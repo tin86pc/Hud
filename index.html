@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>🚗 Tốc Đế HUD - Xoay chữ 90°</title>
+    <title>🚗 Tốc Đế HUD - Tối ưu cho Chrome</title>
     <style>
         * {
             margin: 0;
@@ -22,10 +22,14 @@
             transition: all 0.2s;
         }
 
-        /* Chế độ HUD - XOAY CHỮ 90° */
+        /* Chế độ HUD - Tối ưu cho Chrome */
         body.hud-mode {
             background: transparent !important;
             padding: 0 !important;
+            overflow: hidden !important;
+            position: fixed !important;
+            width: 100% !important;
+            height: 100% !important;
         }
 
         body.hud-mode .speed-container {
@@ -49,6 +53,7 @@
             left: 0;
             right: 0;
             bottom: 0;
+            z-index: 9999;
         }
 
         body.hud-mode .speed-display {
@@ -63,7 +68,11 @@
             justify-content: center;
             align-items: center;
             gap: 20px;
-            transform: scaleX(-1) rotate(90deg);  /* XOAY 90° + LẬT NGANG CHO GƯƠNG */
+            /* XỬ LÝ XOAY CHỮ CHO CHROME */
+            transform: scaleX(-1) rotate(90deg);
+            -webkit-transform: scaleX(-1) rotate(90deg);
+            transform-origin: center center;
+            -webkit-transform-origin: center center;
         }
 
         body.hud-mode .speed-number {
@@ -252,7 +261,7 @@
             📡 Tự động lấy GPS khi tải trang. Cho phép quyền vị trí.
         </div>
         <div class="footer">
-            ⚡ Khi bật HUD: màn hình xoay ngang, chữ xoay 90°, bấm vào màn hình để thoát.
+            ⚡ Khi bật HUD: bấm vào màn hình để thoát.
         </div>
     </div>
 
@@ -341,41 +350,8 @@
                 messageBox.innerHTML = '⏳ Đang tìm vệ tinh, vui lòng ra ngoài trời...';
             }
 
-            // --- Hàm xoay màn hình ngang ---
-            async function forceLandscape() {
-                try {
-                    if (screen.orientation && screen.orientation.lock) {
-                        await screen.orientation.lock('landscape');
-                        console.log('Đã xoay màn hình sang ngang');
-                    }
-                } catch (error) {
-                    console.log('Không thể tự động xoay màn hình:', error);
-                    
-                    if (window.innerHeight > window.innerWidth) {
-                        messageBox.innerHTML = '📱 Vui lòng xoay ngang điện thoại để sử dụng HUD';
-                        setTimeout(() => {
-                            if (hudActive) {
-                                messageBox.innerHTML = '✅ Đã xoay - chữ đã xoay 90°, bấm để thoát';
-                            }
-                        }, 3000);
-                    }
-                }
-            }
-
-            // --- Hàm mở khóa xoay màn hình ---
-            function unlockOrientation() {
-                try {
-                    if (screen.orientation && screen.orientation.unlock) {
-                        screen.orientation.unlock();
-                        console.log('Đã mở khóa xoay màn hình');
-                    }
-                } catch (error) {
-                    console.log('Không thể mở khóa xoay:', error);
-                }
-            }
-
             // --- Hàm tắt HUD ---
-            async function turnOffHUD() {
+            function turnOffHUD() {
                 if (!hudActive) return;
                 
                 hudActive = false;
@@ -383,15 +359,18 @@
                 hudBtn.innerHTML = '<span>🖥️</span> Bật HUD';
                 hudBtn.classList.remove('hud-active');
                 
+                // Thoát fullscreen nếu đang ở chế độ fullscreen
                 try {
                     if (document.exitFullscreen) {
-                        await document.exitFullscreen();
+                        document.exitFullscreen();
                     }
                 } catch (e) {
                     console.log('Không thể thoát fullscreen:', e);
                 }
                 
-                unlockOrientation();
+                // Bỏ khóa cuộn
+                document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
             }
 
             // --- Hàm bật HUD ---
@@ -401,6 +380,11 @@
                 hudBtn.innerHTML = '<span>🔆</span> Tắt HUD';
                 hudBtn.classList.add('hud-active');
                 
+                // Khóa cuộn
+                document.body.style.overflow = 'hidden';
+                document.documentElement.style.overflow = 'hidden';
+                
+                // Thử vào fullscreen (nhưng không bắt buộc)
                 try {
                     if (document.documentElement.requestFullscreen) {
                         await document.documentElement.requestFullscreen();
@@ -409,21 +393,29 @@
                     console.log('Không thể vào fullscreen:', e);
                 }
                 
-                await forceLandscape();
+                // Hiển thị thông báo hướng dẫn xoay màn hình
+                messageBox.innerHTML = '📱 Vui lòng xoay ngang điện thoại để sử dụng HUD';
+                setTimeout(() => {
+                    if (hudActive) {
+                        messageBox.innerHTML = '✅ Đã sẵn sàng - bấm vào màn hình để thoát HUD';
+                    }
+                }, 3000);
             }
 
             // --- Bật/tắt HUD ---
-            async function toggleHUD() {
+            function toggleHUD() {
                 if (hudActive) {
-                    await turnOffHUD();
+                    turnOffHUD();
                 } else {
-                    await turnOnHUD();
+                    turnOnHUD();
                 }
             }
 
             // --- Bấm vào màn hình để thoát HUD ---
             container.addEventListener('click', function(e) {
                 if (hudActive) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     turnOffHUD();
                 }
             });
@@ -441,16 +433,21 @@
                 }
             });
 
-            // --- Xử lý khi xoay màn hình thủ công ---
+            // --- Xử lý khi nhấn nút back trên Android ---
+            window.addEventListener('popstate', function() {
+                if (hudActive) {
+                    turnOffHUD();
+                }
+            });
+
+            // --- Xử lý khi xoay màn hình ---
             window.addEventListener('orientationchange', function() {
                 if (hudActive) {
+                    // Cập nhật lại kích thước hiển thị
                     setTimeout(() => {
-                        if (window.innerHeight > window.innerWidth) {
-                            messageBox.innerHTML = '📱 Đang ở chế độ dọc - xoay ngang để thấy chữ đã xoay';
-                        } else {
-                            messageBox.innerHTML = '✅ Chế độ ngang - chữ đã xoay 90°, bấm để thoát';
-                        }
-                    }, 200);
+                        // Force reflow để cập nhật layout
+                        window.dispatchEvent(new Event('resize'));
+                    }, 100);
                 }
             });
 
@@ -464,7 +461,6 @@
                 if (watchId) {
                     navigator.geolocation.clearWatch(watchId);
                 }
-                unlockOrientation();
             });
 
             updateSpeedOnly(0);
