@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>🚗 Tốc Đế HUD - Chế độ gương</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+
+        body {
+            background: #0a1018;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            transition: background 0.2s;
+        }
+
+        /* Chế độ HUD toàn màn hình - LỘN NGƯỢC CHỮ để nhìn qua gương */
+        body.hud-mode {
+            background: transparent !important;
+        }
+
+        body.hud-mode .speed-container {
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 3px solid rgba(255, 215, 0, 0.9);
+            box-shadow: 0 0 50px rgba(255, 193, 7, 0.5);
+            max-width: 95%;
+            transform: scaleX(-1);
+        }
+
+        body.hud-mode .speed-number {
+            font-size: min(18vw, 25rem);
+            text-shadow: 0 0 30px #ffaa00, 0 0 60px #ff8800;
+        }
+
+        body.hud-mode .unit {
+            font-size: min(4vw, 8rem);
+        }
+
+        body.hud-mode .note, 
+        body.hud-mode .footer {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        /* Container chính */
+        .speed-container {
+            background: #1e2c3a;
+            border-radius: 60px;
+            padding: 35px 25px;
+            max-width: 550px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 1px 4px rgba(255,255,255,0.1);
+            border: 1px solid #ffc10740;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        /* Header nhỏ */
+        .gps-status {
+            background: #17212b;
+            padding: 10px 18px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #3f6180;
+            color: #c2e0ff;
+            font-size: 0.95rem;
+        }
+
+        .gps-status .dot {
+            width: 12px;
+            height: 12px;
+            background: #f0b400;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); background: #00ff88; }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Hiển thị tốc độ lớn */
+        .speed-display {
+            background: #0f1a24;
+            border-radius: 50px;
+            padding: 30px 15px;
+            margin: 15px 0 20px;
+            border: 2px solid #ffc107;
+            box-shadow: inset 0 8px 12px #00000080, 0 15px 25px #000000;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .speed-number {
+            font-size: min(15vw, 10rem);
+            font-weight: 800;
+            line-height: 1.2;
+            color: #f9e57c;
+            text-shadow: 0 0 25px #ffb347, 0 8px 10px black;
+            letter-spacing: 2px;
+            font-feature-settings: "tnum";
+            transition: font-size 0.2s;
+            word-break: keep-all;
+            white-space: nowrap;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        .unit {
+            font-size: min(5vw, 2.5rem);
+            color: #bbd9ff;
+            margin-left: 5px;
+            font-weight: 400;
+            white-space: nowrap;
+        }
+
+        /* Nút bấm - CHỈ CÒN NÚT HUD */
+        .button-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 30px 0 15px;
+        }
+
+        .hud-btn {
+            background: #253c51;
+            border: none;
+            color: white;
+            padding: 16px 28px;
+            border-radius: 60px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: 1px solid #ffc10780;
+            box-shadow: 0 8px 0 #0f1a24, 0 10px 20px black;
+            cursor: pointer;
+            transition: 0.06s linear;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+            min-width: 200px;
+        }
+
+        .hud-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #0f1a24, 0 5px 12px black;
+        }
+
+        .hud-btn.hud-active {
+            background: #3d5e7a;
+            border-color: #ffd966;
+            box-shadow: 0 0 20px #ffc107, 0 6px 0 #0f1a24;
+        }
+
+        /* Thông báo nhỏ */
+        .note {
+            color: #a0c2e0;
+            background: #16222e70;
+            padding: 12px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            border: 1px solid #305070;
+            backdrop-filter: blur(4px);
+            word-break: break-word;
+        }
+
+        .footer {
+            color: #4d6885;
+            font-size: 0.75rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="speed-container" id="mainContainer">
+        <!-- Trạng thái GPS nhỏ -->
+        <div class="gps-status">
+            <span class="dot" id="statusLed"></span>
+            <span id="gpsText">Đang khởi động GPS...</span>
+        </div>
+
+        <!-- Chỉ hiển thị tốc độ và km/h -->
+        <div class="speed-display">
+            <span class="speed-number" id="speedValue">0.0</span>
+            <span class="unit">km/h</span>
+        </div>
+
+        <!-- CHỈ CÒN NÚT HUD - ĐÃ BỎ NÚT MÔ PHỎNG -->
+        <div class="button-panel">
+            <button class="hud-btn" id="hudToggleBtn">
+                <span>🖥️</span> Bật HUD (gương)
+            </button>
+        </div>
+
+        <!-- Thông báo nhỏ -->
+        <div class="note" id="messageBox">
+            📡 Tự động lấy GPS khi tải trang. Cho phép quyền vị trí.
+        </div>
+        <div class="footer">
+            ⚡ Khi bật HUD, chữ sẽ tự động lật ngang để nhìn qua gương.
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // --- DOM elements ---
+            const speedEl = document.getElementById('speedValue');
+            const gpsTextEl = document.getElementById('gpsText');
+            const statusLed = document.getElementById('statusLed');
+            const messageBox = document.getElementById('messageBox');
+            const hudBtn = document.getElementById('hudToggleBtn');
+            const body = document.body;
+
+            // --- State ---
+            let watchId = null;
+            let hudActive = false;
+
+            // --- Hàm cập nhật tốc độ ---
+            function updateSpeedOnly(speedKmh) {
+                if (speedKmh !== undefined && speedKmh !== null && !isNaN(speedKmh)) {
+                    let displaySpeed = Math.min(speedKmh, 999.9);
+                    speedEl.textContent = displaySpeed.toFixed(1);
+                } else {
+                    speedEl.textContent = '0.0';
+                }
+            }
+
+            // --- Xử lý khi có vị trí thật từ GPS ---
+            function handleSuccess(position) {
+                const coords = position.coords;
+                let speed = 0;
+                if (coords.speed !== null && coords.speed > 0) {
+                    speed = coords.speed * 3.6;
+                }
+
+                updateSpeedOnly(speed);
+
+                gpsTextEl.textContent = 'GPS đã kết nối';
+                statusLed.style.background = '#33ff99';
+                statusLed.style.boxShadow = '0 0 15px #00ff80';
+                messageBox.innerHTML = `✅ Tốc độ thực: ${speed.toFixed(1)} km/h`;
+            }
+
+            function handleError(error) {
+                console.warn('Lỗi GPS:', error);
+                let msg = '';
+                if (error.code === 1) msg = '❌ Từ chối quyền GPS. Hãy cấp quyền trong Chrome.';
+                else if (error.code === 2) msg = '⚠️ Không có tín hiệu GPS. Hãy ra ngoài trời.';
+                else if (error.code === 3) msg = '⏳ GPS timeout - thử lại.';
+                else msg = '❓ Lỗi không xác định.';
+
+                gpsTextEl.textContent = 'Lỗi GPS';
+                statusLed.style.background = '#ff5c5c';
+                statusLed.style.boxShadow = '0 0 10px #ff0000';
+                messageBox.innerHTML = msg;
+            }
+
+            // --- Tự động bắt đầu GPS khi trang load ---
+            function autoStartGPS() {
+                if (!navigator.geolocation) {
+                    gpsTextEl.textContent = 'Không hỗ trợ';
+                    messageBox.innerHTML = '❌ Trình duyệt không hỗ trợ Geolocation. Dùng Chrome trên di động.';
+                    return;
+                }
+
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                }
+
+                const options = {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 12000
+                };
+
+                watchId = navigator.geolocation.watchPosition(
+                    handleSuccess,
+                    handleError,
+                    options
+                );
+
+                gpsTextEl.textContent = 'Đang chờ GPS...';
+                statusLed.style.background = '#f0b400';
+                statusLed.style.boxShadow = '0 0 15px #ffb700';
+                messageBox.innerHTML = '⏳ Đang tìm vệ tinh, vui lòng ra ngoài trời...';
+            }
+
+            // --- Bật/tắt HUD toàn màn hình với chữ lộn ngược ---
+            function toggleHUD() {
+                hudActive = !hudActive;
+                if (hudActive) {
+                    body.classList.add('hud-mode');
+                    hudBtn.innerHTML = '<span>🔆</span> Tắt HUD (gương)';
+                    hudBtn.classList.add('hud-active');
+                } else {
+                    body.classList.remove('hud-mode');
+                    hudBtn.innerHTML = '<span>🖥️</span> Bật HUD (gương)';
+                    hudBtn.classList.remove('hud-active');
+                }
+            }
+
+            // --- Sự kiện nút HUD ---
+            hudBtn.addEventListener('click', toggleHUD);
+
+            // --- Khởi động GPS ngay khi trang load ---
+            window.addEventListener('load', function() {
+                autoStartGPS();
+            });
+
+            // Dọn dẹp trước khi thoát
+            window.addEventListener('beforeunload', function() {
+                if (watchId) {
+                    navigator.geolocation.clearWatch(watchId);
+                }
+            });
+
+            // Hiển thị 0.0 ban đầu
+            updateSpeedOnly(0);
+        })();
+    </script>
+</body>
+</html>
