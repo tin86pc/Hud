@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>🚗 Tốc Đế HUD - Chế độ gương</title>
+    <title>🚗 Tốc Đế HUD - Xoay chữ 90°</title>
     <style>
         * {
             margin: 0;
@@ -19,37 +19,75 @@
             justify-content: center;
             align-items: center;
             padding: 16px;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
 
-        /* Chế độ HUD toàn màn hình - LỘN NGƯỢC CHỮ để nhìn qua gương */
+        /* Chế độ HUD - XOAY CHỮ 90° */
         body.hud-mode {
             background: transparent !important;
+            padding: 0 !important;
         }
 
         body.hud-mode .speed-container {
-            background: rgba(0, 0, 0, 0.65);
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
-            border: 3px solid rgba(255, 215, 0, 0.9);
-            box-shadow: 0 0 50px rgba(255, 193, 7, 0.5);
-            max-width: 95%;
-            transform: scaleX(-1);
+            border: 4px solid rgba(255, 215, 0, 0.95);
+            box-shadow: 0 0 80px rgba(255, 193, 7, 0.8);
+            max-width: 100%;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        body.hud-mode .speed-display {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+            width: auto;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            transform: scaleX(-1) rotate(90deg);  /* XOAY 90° + LẬT NGANG CHO GƯƠNG */
         }
 
         body.hud-mode .speed-number {
-            font-size: min(18vw, 25rem);
-            text-shadow: 0 0 30px #ffaa00, 0 0 60px #ff8800;
+            font-size: min(30vh, 40rem);
+            text-shadow: 0 0 40px #ffaa00, 0 0 80px #ff8800, 0 0 120px #ff6600;
+            color: #ffd966;
+            line-height: 1;
+            display: inline-block;
+            white-space: nowrap;
         }
 
         body.hud-mode .unit {
-            font-size: min(4vw, 8rem);
+            font-size: min(8vh, 12rem);
+            color: #ffffff;
+            text-shadow: 0 0 30px #3399ff;
+            display: inline-block;
+            white-space: nowrap;
         }
 
-        body.hud-mode .note, 
+        body.hud-mode .gps-status,
+        body.hud-mode .button-panel,
+        body.hud-mode .note,
         body.hud-mode .footer {
-            opacity: 0.8;
-            font-size: 0.9rem;
+            display: none;
         }
 
         /* Container chính */
@@ -94,7 +132,7 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Hiển thị tốc độ lớn */
+        /* Hiển thị tốc độ lớn - chế độ thường */
         .speed-display {
             background: #0f1a24;
             border-radius: 50px;
@@ -129,7 +167,7 @@
             white-space: nowrap;
         }
 
-        /* Nút bấm - CHỈ CÒN NÚT HUD */
+        /* Nút HUD */
         .button-panel {
             display: flex;
             flex-wrap: wrap;
@@ -202,10 +240,10 @@
             <span class="unit">km/h</span>
         </div>
 
-        <!-- CHỈ CÒN NÚT HUD - ĐÃ BỎ NÚT MÔ PHỎNG -->
+        <!-- Nút HUD -->
         <div class="button-panel">
             <button class="hud-btn" id="hudToggleBtn">
-                <span>🖥️</span> Bật HUD (gương)
+                <span>🖥️</span> Bật HUD
             </button>
         </div>
 
@@ -214,7 +252,7 @@
             📡 Tự động lấy GPS khi tải trang. Cho phép quyền vị trí.
         </div>
         <div class="footer">
-            ⚡ Khi bật HUD, chữ sẽ tự động lật ngang để nhìn qua gương.
+            ⚡ Khi bật HUD: màn hình xoay ngang, chữ xoay 90°, bấm vào màn hình để thoát.
         </div>
     </div>
 
@@ -226,6 +264,7 @@
             const statusLed = document.getElementById('statusLed');
             const messageBox = document.getElementById('messageBox');
             const hudBtn = document.getElementById('hudToggleBtn');
+            const container = document.getElementById('mainContainer');
             const body = document.body;
 
             // --- State ---
@@ -302,24 +341,120 @@
                 messageBox.innerHTML = '⏳ Đang tìm vệ tinh, vui lòng ra ngoài trời...';
             }
 
-            // --- Bật/tắt HUD toàn màn hình với chữ lộn ngược ---
-            function toggleHUD() {
-                hudActive = !hudActive;
-                if (hudActive) {
-                    body.classList.add('hud-mode');
-                    hudBtn.innerHTML = '<span>🔆</span> Tắt HUD (gương)';
-                    hudBtn.classList.add('hud-active');
-                } else {
-                    body.classList.remove('hud-mode');
-                    hudBtn.innerHTML = '<span>🖥️</span> Bật HUD (gương)';
-                    hudBtn.classList.remove('hud-active');
+            // --- Hàm xoay màn hình ngang ---
+            async function forceLandscape() {
+                try {
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock('landscape');
+                        console.log('Đã xoay màn hình sang ngang');
+                    }
+                } catch (error) {
+                    console.log('Không thể tự động xoay màn hình:', error);
+                    
+                    if (window.innerHeight > window.innerWidth) {
+                        messageBox.innerHTML = '📱 Vui lòng xoay ngang điện thoại để sử dụng HUD';
+                        setTimeout(() => {
+                            if (hudActive) {
+                                messageBox.innerHTML = '✅ Đã xoay - chữ đã xoay 90°, bấm để thoát';
+                            }
+                        }, 3000);
+                    }
                 }
             }
 
-            // --- Sự kiện nút HUD ---
-            hudBtn.addEventListener('click', toggleHUD);
+            // --- Hàm mở khóa xoay màn hình ---
+            function unlockOrientation() {
+                try {
+                    if (screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock();
+                        console.log('Đã mở khóa xoay màn hình');
+                    }
+                } catch (error) {
+                    console.log('Không thể mở khóa xoay:', error);
+                }
+            }
 
-            // --- Khởi động GPS ngay khi trang load ---
+            // --- Hàm tắt HUD ---
+            async function turnOffHUD() {
+                if (!hudActive) return;
+                
+                hudActive = false;
+                body.classList.remove('hud-mode');
+                hudBtn.innerHTML = '<span>🖥️</span> Bật HUD';
+                hudBtn.classList.remove('hud-active');
+                
+                try {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    }
+                } catch (e) {
+                    console.log('Không thể thoát fullscreen:', e);
+                }
+                
+                unlockOrientation();
+            }
+
+            // --- Hàm bật HUD ---
+            async function turnOnHUD() {
+                hudActive = true;
+                body.classList.add('hud-mode');
+                hudBtn.innerHTML = '<span>🔆</span> Tắt HUD';
+                hudBtn.classList.add('hud-active');
+                
+                try {
+                    if (document.documentElement.requestFullscreen) {
+                        await document.documentElement.requestFullscreen();
+                    }
+                } catch (e) {
+                    console.log('Không thể vào fullscreen:', e);
+                }
+                
+                await forceLandscape();
+            }
+
+            // --- Bật/tắt HUD ---
+            async function toggleHUD() {
+                if (hudActive) {
+                    await turnOffHUD();
+                } else {
+                    await turnOnHUD();
+                }
+            }
+
+            // --- Bấm vào màn hình để thoát HUD ---
+            container.addEventListener('click', function(e) {
+                if (hudActive) {
+                    turnOffHUD();
+                }
+            });
+
+            // --- Sự kiện nút HUD ---
+            hudBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleHUD();
+            });
+
+            // --- Xử lý khi thoát fullscreen bằng nút hệ thống ---
+            document.addEventListener('fullscreenchange', function() {
+                if (!document.fullscreenElement && hudActive) {
+                    turnOffHUD();
+                }
+            });
+
+            // --- Xử lý khi xoay màn hình thủ công ---
+            window.addEventListener('orientationchange', function() {
+                if (hudActive) {
+                    setTimeout(() => {
+                        if (window.innerHeight > window.innerWidth) {
+                            messageBox.innerHTML = '📱 Đang ở chế độ dọc - xoay ngang để thấy chữ đã xoay';
+                        } else {
+                            messageBox.innerHTML = '✅ Chế độ ngang - chữ đã xoay 90°, bấm để thoát';
+                        }
+                    }, 200);
+                }
+            });
+
+            // --- Khởi động GPS khi load trang ---
             window.addEventListener('load', function() {
                 autoStartGPS();
             });
@@ -329,9 +464,9 @@
                 if (watchId) {
                     navigator.geolocation.clearWatch(watchId);
                 }
+                unlockOrientation();
             });
 
-            // Hiển thị 0.0 ban đầu
             updateSpeedOnly(0);
         })();
     </script>
