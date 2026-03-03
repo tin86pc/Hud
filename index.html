@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPS HUD - xoay 180° + lật gương</title>
+    <title>GPS HUD - tự động giữ sáng + xoay 180° + lật gương</title>
     <style>
         * {
             margin: 0;
@@ -47,13 +47,13 @@
             white-space: nowrap;
             text-align: center;
             display: inline-block;
-            transform: rotate(0deg) scaleX(1); /* Không xoay, không lật */
+            transform: rotate(0deg) scaleX(1);
         }
 
-        /* Khi bật HUD: xoay 180 độ VÀ lật ngang (scaleX(-1)) */
+        /* Khi bật HUD: xoay 180 độ VÀ lật ngang */
         body.hud-mode .speed-number {
             text-shadow: 0 0 25px rgba(0, 200, 255, 0.8), 0 0 50px rgba(0, 100, 255, 0.5);
-            transform: rotate(180deg) scaleX(-1); /* Kết hợp xoay và lật gương */
+            transform: rotate(180deg) scaleX(-1);
         }
 
         .hud-container {
@@ -115,36 +115,96 @@
             font-size: 14px;
             margin-top: 5px;
         }
+
+        .wake-status {
+            color: #8fc9ff;
+            font-size: 16px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="hud-container">
-        <!-- Số tốc độ sẽ vừa xoay 180° vừa lật ngang khi bật HUD -->
+        <!-- Số tốc độ -->
         <div class="speed-number" id="hudSpeed">0</div>
         
-        <!-- Hiển thị trạng thái GPS -->
+        <!-- Trạng thái GPS -->
         <div class="gps-status" id="gpsStatus">🛰 Đang khởi tạo GPS...</div>
         
+        <!-- Nút HUD mode (xoay + lật) -->
         <button class="hud-toggle-btn" id="hudToggleBtn">HUD mode</button>
-        <div class="instruction">Nhấn H hoặc nút: xoay 180° + lật gương</div>
+        
+        <!-- Trạng thái giữ sáng (tự động bật) -->
+        <div class="wake-status" id="wakeStatus">🔆 Đang giữ sáng màn hình...</div>
+        <div class="instruction">Nhấn H để bật/tắt HUD (xoay 180° + lật gương)</div>
     </div>
 
     <script>
         (function() {
+            // DOM elements
             const speedDisplay = document.getElementById('hudSpeed');
             const gpsStatus = document.getElementById('gpsStatus');
             const bodyEl = document.body;
             const toggleBtn = document.getElementById('hudToggleBtn');
+            const wakeStatus = document.getElementById('wakeStatus');
 
+            // Biến GPS
             let currentSpeed = 0;
             let watchId = null;
             let lastPosition = null;
 
-            // Hàm tính tốc độ từ hai điểm GPS (m/s -> km/h)
+            // --- WAKE LOCK - TỰ ĐỘNG GIỮ SÁNG KHI MỞ WEB ---
+            let wakeLock = null;
+
+            async function requestWakeLock() {
+                try {
+                    // Kiểm tra trình duyệt có hỗ trợ Wake Lock không
+                    if ('wakeLock' in navigator) {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        wakeStatus.textContent = '🔆 Đang giữ sáng màn hình (tự động)';
+                        wakeStatus.style.color = '#a0ffa0';
+                        
+                        // Lắng nghe sự kiện release (khi mất wake lock)
+                        wakeLock.addEventListener('release', () => {
+                            wakeStatus.textContent = '⚠️ Mất quyền giữ sáng, thử lại...';
+                            wakeStatus.style.color = '#ffa07a';
+                            // Tự động xin lại nếu bị mất (khi chuyển tab, v.v.)
+                            requestWakeLock();
+                        });
+                        
+                        console.log('Wake Lock active');
+                    } else {
+                        wakeStatus.textContent = '⚠️ Trình duyệt không hỗ trợ giữ sáng';
+                        wakeStatus.style.color = '#ff7f6e';
+                    }
+                } catch (err) {
+                    console.error('Wake Lock error:', err);
+                    wakeStatus.textContent = '⚠️ Không thể giữ sáng màn hình';
+                    wakeStatus.style.color = '#ff7f6e';
+                    // Thử lại sau 2 giây nếu lỗi (ví dụ do user chưa tương tác)
+                    setTimeout(requestWakeLock, 2000);
+                }
+            }
+
+            // Xử lý khi trang bị ẩn/hiện (visibility change)
+            function handleVisibilityChange() {
+                if (document.visibilityState === 'visible') {
+                    // Khi quay lại trang, xin lại wake lock
+                    requestWakeLock();
+                }
+            }
+
+            // Tự động gọi wake lock khi trang load
+            requestWakeLock();
+
+            // Theo dõi sự kiện visibility change
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+
+            // --- HÀM TÍNH TOÁN GPS ---
             function calculateSpeed(position1, position2) {
                 if (!position1 || !position2) return 0;
                 
-                const R = 6371e3; // bán kính Trái đất (mét)
+                const R = 6371e3;
                 const φ1 = position1.coords.latitude * Math.PI/180;
                 const φ2 = position2.coords.latitude * Math.PI/180;
                 const Δφ = (position2.coords.latitude - position1.coords.latitude) * Math.PI/180;
@@ -154,47 +214,40 @@
                         Math.cos(φ1) * Math.cos(φ2) *
                         Math.sin(Δλ/2) * Math.sin(Δλ/2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                const distance = R * c; // khoảng cách (mét)
+                const distance = R * c;
                 
-                const timeDiff = (position2.timestamp - position1.timestamp) / 1000; // giây
+                const timeDiff = (position2.timestamp - position1.timestamp) / 1000;
                 if (timeDiff <= 0) return 0;
                 
-                const speedMps = distance / timeDiff; // m/s
-                return speedMps * 3.6; // km/h
+                const speedMps = distance / timeDiff;
+                return speedMps * 3.6;
             }
 
-            // Xử lý khi có vị trí mới
+            // --- XỬ LÝ VỊ TRÍ GPS ---
             function handlePosition(position) {
                 if (lastPosition) {
-                    // Tính tốc độ dựa trên 2 điểm liên tiếp
                     const speed = calculateSpeed(lastPosition, position);
                     
-                    // Lọc nhiễu: tốc độ thay đổi đột ngột > 30km/h có thể do sai số GPS
                     if (Math.abs(speed - currentSpeed) < 30 || speed === 0) {
                         currentSpeed = Math.round(speed);
                     } else {
                         console.log('GPS noise filtered');
                     }
                 } else {
-                    // Lần đầu có vị trí, dùng speed từ GPS nếu có
                     if (position.coords.speed !== null && position.coords.speed > 0) {
                         currentSpeed = Math.round(position.coords.speed * 3.6);
                     }
                 }
 
-                // Cập nhật hiển thị
                 speedDisplay.textContent = currentSpeed;
                 
-                // Cập nhật trạng thái
                 const accuracy = position.coords.accuracy ? position.coords.accuracy.toFixed(1) : '?';
                 gpsStatus.textContent = `🛰 Đã kết nối GPS (sai số ±${accuracy}m)`;
                 gpsStatus.classList.remove('error');
                 
-                // Lưu vị trí hiện tại cho lần tính sau
                 lastPosition = position;
             }
 
-            // Xử lý lỗi GPS
             function handleError(error) {
                 let message = 'Lỗi GPS: ';
                 switch(error.code) {
@@ -215,7 +268,6 @@
                 speedDisplay.textContent = '0';
             }
 
-            // Bắt đầu theo dõi GPS
             function startGPS() {
                 if (!navigator.geolocation) {
                     gpsStatus.textContent = '⚠️ Trình duyệt không hỗ trợ GPS';
@@ -238,7 +290,6 @@
                 gpsStatus.textContent = '🛰 Đang chờ tín hiệu GPS...';
             }
 
-            // Dừng theo dõi GPS
             function stopGPS() {
                 if (watchId !== null) {
                     navigator.geolocation.clearWatch(watchId);
@@ -246,13 +297,13 @@
                 }
             }
 
-            // Bật/tắt HUD
+            // --- BẬT/TẮT HUD (xoay + lật) ---
             function toggleHudMode() {
                 bodyEl.classList.toggle('hud-mode');
                 toggleBtn.textContent = bodyEl.classList.contains('hud-mode') ? '⛔ HUD off' : 'HUD mode';
             }
 
-            // Sự kiện nút
+            // Sự kiện nút HUD
             toggleBtn.addEventListener('click', toggleHudMode);
 
             // Phím tắt H
@@ -262,13 +313,13 @@
                 }
             });
 
-            // Khởi động GPS khi trang load
+            // Khởi động GPS
             startGPS();
 
             // Dọn dẹp khi đóng trang
             window.addEventListener('beforeunload', stopGPS);
 
-            // Double click vào số để reset bộ nhớ vị trí (nếu cần)
+            // Double click vào số để reset bộ nhớ vị trí
             speedDisplay.addEventListener('dblclick', () => {
                 lastPosition = null;
                 gpsStatus.textContent = '🛰 Đã reset, đang theo dõi GPS...';
