@@ -77,7 +77,9 @@
         body.hud-mode .gps-status,
         body.hud-mode .recommended-row,
         body.hud-mode .limit-source,
-        body.hud-mode .server-status {
+        body.hud-mode .server-status,
+        body.hud-mode .wake-lock-status,
+        body.hud-mode .mode-selector {
             opacity: 0.8;
         }
 
@@ -177,6 +179,89 @@
             100% { opacity: 1; }
         }
 
+        /* Wake Lock status */
+        .wake-lock-status {
+            color: #3f8fb0;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            margin: 5px 0;
+            padding: 3px 10px;
+            background: rgba(0, 30, 50, 0.3);
+            border-radius: 20px;
+            display: inline-block;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .wake-lock-status:hover {
+            background: rgba(0, 30, 50, 0.8);
+        }
+
+        .wake-lock-status.active {
+            color: #00aa00;
+            background: rgba(0, 170, 0, 0.2);
+            border: 1px solid #00aa00;
+        }
+
+        .wake-lock-status.inactive {
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid #ffaa00;
+        }
+
+        .wake-lock-status.error {
+            color: #ff5555;
+            background: rgba(255, 85, 85, 0.1);
+            border: 1px solid #ff5555;
+        }
+
+        /* Mode selector - Nút chuyển tự động/bằng tay */
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 5px;
+            background: rgba(0, 20, 30, 0.6);
+            border-radius: 50px;
+            border: 1px solid #3f6f8c;
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #8fc9ff;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid transparent;
+        }
+
+        .mode-btn.active {
+            background: #2f5f7a;
+            color: white;
+            border-color: #7fc9ff;
+            box-shadow: 0 0 15px rgba(63, 143, 176, 0.5);
+        }
+
+        .mode-btn:first-child.active {
+            background: #00aa00;
+            border-color: #00ff00;
+        }
+
+        .mode-btn:last-child.active {
+            background: #ffaa00;
+            border-color: #ffff00;
+        }
+
         .gps-status {
             color: #3f8fb0;
             font-size: 16px;
@@ -198,6 +283,7 @@
             display: flex;
             justify-content: center;
             margin-top: 10px;
+            gap: 10px;
         }
 
         .hud-toggle-btn {
@@ -213,6 +299,7 @@
             transition: 0.08s linear;
             text-transform: uppercase;
             letter-spacing: 1px;
+            flex: 1;
         }
 
         .hud-toggle-btn:active {
@@ -407,6 +494,13 @@
             color: white;
         }
 
+        .action-btn.warning {
+            background: #ffaa00;
+            border-color: #ffaa00;
+            color: #000000;
+            box-shadow: 0 4px 0 #b37400;
+        }
+
         /* QR Code Modal */
         .qr-modal {
             display: none;
@@ -498,6 +592,15 @@
         <!-- SERVER STATUS - HIỂN THỊ TRÊN HUD -->
         <div class="server-status" id="serverStatus">🌐 Server: Đang chờ...</div>
         
+        <!-- WAKE LOCK STATUS - TÍNH NĂNG GIỮ SÁNG MÀN HÌNH (TỰ ĐỘNG KÍCH HOẠT) -->
+        <div class="wake-lock-status active" id="wakeLockStatus">🔆 Giữ sáng: Đã kích hoạt</div>
+        
+        <!-- MODE SELECTOR - NÚT CHUYỂN TỰ ĐỘNG/BẰNG TAY (MẶC ĐỊNH BẰNG TAY) -->
+        <div class="mode-selector">
+            <button class="mode-btn" id="autoModeBtn">🤖 TỰ ĐỘNG</button>
+            <button class="mode-btn active" id="manualModeBtn">👆 BẰNG TAY</button>
+        </div>
+        
         <div class="gps-status" id="gpsStatus">🛰 Đang khởi tạo GPS...</div>
         <div class="hud-controls">
             <button class="hud-toggle-btn" id="hudToggleBtn">HUD mode</button>
@@ -584,14 +687,16 @@
             <button class="apply-btn" id="applyRoadBtn" style="width: 100%;">ÁP DỤNG QUY ĐỊNH ĐƯỜNG</button>
         </div>
 
-        <!-- NÚT CHIA SẺ QR CODE (đã bỏ nút lấy dữ liệu) -->
+        <!-- NÚT CHIA SẺ QR CODE -->
         <div class="action-buttons">
             <button class="action-btn success" id="shareQrBtn">
                 📱 CHIA SẺ QR CODE
             </button>
+            <!-- NÚT TẮT GIỮ SÁNG (CHỈ ĐỂ TẮT KHI CẦN, MẶC ĐỊNH LÀ BẬT) -->
+            <button class="action-btn warning" id="toggleWakeLockBtn">
+                🔆 TẮT GIỮ SÁNG
+            </button>
         </div>
-        
-      
     </div>
 
     <!-- MODAL HIỂN THỊ QR CODE -->
@@ -607,6 +712,185 @@
     <!-- JavaScript -->
     <script>
         (function() {
+            // ===== BIẾN TOÀN CỤC =====
+            let currentMode = 'manual'; // Mặc định là 'manual' (bằng tay)
+            
+            // ===== WAKE LOCK (GIỮ SÁNG MÀN HÌNH) - TỰ ĐỘNG KÍCH HOẠT =====
+            let wakeLock = null;
+            const wakeLockStatus = document.getElementById('wakeLockStatus');
+            const toggleWakeLockBtn = document.getElementById('toggleWakeLockBtn');
+            let isWakeLockActive = true; // Mặc định là bật
+
+            // Hàm yêu cầu Wake Lock
+            async function requestWakeLock() {
+                try {
+                    // Kiểm tra trình duyệt có hỗ trợ Wake Lock không
+                    if ('wakeLock' in navigator) {
+                        // Yêu cầu Wake Lock
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        
+                        // Cập nhật UI
+                        wakeLockStatus.textContent = '🔆 Giữ sáng: Đã kích hoạt';
+                        wakeLockStatus.className = 'wake-lock-status active';
+                        toggleWakeLockBtn.textContent = '🔆 TẮT GIỮ SÁNG';
+                        isWakeLockActive = true;
+                        
+                        // Lắng nghe sự kiện release
+                        wakeLock.addEventListener('release', () => {
+                            console.log('Wake Lock đã được giải phóng');
+                            // Không cập nhật UI ở đây vì có thể do hệ thống tự giải phóng
+                        });
+                        
+                        console.log('Wake Lock đã được kích hoạt');
+                    } else {
+                        // Trình duyệt không hỗ trợ
+                        wakeLockStatus.textContent = '🔆 Giữ sáng: Không hỗ trợ';
+                        wakeLockStatus.className = 'wake-lock-status error';
+                        toggleWakeLockBtn.disabled = true;
+                        toggleWakeLockBtn.style.opacity = '0.5';
+                        console.log('Trình duyệt không hỗ trợ Wake Lock API');
+                    }
+                } catch (err) {
+                    // Xử lý lỗi
+                    console.error('Lỗi khi kích hoạt Wake Lock:', err);
+                    wakeLockStatus.textContent = '🔆 Giữ sàng: Lỗi';
+                    wakeLockStatus.className = 'wake-lock-status error';
+                    toggleWakeLockBtn.textContent = '🔆 THỬ LẠI';
+                }
+            }
+
+            // Hàm giải phóng Wake Lock
+            async function releaseWakeLock() {
+                if (wakeLock) {
+                    try {
+                        await wakeLock.release();
+                        wakeLock = null;
+                        
+                        // Cập nhật UI
+                        wakeLockStatus.textContent = '🔆 Giữ sáng: Đã tắt';
+                        wakeLockStatus.className = 'wake-lock-status inactive';
+                        toggleWakeLockBtn.textContent = '🔆 BẬT GIỮ SÁNG';
+                        isWakeLockActive = false;
+                        
+                        console.log('Wake Lock đã được giải phóng');
+                    } catch (err) {
+                        console.error('Lỗi khi giải phóng Wake Lock:', err);
+                    }
+                }
+            }
+
+            // Hàm toggle Wake Lock
+            async function toggleWakeLock() {
+                if (isWakeLockActive) {
+                    await releaseWakeLock();
+                } else {
+                    await requestWakeLock();
+                }
+            }
+
+            // Tự động kích hoạt Wake Lock khi trang web load
+            document.addEventListener('DOMContentLoaded', () => {
+                // Kích hoạt Wake Lock tự động
+                setTimeout(requestWakeLock, 500); // Delay nhỏ để đảm bảo mọi thứ đã sẵn sàng
+            });
+
+            // Xử lý khi tab thay đổi visibility (khi chuyển tab khác, Wake Lock có thể bị release)
+            document.addEventListener('visibilitychange', async () => {
+                if (document.visibilityState === 'visible' && isWakeLockActive) {
+                    // Khi quay lại tab, tự động kích hoạt lại Wake Lock nếu đang ở chế độ bật
+                    await requestWakeLock();
+                }
+            });
+
+            // Xử lý khi click nút toggle
+            toggleWakeLockBtn.addEventListener('click', toggleWakeLock);
+            
+            // Click vào wake lock status cũng để toggle
+            wakeLockStatus.addEventListener('click', toggleWakeLock);
+
+            // ===== MODE SELECTOR - TỰ ĐỘNG / BẰNG TAY =====
+            const autoModeBtn = document.getElementById('autoModeBtn');
+            const manualModeBtn = document.getElementById('manualModeBtn');
+            const applySignBtn = document.getElementById('applySignBtn');
+            const applyRoadBtn = document.getElementById('applyRoadBtn');
+            
+            // Vô hiệu hóa các nút áp dụng khi ở chế độ tự động
+            function updateModeUI() {
+                if (currentMode === 'auto') {
+                    autoModeBtn.classList.add('active');
+                    manualModeBtn.classList.remove('active');
+                    
+                    // Vô hiệu hóa các nút áp dụng
+                    applySignBtn.style.opacity = '0.5';
+                    applySignBtn.style.pointerEvents = 'none';
+                    applyRoadBtn.style.opacity = '0.5';
+                    applyRoadBtn.style.pointerEvents = 'none';
+                    
+                    // Hiển thị thông báo
+                    limitSourceEl.textContent = '📋 Chế độ tự động - Đang chờ dữ liệu...';
+                    
+                    // Kích hoạt lại Wake Lock nếu đang tắt
+                    if (!isWakeLockActive) {
+                        requestWakeLock();
+                    }
+                    
+                    // Bắt đầu cập nhật dữ liệu tự động
+                    startAutoUpdate();
+                } else {
+                    manualModeBtn.classList.add('active');
+                    autoModeBtn.classList.remove('active');
+                    
+                    // Kích hoạt các nút áp dụng
+                    applySignBtn.style.opacity = '1';
+                    applySignBtn.style.pointerEvents = 'auto';
+                    applyRoadBtn.style.opacity = '1';
+                    applyRoadBtn.style.pointerEvents = 'auto';
+                    
+                    // Dừng cập nhật tự động
+                    stopAutoUpdate();
+                    
+                    // Cập nhật lại limit source nếu đang hiển thị thông báo auto
+                    if (limitSourceEl.textContent.includes('Chế độ tự động')) {
+                        limitSourceEl.textContent = '📋 Chưa áp dụng';
+                    }
+                }
+            }
+            
+            // Chuyển sang chế độ tự động
+            autoModeBtn.addEventListener('click', function() {
+                currentMode = 'auto';
+                updateModeUI();
+            });
+            
+            // Chuyển sang chế độ bằng tay
+            manualModeBtn.addEventListener('click', function() {
+                currentMode = 'manual';
+                updateModeUI();
+            });
+
+            // ===== CẬP NHẬT DỮ LIỆU TỰ ĐỘNG =====
+            let autoUpdateInterval = null;
+            
+            function startAutoUpdate() {
+                // Dừng interval cũ nếu có
+                if (autoUpdateInterval) {
+                    clearInterval(autoUpdateInterval);
+                }
+                
+                // Cập nhật ngay lập tức
+                fetchServerData();
+                
+                // Cập nhật mỗi 10 giây
+                autoUpdateInterval = setInterval(fetchServerData, 10000);
+            }
+            
+            function stopAutoUpdate() {
+                if (autoUpdateInterval) {
+                    clearInterval(autoUpdateInterval);
+                    autoUpdateInterval = null;
+                }
+            }
+
             // ===== HÀM CUỘN LÊN ĐẦU TRANG =====
             function scrollToTop() {
                 window.scrollTo({
@@ -687,16 +971,6 @@
             let currentLimit = 50;
             let watchId = null;
             let lastPosition = null;
-
-            // Wake Lock
-            async function requestWakeLock() {
-                try {
-                    if ('wakeLock' in navigator) {
-                        await navigator.wakeLock.request('screen');
-                    }
-                } catch (err) {}
-            }
-            requestWakeLock();
 
             // Kiểm tra cảnh báo
             function checkSpeedWarning() {
@@ -811,8 +1085,6 @@
             const roadDetailRadios = document.querySelectorAll('#roadTypeDetail .radio-option');
             const signSlider = document.getElementById('signSpeed');
             const signValue = document.getElementById('signSpeedValue');
-            const applySignBtn = document.getElementById('applySignBtn');
-            const applyRoadBtn = document.getElementById('applyRoadBtn');
             
             // ===== NÚT CHIA SẺ QR CODE =====
             const shareQrBtn = document.getElementById('shareQrBtn');
@@ -941,10 +1213,33 @@
 
             // Nút áp dụng biển báo (nguồn 1) - CÓ CUỘN LÊN ĐẦU
             applySignBtn.addEventListener('click', function() {
-                signLimit = parseInt(signSlider.value);
-                
-                if (signLimit > 0) {
-                    activeSource = 'sign';
+                if (currentMode === 'manual') {
+                    signLimit = parseInt(signSlider.value);
+                    
+                    if (signLimit > 0) {
+                        activeSource = 'sign';
+                        
+                        this.classList.add('active');
+                        this.textContent = '✓ ĐÃ ÁP DỤNG';
+                        
+                        updateDisplay();
+                        
+                        // CUỘN LÊN ĐẦU TRANG
+                        scrollToTop();
+                        
+                        setTimeout(() => {
+                            this.classList.remove('active');
+                            this.textContent = 'ÁP DỤNG';
+                        }, 2000);
+                    }
+                }
+            });
+
+            // Nút áp dụng quy định đường (nguồn 2) - CÓ CUỘN LÊN ĐẦU
+            applyRoadBtn.addEventListener('click', function() {
+                if (currentMode === 'manual') {
+                    roadLimit = calculateRoadLimit();
+                    activeSource = 'road';
                     
                     this.classList.add('active');
                     this.textContent = '✓ ĐÃ ÁP DỤNG';
@@ -956,33 +1251,14 @@
                     
                     setTimeout(() => {
                         this.classList.remove('active');
-                        this.textContent = 'ÁP DỤNG';
+                        this.textContent = 'ÁP DỤNG QUY ĐỊNH ĐƯỜNG';
                     }, 2000);
                 }
             });
 
-            // Nút áp dụng quy định đường (nguồn 2) - CÓ CUỘN LÊN ĐẦU
-            applyRoadBtn.addEventListener('click', function() {
-                roadLimit = calculateRoadLimit();
-                activeSource = 'road';
-                
-                this.classList.add('active');
-                this.textContent = '✓ ĐÃ ÁP DỤNG';
-                
-                updateDisplay();
-                
-                // CUỘN LÊN ĐẦU TRANG
-                scrollToTop();
-                
-                setTimeout(() => {
-                    this.classList.remove('active');
-                    this.textContent = 'ÁP DỤNG QUY ĐỊNH ĐƯỜNG';
-                }, 2000);
-            });
-
             // Double click để bỏ áp dụng
             applySignBtn.addEventListener('dblclick', function() {
-                if (activeSource === 'sign') {
+                if (currentMode === 'manual' && activeSource === 'sign') {
                     activeSource = null;
                     this.classList.remove('applied');
                     updateDisplay();
@@ -997,7 +1273,7 @@
             });
 
             applyRoadBtn.addEventListener('dblclick', function() {
-                if (activeSource === 'road') {
+                if (currentMode === 'manual' && activeSource === 'road') {
                     activeSource = null;
                     this.classList.remove('applied');
                     updateDisplay();
@@ -1016,8 +1292,10 @@
                 signValue.textContent = e.target.value;
             });
 
-            // ===== HÀM GIẢ LẬP LẤY DỮ LIỆU TỪ SERVER =====
+            // ===== HÀM LẤY DỮ LIỆU TỪ SERVER =====
             function fetchServerData() {
+                if (currentMode !== 'auto') return; // Chỉ cập nhật khi ở chế độ tự động
+                
                 serverStatusEl.textContent = '🌐 Server: Đang cập nhật...';
                 serverStatusEl.className = 'server-status loading';
                 
@@ -1025,10 +1303,10 @@
                 setTimeout(() => {
                     // Dữ liệu mẫu từ server
                     const serverData = {
-                        roadType: 'highway',
-                        area: 'non_residential',
-                        vehicleType: 'car',
-                        speedLimit: 100,
+                        roadType: ['normal_2way', 'normal_1way', 'divided', 'highway'][Math.floor(Math.random() * 4)],
+                        area: ['residential', 'non_residential'][Math.floor(Math.random() * 2)],
+                        vehicleType: ['motorcycle', 'car', 'truck', 'bus'][Math.floor(Math.random() * 4)],
+                        speedLimit: Math.floor(Math.random() * 80) + 40, // 40-120
                         timestamp: new Date().toLocaleTimeString()
                     };
                     
@@ -1070,19 +1348,20 @@
                     signSlider.value = serverData.speedLimit;
                     signValue.textContent = serverData.speedLimit;
                     
+                    // Tự động áp dụng giới hạn tốc độ từ server
+                    if (currentMode === 'auto') {
+                        // Ưu tiên áp dụng biển báo từ server
+                        signLimit = serverData.speedLimit;
+                        activeSource = 'sign';
+                        updateDisplay();
+                    }
+                    
                     // Cập nhật trạng thái server trên HUD
                     serverStatusEl.textContent = `🌐 Server: Cập nhật lúc ${serverData.timestamp}`;
                     serverStatusEl.className = 'server-status success';
                     
-                }, 1500);
+                }, 1000);
             }
-
-            // ===== TỰ ĐỘNG CẬP NHẬT DỮ LIỆU SERVER =====
-            // Cập nhật lần đầu sau 2 giây
-            //setTimeout(fetchServerData, 2000);
-            
-            // Cập nhật định kỳ mỗi 30 giây
-            //setInterval(fetchServerData, 30000);
 
             // ===== NÚT CHIA SẺ QR CODE =====
             shareQrBtn.addEventListener('click', function() {
@@ -1123,6 +1402,10 @@
 
             // Khởi động
             startGPS();
+            
+            // Thiết lập mode ban đầu (manual)
+            currentMode = 'manual';
+            updateModeUI();
 
             // Khởi tạo audio khi click
             document.addEventListener('click', function initAudioOnFirstClick() {
