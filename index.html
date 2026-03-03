@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPS HUD - xoay 180°</title>
+    <title>GPS HUD - xoay 180° + lật gương</title>
     <style>
         * {
             margin: 0;
@@ -34,7 +34,7 @@
             backdrop-filter: blur(4px);
         }
 
-        /* Số tốc độ với hiệu ứng xoay 180 độ khi bật HUD */
+        /* Số tốc độ: mặc định bình thường */
         .speed-number {
             font-size: min(50vw, 420px);
             font-weight: 900;
@@ -47,12 +47,13 @@
             white-space: nowrap;
             text-align: center;
             display: inline-block;
-            transform: rotate(0deg); /* Mặc định không xoay */
+            transform: rotate(0deg) scaleX(1); /* Không xoay, không lật */
         }
 
+        /* Khi bật HUD: xoay 180 độ VÀ lật ngang (scaleX(-1)) */
         body.hud-mode .speed-number {
             text-shadow: 0 0 25px rgba(0, 200, 255, 0.8), 0 0 50px rgba(0, 100, 255, 0.5);
-            transform: rotate(180deg); /* Xoay 180 độ khi bật HUD */
+            transform: rotate(180deg) scaleX(-1); /* Kết hợp xoay và lật gương */
         }
 
         .hud-container {
@@ -102,7 +103,6 @@
             margin-top: 5px;
             letter-spacing: 1px;
             text-align: center;
-            /* Không bị xoay */
             transform: none !important;
         }
 
@@ -119,14 +119,14 @@
 </head>
 <body>
     <div class="hud-container">
-        <!-- Số tốc độ sẽ xoay 180 độ khi bật HUD -->
+        <!-- Số tốc độ sẽ vừa xoay 180° vừa lật ngang khi bật HUD -->
         <div class="speed-number" id="hudSpeed">0</div>
         
         <!-- Hiển thị trạng thái GPS -->
         <div class="gps-status" id="gpsStatus">🛰 Đang khởi tạo GPS...</div>
         
         <button class="hud-toggle-btn" id="hudToggleBtn">HUD mode</button>
-        <div class="instruction">Nhấn H hoặc nút để bật/tắt HUD - số sẽ xoay 180°</div>
+        <div class="instruction">Nhấn H hoặc nút: xoay 180° + lật gương</div>
     </div>
 
     <script>
