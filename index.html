@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPS HUD - lật gương</title>
+    <title>GPS HUD - xoay 180°</title>
     <style>
         * {
             margin: 0;
@@ -34,7 +34,7 @@
             backdrop-filter: blur(4px);
         }
 
-        /* LUÔN LUÔN lật số theo trục X màn hình (bất kể chế độ HUD) */
+        /* Số tốc độ với hiệu ứng xoay 180 độ khi bật HUD */
         .speed-number {
             font-size: min(50vw, 420px);
             font-weight: 900;
@@ -42,18 +42,17 @@
             text-shadow: 0 0 15px #3ab4ff, 0 0 30px #0077ff;
             line-height: 1;
             letter-spacing: 4px;
-            transition: text-shadow 0.2s;
+            transition: transform 0.4s ease-in-out, text-shadow 0.2s;
             font-family: 'Arial Black', 'Impact', 'Franklin Gothic Heavy', sans-serif;
             white-space: nowrap;
             text-align: center;
             display: inline-block;
-            /* Lật ngang vĩnh viễn theo trục X màn hình */
-            transform: scaleX(-1);
+            transform: rotate(0deg); /* Mặc định không xoay */
         }
 
         body.hud-mode .speed-number {
             text-shadow: 0 0 25px rgba(0, 200, 255, 0.8), 0 0 50px rgba(0, 100, 255, 0.5);
-            /* Giữ nguyên scaleX(-1) - đã được kế thừa */
+            transform: rotate(180deg); /* Xoay 180 độ khi bật HUD */
         }
 
         .hud-container {
@@ -103,24 +102,31 @@
             margin-top: 5px;
             letter-spacing: 1px;
             text-align: center;
-            /* Không bị lật ngược */
+            /* Không bị xoay */
             transform: none !important;
         }
 
         .gps-status.error {
             color: #ff7f6e;
         }
+        
+        .instruction {
+            color: #6a8ca0;
+            font-size: 14px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="hud-container">
-        <!-- Số tốc độ sẽ luôn bị lật ngang do transform: scaleX(-1) trong CSS -->
+        <!-- Số tốc độ sẽ xoay 180 độ khi bật HUD -->
         <div class="speed-number" id="hudSpeed">0</div>
         
-        <!-- Hiển thị trạng thái GPS (không bị lật) -->
+        <!-- Hiển thị trạng thái GPS -->
         <div class="gps-status" id="gpsStatus">🛰 Đang khởi tạo GPS...</div>
         
         <button class="hud-toggle-btn" id="hudToggleBtn">HUD mode</button>
+        <div class="instruction">Nhấn H hoặc nút để bật/tắt HUD - số sẽ xoay 180°</div>
     </div>
 
     <script>
@@ -133,7 +139,6 @@
             let currentSpeed = 0;
             let watchId = null;
             let lastPosition = null;
-            let lastTimestamp = null;
 
             // Hàm tính tốc độ từ hai điểm GPS (m/s -> km/h)
             function calculateSpeed(position1, position2) {
@@ -168,7 +173,6 @@
                     if (Math.abs(speed - currentSpeed) < 30 || speed === 0) {
                         currentSpeed = Math.round(speed);
                     } else {
-                        // Nếu nghi ngờ nhiễu, giữ tốc độ cũ
                         console.log('GPS noise filtered');
                     }
                 } else {
@@ -220,9 +224,9 @@
                 }
 
                 const options = {
-                    enableHighAccuracy: true,  // Ưu tiên độ chính xác cao (dùng GPS)
-                    maximumAge: 0,              // Không dùng cache
-                    timeout: 10000               // Timeout 10 giây
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 10000
                 };
 
                 watchId = navigator.geolocation.watchPosition(
