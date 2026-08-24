@@ -57,7 +57,6 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
-        /* ===== VIDEO WRAPPER ===== */
         .video-wrapper {
             position: relative;
             width: 100%;
@@ -67,24 +66,20 @@
             border: 2px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* Video ẩn, chỉ dùng để lấy dữ liệu */
         #videoPreview {
             width: 100%;
             height: auto;
             display: none;
         }
 
-        /* Canvas hiển thị full */
         #renderCanvas {
             width: 100%;
             height: auto;
             display: block;
             background: #000;
             aspect-ratio: 16 / 9;
-            object-fit: contain;
         }
 
-        /* ===== GPS OVERLAY TRÊN VIDEO ===== */
         .gps-overlay {
             position: absolute;
             bottom: 14px;
@@ -135,7 +130,6 @@
             margin-left: 2px;
         }
 
-        /* ===== CONTROLS ===== */
         .controls-row {
             display: flex;
             gap: 10px;
@@ -255,7 +249,6 @@
             transform: none;
         }
 
-        /* ===== STATUS BAR ===== */
         .status-bar {
             display: flex;
             justify-content: space-between;
@@ -327,7 +320,6 @@
             font-weight: 600;
         }
 
-        /* ===== RAM BAR ===== */
         .ram-bar-wrap {
             display: flex;
             align-items: center;
@@ -387,7 +379,6 @@
             white-space: nowrap;
         }
 
-        /* ===== DOWNLOAD ===== */
         .download-link {
             margin-top: 12px;
             display: none;
@@ -408,7 +399,6 @@
             border-color: #64b5f6;
         }
 
-        /* ===== RAM SETTINGS ===== */
         .ram-settings {
             display: flex;
             align-items: center;
@@ -453,7 +443,6 @@
             color: #fff;
         }
 
-        /* ===== TOAST ===== */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -487,7 +476,6 @@
             background: rgba(244, 67, 54, 0.9);
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
             .container {
                 padding: 12px 14px 18px;
@@ -527,14 +515,6 @@
             .status-bar .left .time {
                 font-size: 14px;
             }
-
-            .ram-bar-wrap .info-text {
-                font-size: 10px;
-            }
-
-            .ram-settings {
-                flex-wrap: wrap;
-            }
         }
 
         @media (max-width: 400px) {
@@ -564,12 +544,10 @@
             <span class="badge">Overlay Time + Speed</span>
         </div>
 
-        <!-- ===== VIDEO ===== -->
         <div class="video-wrapper">
             <video id="videoPreview" autoplay muted playsinline></video>
             <canvas id="renderCanvas"></canvas>
 
-            <!-- GPS Overlay -->
             <div class="gps-overlay" id="gpsOverlay">
                 <span class="dot red" id="gpsDot"></span>
                 <span id="gpsStatus">GPS</span>
@@ -580,7 +558,6 @@
             </div>
         </div>
 
-        <!-- ===== CONTROLS ===== -->
         <div class="controls-row">
             <button class="btn btn-start" id="btnStart">▶ Bắt đầu</button>
             <button class="btn btn-stop" id="btnStop" disabled>⏹ Dừng</button>
@@ -590,7 +567,6 @@
             <button class="btn btn-cam" id="camBack" data-facing="environment">📷 Sau</button>
         </div>
 
-        <!-- ===== STATUS ===== -->
         <div class="status-bar">
             <div class="left">
                 <span class="dot" id="statusDot"></span>
@@ -605,7 +581,6 @@
             </div>
         </div>
 
-        <!-- ===== RAM ===== -->
         <div class="ram-bar-wrap">
             <span class="label">💾 RAM</span>
             <div class="bar-track">
@@ -834,6 +809,9 @@
 
                 this.videoWidth = 1280;
                 this.videoHeight = 720;
+
+                // Đã khởi tạo canvas chưa
+                this.canvasReady = false;
             }
 
             setMaxRam(mb) {
@@ -908,6 +886,26 @@
                     audio: true,
                 };
                 return await navigator.mediaDevices.getUserMedia(constraints);
+            }
+
+            // ===== SETUP CANVAS =====
+            setupCanvas() {
+                // Lấy kích thước thực tế từ video
+                const videoTrack = this.stream.getVideoTracks()[0];
+                if (videoTrack) {
+                    const settings = videoTrack.getSettings();
+                    this.videoWidth = settings.width || 1280;
+                    this.videoHeight = settings.height || 720;
+                }
+
+                // Set canvas đúng kích thước
+                this.canvas.width = this.videoWidth;
+                this.canvas.height = this.videoHeight;
+                this.canvas.style.width = '100%';
+                this.canvas.style.height = 'auto';
+                this.canvas.style.aspectRatio = `${this.videoWidth} / ${this.videoHeight}`;
+
+                this.canvasReady = true;
             }
 
             // ===== RENDER LOOP =====
@@ -1008,6 +1006,7 @@
             // ===== START =====
             async start(facingMode = null) {
                 try {
+                    // Dừng stream cũ
                     if (this.stream) {
                         this.stream.getTracks().forEach(track => track.stop());
                         this.stream = null;
@@ -1017,24 +1016,17 @@
                     this.stream = await this.getCamera(mode);
                     this.currentFacingMode = mode;
 
+                    // Gán stream vào video
                     this.video.srcObject = this.stream;
                     await this.video.play();
 
-                    // Lấy kích thước thực tế từ video
-                    const videoTrack = this.stream.getVideoTracks()[0];
-                    const settings = videoTrack.getSettings();
-                    this.videoWidth = settings.width || 1280;
-                    this.videoHeight = settings.height || 720;
+                    // === QUAN TRỌNG: Setup canvas ===
+                    this.setupCanvas();
 
-                    // === QUAN TRỌNG: Set canvas đúng kích thước ===
-                    this.canvas.width = this.videoWidth;
-                    this.canvas.height = this.videoHeight;
-                    this.canvas.style.width = '100%';
-                    this.canvas.style.height = 'auto';
-                    this.canvas.style.aspectRatio = `${this.videoWidth} / ${this.videoHeight}`;
-
+                    // Áp dụng mirror
                     this.applyMirror();
 
+                    // Reset buffer
                     this.buffer = [];
                     this.totalSize = 0;
                     this.totalDuration = 0;
@@ -1042,7 +1034,7 @@
                     this.hasHeader = false;
                     this.isRamFull = false;
 
-                    // Tạo stream từ canvas
+                    // === Tạo stream từ canvas ===
                     this.canvasStream = this.canvas.captureStream(30);
 
                     // Thêm audio
@@ -1051,6 +1043,7 @@
                         this.canvasStream.addTrack(audioTracks[0]);
                     }
 
+                    // === MediaRecorder ===
                     this.recorder = new MediaRecorder(this.canvasStream, {
                         mimeType: 'video/webm;codecs=vp8,opus',
                     });
@@ -1103,9 +1096,13 @@
                     this.isRecording = true;
                     this.startTime = Date.now();
 
+                    // GPS
                     this.gps.start();
+
+                    // Render loop
                     this.startRenderLoop();
 
+                    // Timer
                     this.timerInterval = setInterval(() => {
                         if (this.isRecording) {
                             this.autoAdjustRam();
@@ -1122,6 +1119,7 @@
                 }
             }
 
+            // ===== STOP =====
             stop() {
                 if (this.recorder && this.isRecording) {
                     this.recorder.stop();
@@ -1139,6 +1137,7 @@
                 if (this.onUpdate) this.onUpdate();
             }
 
+            // ===== SAVE =====
             save() {
                 if (this.buffer.length === 0) {
                     showToast('⚠️ Chưa có dữ liệu video!', 2000);
@@ -1168,6 +1167,7 @@
                 }
             }
 
+            // ===== SWITCH CAMERA =====
             async switchCamera(facingMode) {
                 if (facingMode === this.currentFacingMode) {
                     showToast('ℹ️ Đã ở camera này rồi!', 1500);
@@ -1175,26 +1175,37 @@
                 }
 
                 const wasRecording = this.isRecording;
+
+                // Dừng quay nếu đang quay
                 if (wasRecording) {
                     this.stop();
                 }
 
                 try {
+                    // Bắt đầu lại với camera mới
                     const success = await this.start(facingMode);
                     if (success) {
                         this.currentFacingMode = facingMode;
                         const label = facingMode === 'user' ? 'Trước' : 'Sau';
                         showToast(`✅ Đã chuyển sang camera ${label}`, 1500);
+
+                        // Cập nhật UI
+                        document.getElementById('cameraStatus').textContent = label;
+                        document.getElementById('camFront').classList.toggle('active', facingMode === 'user');
+                        document.getElementById('camBack').classList.toggle('active', facingMode === 'environment');
+
                         if (this.onUpdate) this.onUpdate();
                         return true;
                     }
                     return false;
                 } catch (err) {
+                    console.error('Lỗi chuyển camera:', err);
                     showToast('❌ Không thể chuyển camera!', 2000, 'danger');
                     return false;
                 }
             }
 
+            // ===== MIRROR =====
             applyMirror() {
                 if (this.isMirrored && this.currentFacingMode === 'user') {
                     this.video.style.transform = 'scaleX(-1)';
@@ -1210,6 +1221,7 @@
                 if (this.onUpdate) this.onUpdate();
             }
 
+            // ===== GETTERS =====
             getSegmentCount() {
                 return this.buffer.length;
             }
@@ -1339,8 +1351,6 @@
 
         recorder.onUpdate = updateUI;
 
-        gps.onUpdate = (speed) => {};
-
         // ===== SỰ KIỆN =====
 
         ramSelect.addEventListener('change', function() {
@@ -1399,6 +1409,7 @@
             statusText.textContent = `✅ Đã lưu ${sizeMB} MB`;
         });
 
+        // ===== CHUYỂN CAMERA =====
         camFront.addEventListener('click', async () => {
             await recorder.switchCamera('user');
             updateUI();
@@ -1421,7 +1432,7 @@
         });
 
         console.log('🎥 Video Recorder với Overlay Time + Speed!');
-        console.log('✅ Canvas được set đúng kích thước video');
+        console.log('✅ Đã sửa lỗi chuyển camera');
     </script>
 </body>
 </html>
