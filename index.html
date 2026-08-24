@@ -1,1421 +1,542 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPS HUD - Cảnh báo vượt tốc độ</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ring Buffer Video Recorder</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            user-select: none;
         }
 
         body {
-            background: #000000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            justify-content: flex-start;
-            font-family: 'Arial Black', 'Impact', 'Segoe UI', sans-serif;
             padding: 20px;
         }
 
-        /* Cảnh báo vượt tốc độ */
-        body.speeding .speed-number {
-            color: #ff5555;
-            text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000;
-            animation: pulse 0.5s infinite alternate;
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 30px;
+            padding: 40px 50px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        /* Video preview */
+        #videoPreview {
+            width: 100%;
+            max-height: 300px;
+            background: #000;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            object-fit: cover;
+        }
+
+        /* Status */
+        .status {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #555;
+            transition: background 0.3s;
+        }
+
+        .status-dot.recording {
+            background: #ff3b30;
+            animation: pulse 1.2s infinite;
         }
 
         @keyframes pulse {
-            from { transform: scale(1); }
-            to { transform: scale(1.05); }
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
         }
 
-        body.speeding .recommended-row {
-            background: rgba(255, 0, 0, 0.3);
-            border-color: #ff5555;
-        }
-
-        body.speeding .limit-source {
-            color: #ffaa00;
-            background: rgba(255, 0, 0, 0.3);
-        }
-
-        /* ===== PHẦN HUD HIỂN THỊ TỐC ĐỘ ===== */
-        .hud-section {
-            width: 100%;
-            max-width: 650px;
-            background: #0a0f14;
-            border-radius: 60px;
-            padding: 20px 30px 25px 30px;
-            margin-bottom: 15px;
-            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.8), inset 0 0 0 1px #2f4f5f;
-            transition: all 0.2s;
-        }
-
-        /* Chế độ HUD (xoay số) */
-        body.hud-mode .hud-section {
-            background: transparent;
-            box-shadow: none;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(4px);
-        }
-
-        body.hud-mode .speed-number {
-            transform: rotate(180deg) scaleX(-1);
-            text-shadow: 0 0 25px rgba(0, 200, 255, 0.8), 0 0 50px rgba(0, 100, 255, 0.5);
-        }
-
-        body.speeding.hud-mode .speed-number {
-            text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000;
-        }
-
-        body.hud-mode .gps-status,
-        body.hud-mode .recommended-row,
-        body.hud-mode .limit-source,
-        body.hud-mode .server-status,
-        body.hud-mode .wake-lock-status,
-        body.hud-mode .mode-selector {
-            opacity: 0.8;
-        }
-
-        .speed-number {
-            font-size: min(75vw, 260px);
-            font-weight: 900;
-            color: #f0fcff;
-            text-shadow: 0 0 15px #3ab4ff, 0 0 30px #0077ff;
-            line-height: 1;
-            letter-spacing: 4px;
-            transition: transform 0.4s ease-in-out, text-shadow 0.2s;
-            font-family: 'Arial Black', 'Impact', sans-serif;
-            white-space: nowrap;
-            text-align: center;
-            display: block;
-        }
-
-        /* Hiển thị tốc độ giới hạn */
-        .recommended-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin: 8px 0 5px;
-            background: rgba(0, 30, 50, 0.5);
-            padding: 10px 20px;
-            border-radius: 50px;
-            border: 1px solid #3f6f8c;
-            transition: all 0.3s;
-        }
-
-        .recommended-label {
-            color: #ffaa00;
+        .status-time {
+            font-family: 'Courier New', monospace;
             font-size: 18px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .recommended-value {
-            color: #ffaa00;
-            font-size: 36px;
-            font-weight: 900;
-            text-shadow: 0 0 15px rgba(255, 170, 0, 0.5);
-        }
-
-        .recommended-unit {
-            color: #ffaa00;
-            font-size: 18px;
-            opacity: 0.8;
-        }
-
-        /* Limit source */
-        .limit-source {
-            color: #8fc9ff;
-            font-size: 16px;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            margin: 8px 0 5px;
-            padding: 5px 15px;
-            background: rgba(0, 30, 50, 0.5);
-            border-radius: 30px;
-            display: inline-block;
-            width: auto;
-            border: 1px solid #3f6f8c;
-        }
-
-        /* Server status - hiển thị trên HUD */
-        .server-status {
-            color: #3f8fb0;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            margin: 5px 0;
-            padding: 3px 10px;
-            background: rgba(0, 30, 50, 0.3);
-            border-radius: 20px;
-            display: inline-block;
-        }
-
-        .server-status.success {
-            color: #00aa00;
-        }
-
-        .server-status.error {
-            color: #ff5555;
-        }
-
-        .server-status.loading {
-            color: #ffaa00;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        /* Wake Lock status */
-        .wake-lock-status {
-            color: #3f8fb0;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            margin: 5px 0;
-            padding: 3px 10px;
-            background: rgba(0, 30, 50, 0.3);
-            border-radius: 20px;
-            display: inline-block;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-
-        .wake-lock-status:hover {
-            background: rgba(0, 30, 50, 0.8);
-        }
-
-        .wake-lock-status.active {
-            color: #00aa00;
-            background: rgba(0, 170, 0, 0.2);
-            border: 1px solid #00aa00;
-        }
-
-        .wake-lock-status.inactive {
-            color: #ffaa00;
-            background: rgba(255, 170, 0, 0.1);
-            border: 1px solid #ffaa00;
-        }
-
-        .wake-lock-status.error {
-            color: #ff5555;
-            background: rgba(255, 85, 85, 0.1);
-            border: 1px solid #ff5555;
-        }
-
-        /* Mode selector - Nút chuyển tự động/bằng tay */
-        .mode-selector {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 10px 0;
-            padding: 5px;
-            background: rgba(0, 20, 30, 0.6);
-            border-radius: 50px;
-            border: 1px solid #3f6f8c;
-        }
-
-        .mode-btn {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #8fc9ff;
-            font-size: 16px;
-            font-weight: bold;
-            padding: 10px 20px;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: 1px solid transparent;
-        }
-
-        .mode-btn.active {
-            background: #2f5f7a;
-            color: white;
-            border-color: #7fc9ff;
-            box-shadow: 0 0 15px rgba(63, 143, 176, 0.5);
-        }
-
-        .mode-btn:first-child.active {
-            background: #00aa00;
-            border-color: #00ff00;
-        }
-
-        .mode-btn:last-child.active {
-            background: #ffaa00;
-            border-color: #ffff00;
-        }
-
-        .gps-status {
-            color: #3f8fb0;
-            font-size: 16px;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            margin: 5px 0;
-        }
-
-        .gps-status.warning {
-            color: #ffaa00;
-        }
-
-        .gps-status.danger {
-            color: #ff5555;
-            font-weight: bold;
-        }
-
-        .hud-controls {
-            display: flex;
-            justify-content: center;
-            margin-top: 10px;
-            gap: 10px;
-        }
-
-        .hud-toggle-btn {
-            background: #1a2a33;
-            border: 1px solid #3a6f8c;
-            color: #b0e0ff;
-            font-size: 18px;
-            font-weight: bold;
-            padding: 10px 25px;
-            border-radius: 40px;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #0f1e26;
-            transition: 0.08s linear;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            flex: 1;
-        }
-
-        .hud-toggle-btn:active {
-            transform: translateY(4px);
-            box-shadow: none;
-        }
-
-        /* ===== PHẦN CÔNG CỤ TÍNH TỐC ĐỘ ===== */
-        .calculator-section {
-            width: 100%;
-            max-width: 650px;
-            background: #0f1f2a;
-            border-radius: 40px;
-            padding: 20px;
-            border: 1px solid #3f6f8c;
-            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6);
-        }
-
-        .section-title {
-            color: #8fc9ff;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 2px solid #2f4f5f;
-            padding-bottom: 8px;
-        }
-
-        .option-group {
-            margin-bottom: 18px;
-            border-bottom: 1px solid #2f4f5f;
-            padding-bottom: 15px;
-        }
-
-        .option-title {
-            color: #b0e0ff;
-            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .radio-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .radio-option {
-            flex: 1 1 calc(50% - 8px);
-            min-width: 140px;
-            background: #1a2f3a;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px 14px;
             border-radius: 30px;
-            padding: 10px 12px;
-            color: #b0e0ff;
-            border: 1px solid #3f6f8c;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 14px;
         }
 
-        .radio-option.selected {
-            background: #2f5f7a;
-            border-color: #7fc9ff;
-            color: white;
-            box-shadow: 0 0 10px #3ab4ff;
-        }
-
-        .radio-option input {
-            display: none;
-        }
-
-        /* Speed limit controls */
-        .speed-limit-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .slider-container {
-            flex: 3;
-            padding: 5px 0;
-        }
-
-        .slider-label {
+        /* Info */
+        .info {
             display: flex;
             justify-content: space-between;
-            color: #b0e0ff;
-            margin-bottom: 5px;
-            font-size: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
         }
 
-        input[type=range] {
-            width: 100%;
-            height: 6px;
-            background: #1a2f3a;
-            border-radius: 10px;
-            -webkit-appearance: none;
+        .info span {
+            font-weight: 600;
+            color: #fff;
         }
 
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #7fc9ff;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 8px #3ab4ff;
-            border: 2px solid white;
-        }
-
-        .apply-btn {
-            flex: 1;
-            background: #ffaa00;
-            border: none;
-            color: #000000;
-            font-size: 16px;
-            font-weight: bold;
-            padding: 12px 0;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.1s;
-            text-align: center;
-            box-shadow: 0 4px 0 #b37400;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            min-width: 80px;
-        }
-
-        .apply-btn:active {
-            transform: translateY(4px);
-            box-shadow: none;
-        }
-
-        .apply-btn.active {
-            background: #00aa00;
-            color: white;
-            box-shadow: 0 4px 0 #006600;
-        }
-
-        .apply-btn.applied {
-            background: #00aa00;
-            color: white;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
+        /* Buttons */
+        .btn-group {
             display: flex;
-            gap: 10px;
-            margin: 15px 0;
+            gap: 12px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .action-btn {
-            flex: 1;
-            background: #1a2a33;
-            border: 1px solid #3f6f8c;
-            color: #b0e0ff;
+        .btn {
+            padding: 14px 34px;
+            border: none;
+            border-radius: 50px;
             font-size: 16px;
-            font-weight: bold;
-            padding: 15px 0;
-            border-radius: 40px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.1s;
-            text-align: center;
-            box-shadow: 0 4px 0 #0f1e26;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1 1 auto;
             min-width: 140px;
+            justify-content: center;
         }
 
-        .action-btn:active {
-            transform: translateY(4px);
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-start {
+            background: #4caf50;
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-start:hover {
+            background: #43a047;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-start:disabled {
+            background: #2e7d32;
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
             box-shadow: none;
         }
 
-        .action-btn.primary {
-            background: #2f5f7a;
-            border-color: #7fc9ff;
-            color: white;
+        .btn-save {
+            background: #ff6b35;
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
         }
 
-        .action-btn.success {
-            background: #2f7a5f;
-            border-color: #7fc9ff;
-            color: white;
+        .btn-save:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(255, 107, 53, 0.4);
         }
 
-        .action-btn.warning {
-            background: #ffaa00;
-            border-color: #ffaa00;
-            color: #000000;
-            box-shadow: 0 4px 0 #b37400;
+        .btn-save:disabled {
+            background: #a04020;
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        /* QR Code Modal */
-        .qr-modal {
+        .btn-stop {
+            background: #f44336;
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-stop:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(244, 67, 54, 0.4);
+        }
+
+        /* Download link */
+        .download-link {
+            margin-top: 20px;
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
         }
 
-        .qr-modal.show {
-            display: flex;
+        .download-link a {
+            color: #64b5f6;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            border-bottom: 2px solid rgba(100, 181, 246, 0.3);
+            padding-bottom: 4px;
+            transition: border-color 0.3s;
         }
 
-        .qr-content {
-            background: white;
-            padding: 30px;
-            border-radius: 40px;
-            text-align: center;
-            max-width: 90%;
+        .download-link a:hover {
+            border-color: #64b5f6;
         }
 
-        .qr-title {
-            color: #0a0f14;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
+        /* Responsive */
+        @media (max-width: 500px) {
+            .container {
+                padding: 25px 20px;
+            }
 
-        #qrCanvas {
-            width: 250px;
-            height: 250px;
-            margin: 0 auto 20px;
-            display: block;
-        }
+            .btn {
+                min-width: 100%;
+                padding: 12px 20px;
+            }
 
-        .qr-url {
-            color: #0a0f14;
-            font-size: 14px;
-            word-break: break-all;
-            margin: 10px 0;
-            padding: 10px;
-            background: #f0f0f0;
-            border-radius: 20px;
-        }
+            .info {
+                flex-direction: column;
+                gap: 6px;
+                text-align: center;
+            }
 
-        .qr-close {
-            background: #1a2a33;
-            color: white;
-            border: none;
-            font-size: 18px;
-            font-weight: bold;
-            padding: 12px 30px;
-            border-radius: 40px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        
-        .note {
-            color: #6a8ca0;
-            font-size: 12px;
-            text-align: center;
-            margin-top: 10px;
-            font-style: italic;
+            h1 {
+                font-size: 22px;
+            }
         }
     </style>
-    <!-- Thêm thư viện QRCode -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
-    <!-- PHẦN HUD HIỂN THỊ TỐC ĐỘ -->
-    <div class="hud-section">
-        <div class="speed-number" id="hudSpeed">0</div>
-        
-        <!-- TỐC ĐỘ GIỚI HẠN -->
-        <div class="recommended-row">
-            <span class="recommended-label">📋 GIỚI HẠN</span>
-            <span class="recommended-value" id="limitSpeed">50</span>
-            <span class="recommended-unit">km/h</span>
-        </div>
-        
-        <!-- LIMIT SOURCE -->
-        <div class="limit-source" id="limitSource">📋 Chưa áp dụng</div>
-        
-        <!-- SERVER STATUS - HIỂN THỊ TRÊN HUD -->
-        <div class="server-status" id="serverStatus">🌐 Server: Đang chờ...</div>
-        
-        <!-- WAKE LOCK STATUS - TÍNH NĂNG GIỮ SÁNG MÀN HÌNH (TỰ ĐỘNG KÍCH HOẠT) -->
-        <div class="wake-lock-status active" id="wakeLockStatus">🔆 Giữ sáng: Đã kích hoạt</div>
-        
-        <!-- MODE SELECTOR - NÚT CHUYỂN TỰ ĐỘNG/BẰNG TAY (MẶC ĐỊNH BẰNG TAY) -->
-        <div class="mode-selector">
-            <button class="mode-btn" id="autoModeBtn">🤖 TỰ ĐỘNG</button>
-            <button class="mode-btn active" id="manualModeBtn">👆 BẰNG TAY</button>
-        </div>
-        
-        <div class="gps-status" id="gpsStatus">🛰 Đang khởi tạo GPS...</div>
-        <div class="hud-controls">
-            <button class="hud-toggle-btn" id="hudToggleBtn">HUD mode</button>
-        </div>
-    </div>
 
-    <!-- PHẦN CÔNG CỤ TÍNH TỐC ĐỘ -->
-    <div class="calculator-section">
-        <div class="section-title">
-            <span>⚙️ TÙY CHỌN THEO QUY ĐỊNH</span>
+    <div class="container">
+        <h1>🎥 Ring Buffer Recorder</h1>
+        <p class="subtitle">Luôn ghi lại 15 phút gần nhất — bấm Lưu bất cứ lúc nào</p>
+
+        <!-- Video preview -->
+        <video id="videoPreview" autoplay muted playsinline></video>
+
+        <!-- Status -->
+        <div class="status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Chưa bắt đầu</span>
+            <span class="status-time" id="statusTime">00:00</span>
         </div>
 
-        <!-- NGUỒN 1: BIỂN BÁO -->
-        <div class="option-group">
-            <div class="option-title">🚦 NGUỒN 1: BIỂN BÁO HẠN CHẾ TỐC ĐỘ</div>
-            <div class="speed-limit-control">
-                <div class="slider-container">
-                    <div class="slider-label">
-                        <span>Giới hạn (km/h)</span>
-                        <span id="signSpeedValue">50</span>
-                    </div>
-                    <input type="range" id="signSpeed" min="0" max="120" value="50" step="5">
-                </div>
-                <button class="apply-btn" id="applySignBtn">ÁP DỤNG</button>
-            </div>
+        <!-- Info -->
+        <div class="info">
+            <div>📦 Số đoạn trong buffer: <span id="segmentCount">0</span></div>
+            <div>⏱️ Tổng thời lượng: <span id="totalDuration">0s</span></div>
+            <div>📊 Dung lượng: <span id="totalSize">0 KB</span></div>
         </div>
 
-        <!-- NGUỒN 2: QUY ĐỊNH ĐƯỜNG -->
-        <div class="option-group">
-            <div class="option-title">🛣️ NGUỒN 2: THEO QUY ĐỊNH ĐƯỜNG</div>
-            
-            <!-- Loại xe -->
-            <div style="margin-bottom: 12px;">
-                <div class="option-title" style="font-size: 14px; margin-bottom: 5px;">🚗 LOẠI XE</div>
-                <div class="radio-group" id="vehicleType">
-                    <label class="radio-option selected" data-value="motorcycle">
-                        <input type="radio" name="vehicle" value="motorcycle" checked> 🏍️ Xe máy
-                    </label>
-                    <label class="radio-option" data-value="car">
-                        <input type="radio" name="vehicle" value="car"> 🚗 Xe con (<9 chỗ)
-                    </label>
-                    <label class="radio-option" data-value="truck">
-                        <input type="radio" name="vehicle" value="truck"> 🚚 Xe tải (<3.5T)
-                    </label>
-                    <label class="radio-option" data-value="bus">
-                        <input type="radio" name="vehicle" value="bus"> 🚌 Xe khách (>9 chỗ)
-                    </label>
-                </div>
-            </div>
-
-            <!-- Khu vực -->
-            <div style="margin-bottom: 12px;">
-                <div class="option-title" style="font-size: 14px; margin-bottom: 5px;">🏙️ KHU VỰC</div>
-                <div class="radio-group" id="areaType">
-                    <label class="radio-option selected" data-value="residential">
-                        <input type="radio" name="area" value="residential" checked> 🏘️ Trong khu đông dân cư
-                    </label>
-                    <label class="radio-option" data-value="non_residential">
-                        <input type="radio" name="area" value="non_residential"> 🏞️ Ngoài khu đông dân cư
-                    </label>
-                </div>
-            </div>
-
-            <!-- Loại đường chi tiết -->
-            <div style="margin-bottom: 15px;">
-                <div class="option-title" style="font-size: 14px; margin-bottom: 5px;">🛣️ LOẠI ĐƯỜNG</div>
-                <div class="radio-group" id="roadTypeDetail">
-                    <label class="radio-option selected" data-value="normal_2way">
-                        <input type="radio" name="road_detail" value="normal_2way" checked> 🛣️ Đường hai chiều
-                    </label>
-                    <label class="radio-option" data-value="normal_1way">
-                        <input type="radio" name="road_detail" value="normal_1way"> ➡️ Đường một chiều
-                    </label>
-                    <label class="radio-option" data-value="divided">
-                        <input type="radio" name="road_detail" value="divided"> 🛣️ Đường đôi (có dải phân cách)
-                    </label>
-                    <label class="radio-option" data-value="highway">
-                        <input type="radio" name="road_detail" value="highway"> 🛣️ Đường cao tốc
-                    </label>
-                </div>
-            </div>
-            
-            <!-- Nút áp dụng cho quy định đường -->
-            <button class="apply-btn" id="applyRoadBtn" style="width: 100%;">ÁP DỤNG QUY ĐỊNH ĐƯỜNG</button>
+        <!-- Buttons -->
+        <div class="btn-group">
+            <button class="btn btn-start" id="btnStart">▶ Bắt đầu</button>
+            <button class="btn btn-stop" id="btnStop" disabled>⏹ Dừng</button>
+            <button class="btn btn-save" id="btnSave" disabled>💾 Lưu 15 phút</button>
         </div>
 
-        <!-- NÚT CHIA SẺ QR CODE -->
-        <div class="action-buttons">
-            <button class="action-btn success" id="shareQrBtn">
-                📱 CHIA SẺ QR CODE
-            </button>
-            <!-- NÚT TẮT GIỮ SÁNG (CHỈ ĐỂ TẮT KHI CẦN, MẶC ĐỊNH LÀ BẬT) -->
-            <button class="action-btn warning" id="toggleWakeLockBtn">
-                🔆 TẮT GIỮ SÁNG
-            </button>
+        <div class="download-link" id="downloadLink">
+            <a href="#" id="downloadAnchor" download="video.webm">📥 Tải video xuống</a>
         </div>
     </div>
 
-    <!-- MODAL HIỂN THỊ QR CODE -->
-    <div class="qr-modal" id="qrModal">
-        <div class="qr-content">
-            <div class="qr-title">📱 CHIA SẺ ỨNG DỤNG</div>
-            <canvas id="qrCanvas"></canvas>
-            <div class="qr-url" id="qrUrl">Đang tạo...</div>
-            <button class="qr-close" id="qrCloseBtn">ĐÓNG</button>
-        </div>
-    </div>
-
-    <!-- JavaScript -->
     <script>
-        (function() {
-            // ===== BIẾN TOÀN CỤC =====
-            let currentMode = 'manual'; // Mặc định là 'manual' (bằng tay)
-            
-            // ===== WAKE LOCK (GIỮ SÁNG MÀN HÌNH) - TỰ ĐỘNG KÍCH HOẠT =====
-            let wakeLock = null;
-            const wakeLockStatus = document.getElementById('wakeLockStatus');
-            const toggleWakeLockBtn = document.getElementById('toggleWakeLockBtn');
-            let isWakeLockActive = true; // Mặc định là bật
+        // ============================================================
+        //  RING BUFFER VIDEO RECORDER — CLASS
+        // ============================================================
+        class RingVideoRecorder {
+            constructor(maxDurationMs = 15 * 60 * 1000) {
+                this.maxDurationMs = maxDurationMs; // 15 phút
+                this.segmentDurationMs = 1000; // mỗi đoạn 1 giây
 
-            // Hàm yêu cầu Wake Lock
-            async function requestWakeLock() {
+                this.buffer = []; // chứa các Blob đoạn video
+                this.totalSize = 0;
+                this.totalDuration = 0;
+
+                this.recorder = null;
+                this.stream = null;
+                this.isRecording = false;
+                this.startTime = null;
+                this.timerInterval = null;
+
+                // Callback cập nhật UI
+                this.onUpdate = null;
+            }
+
+            // Bắt đầu quay
+            async start() {
                 try {
-                    // Kiểm tra trình duyệt có hỗ trợ Wake Lock không
-                    if ('wakeLock' in navigator) {
-                        // Yêu cầu Wake Lock
-                        wakeLock = await navigator.wakeLock.request('screen');
-                        
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                            facingMode: 'user'
+                        },
+                        audio: true,
+                    });
+
+                    // Hiển thị preview
+                    const videoEl = document.getElementById('videoPreview');
+                    videoEl.srcObject = this.stream;
+                    await videoEl.play();
+
+                    this.recorder = new MediaRecorder(this.stream, {
+                        mimeType: 'video/webm;codecs=vp9,opus',
+                    });
+
+                    // Mỗi segmentDurationMs nhận 1 đoạn dữ liệu
+                    this.recorder.start(this.segmentDurationMs);
+
+                    this.recorder.ondataavailable = (event) => {
+                        if (event.data.size === 0) return;
+
+                        // Thêm vào buffer
+                        this.buffer.push(event.data);
+                        this.totalSize += event.data.size;
+                        this.totalDuration += this.segmentDurationMs;
+
+                        // Xóa đoạn cũ nếu vượt quá 15 phút
+                        while (this.totalDuration > this.maxDurationMs) {
+                            const oldest = this.buffer.shift();
+                            if (oldest) {
+                                this.totalSize -= oldest.size;
+                                this.totalDuration -= this.segmentDurationMs;
+                            }
+                        }
+
                         // Cập nhật UI
-                        wakeLockStatus.textContent = '🔆 Giữ sáng: Đã kích hoạt';
-                        wakeLockStatus.className = 'wake-lock-status active';
-                        toggleWakeLockBtn.textContent = '🔆 TẮT GIỮ SÁNG';
-                        isWakeLockActive = true;
-                        
-                        // Lắng nghe sự kiện release
-                        wakeLock.addEventListener('release', () => {
-                            console.log('Wake Lock đã được giải phóng');
-                            // Không cập nhật UI ở đây vì có thể do hệ thống tự giải phóng
-                        });
-                        
-                        console.log('Wake Lock đã được kích hoạt');
-                    } else {
-                        // Trình duyệt không hỗ trợ
-                        wakeLockStatus.textContent = '🔆 Giữ sáng: Không hỗ trợ';
-                        wakeLockStatus.className = 'wake-lock-status error';
-                        toggleWakeLockBtn.disabled = true;
-                        toggleWakeLockBtn.style.opacity = '0.5';
-                        console.log('Trình duyệt không hỗ trợ Wake Lock API');
-                    }
-                } catch (err) {
-                    // Xử lý lỗi
-                    console.error('Lỗi khi kích hoạt Wake Lock:', err);
-                    wakeLockStatus.textContent = '🔆 Giữ sàng: Lỗi';
-                    wakeLockStatus.className = 'wake-lock-status error';
-                    toggleWakeLockBtn.textContent = '🔆 THỬ LẠI';
-                }
-            }
-
-            // Hàm giải phóng Wake Lock
-            async function releaseWakeLock() {
-                if (wakeLock) {
-                    try {
-                        await wakeLock.release();
-                        wakeLock = null;
-                        
-                        // Cập nhật UI
-                        wakeLockStatus.textContent = '🔆 Giữ sáng: Đã tắt';
-                        wakeLockStatus.className = 'wake-lock-status inactive';
-                        toggleWakeLockBtn.textContent = '🔆 BẬT GIỮ SÁNG';
-                        isWakeLockActive = false;
-                        
-                        console.log('Wake Lock đã được giải phóng');
-                    } catch (err) {
-                        console.error('Lỗi khi giải phóng Wake Lock:', err);
-                    }
-                }
-            }
-
-            // Hàm toggle Wake Lock
-            async function toggleWakeLock() {
-                if (isWakeLockActive) {
-                    await releaseWakeLock();
-                } else {
-                    await requestWakeLock();
-                }
-            }
-
-            // Tự động kích hoạt Wake Lock khi trang web load
-            document.addEventListener('DOMContentLoaded', () => {
-                // Kích hoạt Wake Lock tự động
-                setTimeout(requestWakeLock, 500); // Delay nhỏ để đảm bảo mọi thứ đã sẵn sàng
-            });
-
-            // Xử lý khi tab thay đổi visibility (khi chuyển tab khác, Wake Lock có thể bị release)
-            document.addEventListener('visibilitychange', async () => {
-                if (document.visibilityState === 'visible' && isWakeLockActive) {
-                    // Khi quay lại tab, tự động kích hoạt lại Wake Lock nếu đang ở chế độ bật
-                    await requestWakeLock();
-                }
-            });
-
-            // Xử lý khi click nút toggle
-            toggleWakeLockBtn.addEventListener('click', toggleWakeLock);
-            
-            // Click vào wake lock status cũng để toggle
-            wakeLockStatus.addEventListener('click', toggleWakeLock);
-
-            // ===== MODE SELECTOR - TỰ ĐỘNG / BẰNG TAY =====
-            const autoModeBtn = document.getElementById('autoModeBtn');
-            const manualModeBtn = document.getElementById('manualModeBtn');
-            const applySignBtn = document.getElementById('applySignBtn');
-            const applyRoadBtn = document.getElementById('applyRoadBtn');
-            
-            // Vô hiệu hóa các nút áp dụng khi ở chế độ tự động
-            function updateModeUI() {
-                if (currentMode === 'auto') {
-                    autoModeBtn.classList.add('active');
-                    manualModeBtn.classList.remove('active');
-                    
-                    // Vô hiệu hóa các nút áp dụng
-                    applySignBtn.style.opacity = '0.5';
-                    applySignBtn.style.pointerEvents = 'none';
-                    applyRoadBtn.style.opacity = '0.5';
-                    applyRoadBtn.style.pointerEvents = 'none';
-                    
-                    // Hiển thị thông báo
-                    limitSourceEl.textContent = '📋 Chế độ tự động - Đang chờ dữ liệu...';
-                    
-                    // Kích hoạt lại Wake Lock nếu đang tắt
-                    if (!isWakeLockActive) {
-                        requestWakeLock();
-                    }
-                    
-                    // Bắt đầu cập nhật dữ liệu tự động
-                    startAutoUpdate();
-                } else {
-                    manualModeBtn.classList.add('active');
-                    autoModeBtn.classList.remove('active');
-                    
-                    // Kích hoạt các nút áp dụng
-                    applySignBtn.style.opacity = '1';
-                    applySignBtn.style.pointerEvents = 'auto';
-                    applyRoadBtn.style.opacity = '1';
-                    applyRoadBtn.style.pointerEvents = 'auto';
-                    
-                    // Dừng cập nhật tự động
-                    stopAutoUpdate();
-                    
-                    // Cập nhật lại limit source nếu đang hiển thị thông báo auto
-                    if (limitSourceEl.textContent.includes('Chế độ tự động')) {
-                        limitSourceEl.textContent = '📋 Chưa áp dụng';
-                    }
-                }
-            }
-            
-            // Chuyển sang chế độ tự động
-            autoModeBtn.addEventListener('click', function() {
-                currentMode = 'auto';
-                updateModeUI();
-            });
-            
-            // Chuyển sang chế độ bằng tay
-            manualModeBtn.addEventListener('click', function() {
-                currentMode = 'manual';
-                updateModeUI();
-            });
-
-            // ===== CẬP NHẬT DỮ LIỆU TỰ ĐỘNG =====
-            let autoUpdateInterval = null;
-            
-            function startAutoUpdate() {
-                // Dừng interval cũ nếu có
-                if (autoUpdateInterval) {
-                    clearInterval(autoUpdateInterval);
-                }
-                
-                // Cập nhật ngay lập tức
-                fetchServerData();
-                
-                // Cập nhật mỗi 10 giây
-                autoUpdateInterval = setInterval(fetchServerData, 10000);
-            }
-            
-            function stopAutoUpdate() {
-                if (autoUpdateInterval) {
-                    clearInterval(autoUpdateInterval);
-                    autoUpdateInterval = null;
-                }
-            }
-
-            // ===== HÀM CUỘN LÊN ĐẦU TRANG =====
-            function scrollToTop() {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
-            }
-
-            // ===== AUDIO WARNING SYSTEM =====
-            let audioContext = null;
-            let isWarningPlaying = false;
-            let lastWarningTime = 0;
-
-            function initAudio() {
-                if (audioContext) return;
-                try {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                } catch (e) {
-                    console.log('Web Audio API not supported');
-                }
-            }
-
-            function playWarningSound() {
-                if (!audioContext) {
-                    initAudio();
-                    if (!audioContext) return;
-                }
-
-                if (isWarningPlaying) return;
-
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-
-                isWarningPlaying = true;
-
-                const now = audioContext.currentTime;
-                
-                // Beep 1
-                const osc1 = audioContext.createOscillator();
-                const gain1 = audioContext.createGain();
-                osc1.type = 'sine';
-                osc1.frequency.value = 880;
-                gain1.gain.setValueAtTime(0.3, now);
-                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc1.connect(gain1);
-                gain1.connect(audioContext.destination);
-                osc1.start(now);
-                osc1.stop(now + 0.2);
-
-                // Beep 2
-                const osc2 = audioContext.createOscillator();
-                const gain2 = audioContext.createGain();
-                osc2.type = 'sine';
-                osc2.frequency.value = 880;
-                gain2.gain.setValueAtTime(0.3, now + 0.3);
-                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc2.connect(gain2);
-                gain2.connect(audioContext.destination);
-                osc2.start(now + 0.3);
-                osc2.stop(now + 0.5);
-
-                setTimeout(() => {
-                    isWarningPlaying = false;
-                }, 600);
-            }
-
-            // ===== PHẦN HUD =====
-            const speedDisplay = document.getElementById('hudSpeed');
-            const gpsStatus = document.getElementById('gpsStatus');
-            const bodyEl = document.body;
-            const hudToggleBtn = document.getElementById('hudToggleBtn');
-            const limitSpeedDisplay = document.getElementById('limitSpeed');
-            const limitSourceEl = document.getElementById('limitSource');
-            const serverStatusEl = document.getElementById('serverStatus');
-
-            let currentSpeed = 0;
-            let currentLimit = 50;
-            let watchId = null;
-            let lastPosition = null;
-
-            // Kiểm tra cảnh báo
-            function checkSpeedWarning() {
-                const now = Date.now();
-                
-                if (currentSpeed > currentLimit && currentSpeed > 0 && currentLimit > 0) {
-                    if (!bodyEl.classList.contains('speeding')) {
-                        bodyEl.classList.add('speeding');
-                        gpsStatus.className = 'gps-status danger';
-                        gpsStatus.textContent = `⚠️ CẢNH BÁO! Vượt quá ${currentLimit}km/h`;
-                    }
-                    
-                    if (now - lastWarningTime > 3000) {
-                        playWarningSound();
-                        lastWarningTime = now;
-                    }
-                } else {
-                    if (bodyEl.classList.contains('speeding')) {
-                        bodyEl.classList.remove('speeding');
-                        gpsStatus.className = 'gps-status';
-                        const accuracy = lastPosition?.coords.accuracy ? lastPosition.coords.accuracy.toFixed(1) : '?';
-                        gpsStatus.textContent = `🛰 GPS: ${currentSpeed}km/h (sai số ±${accuracy}m)`;
-                    }
-                }
-            }
-
-            // Hàm tính tốc độ từ GPS
-            function calculateSpeedFromGPS(position1, position2) {
-                if (!position1 || !position2) return 0;
-                
-                const R = 6371e3;
-                const φ1 = position1.coords.latitude * Math.PI/180;
-                const φ2 = position2.coords.latitude * Math.PI/180;
-                const Δφ = (position2.coords.latitude - position1.coords.latitude) * Math.PI/180;
-                const Δλ = (position2.coords.longitude - position1.coords.longitude) * Math.PI/180;
-
-                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                        Math.cos(φ1) * Math.cos(φ2) *
-                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                const distance = R * c;
-                
-                const timeDiff = (position2.timestamp - position1.timestamp) / 1000;
-                if (timeDiff <= 0) return 0;
-                
-                const speedMps = distance / timeDiff;
-                return speedMps * 3.6;
-            }
-
-            // Xử lý vị trí GPS
-            function handlePosition(position) {
-                if (lastPosition) {
-                    const speed = calculateSpeedFromGPS(lastPosition, position);
-                    if (Math.abs(speed - currentSpeed) < 30 || speed === 0) {
-                        currentSpeed = Math.round(speed);
-                    }
-                } else {
-                    if (position.coords.speed !== null && position.coords.speed > 0) {
-                        currentSpeed = Math.round(position.coords.speed * 3.6);
-                    }
-                }
-
-                speedDisplay.textContent = currentSpeed;
-                
-                const accuracy = position.coords.accuracy ? position.coords.accuracy.toFixed(1) : '?';
-                
-                if (currentSpeed > currentLimit) {
-                    gpsStatus.className = 'gps-status danger';
-                    gpsStatus.textContent = `⚠️ CẢNH BÁO! Vượt quá ${currentLimit}km/h`;
-                } else {
-                    gpsStatus.className = 'gps-status';
-                    gpsStatus.textContent = `🛰 GPS: ${currentSpeed}km/h (sai số ±${accuracy}m)`;
-                }
-                
-                lastPosition = position;
-                checkSpeedWarning();
-            }
-
-            function handleError(error) {
-                gpsStatus.textContent = '⚠️ Đang chờ tín hiệu GPS...';
-            }
-
-            function startGPS() {
-                if (!navigator.geolocation) {
-                    gpsStatus.textContent = '⚠️ Trình duyệt không hỗ trợ GPS';
-                    return;
-                }
-
-                navigator.geolocation.watchPosition(handlePosition, handleError, {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 10000
-                });
-            }
-
-            // Bật/tắt HUD
-            function toggleHudMode() {
-                bodyEl.classList.toggle('hud-mode');
-                hudToggleBtn.textContent = bodyEl.classList.contains('hud-mode') ? '⛔ HUD off' : 'HUD mode';
-            }
-
-            hudToggleBtn.addEventListener('click', toggleHudMode);
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'h' || e.key === 'H') {
-                    toggleHudMode();
-                }
-            });
-
-            // ===== PHẦN TÍNH TOÁN =====
-            const vehicleRadios = document.querySelectorAll('#vehicleType .radio-option');
-            const areaRadios = document.querySelectorAll('#areaType .radio-option');
-            const roadDetailRadios = document.querySelectorAll('#roadTypeDetail .radio-option');
-            const signSlider = document.getElementById('signSpeed');
-            const signValue = document.getElementById('signSpeedValue');
-            
-            // ===== NÚT CHIA SẺ QR CODE =====
-            const shareQrBtn = document.getElementById('shareQrBtn');
-            const qrModal = document.getElementById('qrModal');
-            const qrCloseBtn = document.getElementById('qrCloseBtn');
-            const qrCanvas = document.getElementById('qrCanvas');
-            const qrUrl = document.getElementById('qrUrl');
-
-            // Biến trạng thái
-            let activeSource = null; // 'sign' hoặc 'road'
-            let roadLimit = 50;
-            let signLimit = 50;
-
-            // Bảng tốc độ quy định
-            const speedRegulations = {
-                motorcycle: {
-                    residential: { normal_2way: 40, normal_1way: 50, divided: 50, highway: 60 },
-                    non_residential: { normal_2way: 50, normal_1way: 60, divided: 70, highway: 80 }
-                },
-                car: {
-                    residential: { normal_2way: 50, normal_1way: 60, divided: 60, highway: 80 },
-                    non_residential: { normal_2way: 60, normal_1way: 70, divided: 80, highway: 100 }
-                },
-                truck: {
-                    residential: { normal_2way: 40, normal_1way: 50, divided: 50, highway: 70 },
-                    non_residential: { normal_2way: 50, normal_1way: 60, divided: 70, highway: 80 }
-                },
-                bus: {
-                    residential: { normal_2way: 40, normal_1way: 50, divided: 50, highway: 70 },
-                    non_residential: { normal_2way: 50, normal_1way: 60, divided: 70, highway: 80 }
-                }
-            };
-
-            // Event cho loại xe
-            vehicleRadios.forEach(opt => {
-                opt.addEventListener('click', function() {
-                    vehicleRadios.forEach(o => o.classList.remove('selected'));
-                    this.classList.add('selected');
-                    this.querySelector('input').checked = true;
-                });
-            });
-
-            // Event cho khu vực
-            areaRadios.forEach(opt => {
-                opt.addEventListener('click', function() {
-                    areaRadios.forEach(o => o.classList.remove('selected'));
-                    this.classList.add('selected');
-                    this.querySelector('input').checked = true;
-                });
-            });
-
-            // Event cho loại đường chi tiết
-            roadDetailRadios.forEach(opt => {
-                opt.addEventListener('click', function() {
-                    roadDetailRadios.forEach(o => o.classList.remove('selected'));
-                    this.classList.add('selected');
-                    this.querySelector('input').checked = true;
-                });
-            });
-
-            // Hàm tính giới hạn theo quy định đường
-            function calculateRoadLimit() {
-                const vehicle = document.querySelector('input[name="vehicle"]:checked')?.value || 'motorcycle';
-                const area = document.querySelector('input[name="area"]:checked')?.value || 'residential';
-                const roadDetail = document.querySelector('input[name="road_detail"]:checked')?.value || 'normal_2way';
-                
-                return speedRegulations[vehicle][area][roadDetail];
-            }
-
-            // Hàm cập nhật hiển thị
-            function updateDisplay() {
-                let limit, sourceText;
-
-                if (activeSource === 'sign') {
-                    limit = signLimit;
-                    sourceText = '🚦 Biển báo';
-                    applySignBtn.classList.add('applied');
-                    applyRoadBtn.classList.remove('applied');
-                } else if (activeSource === 'road') {
-                    limit = roadLimit;
-                    
-                    // Tạo text mô tả ngắn gọn
-                    const vehicle = document.querySelector('input[name="vehicle"]:checked')?.value || 'motorcycle';
-                    const area = document.querySelector('input[name="area"]:checked')?.value || 'residential';
-                    const roadDetail = document.querySelector('input[name="road_detail"]:checked')?.value || 'normal_2way';
-                    
-                    const vehicleText = {
-                        motorcycle: 'xe máy',
-                        car: 'xe con',
-                        truck: 'xe tải',
-                        bus: 'xe khách'
-                    }[vehicle];
-                    
-                    const areaText = area === 'residential' ? 'trong dân cư' : 'ngoài dân cư';
-                    
-                    const roadText = {
-                        normal_2way: 'hai chiều',
-                        normal_1way: 'một chiều',
-                        divided: 'đường đôi',
-                        highway: 'cao tốc'
-                    }[roadDetail];
-                    
-                    sourceText = `📋 ${vehicleText}, ${areaText}, ${roadText}`;
-                    
-                    applyRoadBtn.classList.add('applied');
-                    applySignBtn.classList.remove('applied');
-                } else {
-                    limit = 0;
-                    sourceText = '📋 Chưa áp dụng';
-                    applySignBtn.classList.remove('applied');
-                    applyRoadBtn.classList.remove('applied');
-                }
-
-                if (limit > 0) {
-                    currentLimit = limit;
-                    limitSpeedDisplay.textContent = limit;
-                    limitSourceEl.textContent = sourceText;
-                } else {
-                    currentLimit = 999; // Tạm thời không giới hạn
-                    limitSpeedDisplay.textContent = '--';
-                    limitSourceEl.textContent = sourceText;
-                }
-
-                checkSpeedWarning();
-            }
-
-            // Nút áp dụng biển báo (nguồn 1) - CÓ CUỘN LÊN ĐẦU
-            applySignBtn.addEventListener('click', function() {
-                if (currentMode === 'manual') {
-                    signLimit = parseInt(signSlider.value);
-                    
-                    if (signLimit > 0) {
-                        activeSource = 'sign';
-                        
-                        this.classList.add('active');
-                        this.textContent = '✓ ĐÃ ÁP DỤNG';
-                        
-                        updateDisplay();
-                        
-                        // CUỘN LÊN ĐẦU TRANG
-                        scrollToTop();
-                        
-                        setTimeout(() => {
-                            this.classList.remove('active');
-                            this.textContent = 'ÁP DỤNG';
-                        }, 2000);
-                    }
-                }
-            });
-
-            // Nút áp dụng quy định đường (nguồn 2) - CÓ CUỘN LÊN ĐẦU
-            applyRoadBtn.addEventListener('click', function() {
-                if (currentMode === 'manual') {
-                    roadLimit = calculateRoadLimit();
-                    activeSource = 'road';
-                    
-                    this.classList.add('active');
-                    this.textContent = '✓ ĐÃ ÁP DỤNG';
-                    
-                    updateDisplay();
-                    
-                    // CUỘN LÊN ĐẦU TRANG
-                    scrollToTop();
-                    
-                    setTimeout(() => {
-                        this.classList.remove('active');
-                        this.textContent = 'ÁP DỤNG QUY ĐỊNH ĐƯỜNG';
-                    }, 2000);
-                }
-            });
-
-            // Double click để bỏ áp dụng
-            applySignBtn.addEventListener('dblclick', function() {
-                if (currentMode === 'manual' && activeSource === 'sign') {
-                    activeSource = null;
-                    this.classList.remove('applied');
-                    updateDisplay();
-                    
-                    this.classList.add('active');
-                    this.textContent = '✓ ĐÃ BỎ';
-                    setTimeout(() => {
-                        this.classList.remove('active');
-                        this.textContent = 'ÁP DỤNG';
-                    }, 1000);
-                }
-            });
-
-            applyRoadBtn.addEventListener('dblclick', function() {
-                if (currentMode === 'manual' && activeSource === 'road') {
-                    activeSource = null;
-                    this.classList.remove('applied');
-                    updateDisplay();
-                    
-                    this.classList.add('active');
-                    this.textContent = '✓ ĐÃ BỎ';
-                    setTimeout(() => {
-                        this.classList.remove('active');
-                        this.textContent = 'ÁP DỤNG QUY ĐỊNH ĐƯỜNG';
-                    }, 1000);
-                }
-            });
-
-            // Cập nhật giá trị slider
-            signSlider.addEventListener('input', (e) => {
-                signValue.textContent = e.target.value;
-            });
-
-            // ===== HÀM LẤY DỮ LIỆU TỪ SERVER =====
-            function fetchServerData() {
-                if (currentMode !== 'auto') return; // Chỉ cập nhật khi ở chế độ tự động
-                
-                serverStatusEl.textContent = '🌐 Server: Đang cập nhật...';
-                serverStatusEl.className = 'server-status loading';
-                
-                // Giả lập gọi API
-                setTimeout(() => {
-                    // Dữ liệu mẫu từ server
-                    const serverData = {
-                        roadType: ['normal_2way', 'normal_1way', 'divided', 'highway'][Math.floor(Math.random() * 4)],
-                        area: ['residential', 'non_residential'][Math.floor(Math.random() * 2)],
-                        vehicleType: ['motorcycle', 'car', 'truck', 'bus'][Math.floor(Math.random() * 4)],
-                        speedLimit: Math.floor(Math.random() * 80) + 40, // 40-120
-                        timestamp: new Date().toLocaleTimeString()
+                        if (this.onUpdate) this.onUpdate();
                     };
-                    
-                    // Cập nhật các lựa chọn
-                    // Loại xe
-                    vehicleRadios.forEach(opt => {
-                        const radio = opt.querySelector('input');
-                        if (radio.value === serverData.vehicleType) {
-                            radio.checked = true;
-                            opt.classList.add('selected');
-                        } else {
-                            opt.classList.remove('selected');
-                        }
-                    });
-                    
-                    // Khu vực
-                    areaRadios.forEach(opt => {
-                        const radio = opt.querySelector('input');
-                        if (radio.value === serverData.area) {
-                            radio.checked = true;
-                            opt.classList.add('selected');
-                        } else {
-                            opt.classList.remove('selected');
-                        }
-                    });
-                    
-                    // Loại đường
-                    roadDetailRadios.forEach(opt => {
-                        const radio = opt.querySelector('input');
-                        if (radio.value === serverData.roadType) {
-                            radio.checked = true;
-                            opt.classList.add('selected');
-                        } else {
-                            opt.classList.remove('selected');
-                        }
-                    });
-                    
-                    // Cập nhật biển báo
-                    signSlider.value = serverData.speedLimit;
-                    signValue.textContent = serverData.speedLimit;
-                    
-                    // Tự động áp dụng giới hạn tốc độ từ server
-                    if (currentMode === 'auto') {
-                        // Ưu tiên áp dụng biển báo từ server
-                        signLimit = serverData.speedLimit;
-                        activeSource = 'sign';
-                        updateDisplay();
-                    }
-                    
-                    // Cập nhật trạng thái server trên HUD
-                    serverStatusEl.textContent = `🌐 Server: Cập nhật lúc ${serverData.timestamp}`;
-                    serverStatusEl.className = 'server-status success';
-                    
-                }, 1000);
+
+                    this.isRecording = true;
+                    this.startTime = Date.now();
+
+                    // Cập nhật đồng hồ
+                    this.timerInterval = setInterval(() => {
+                        if (this.onUpdate) this.onUpdate();
+                    }, 500);
+
+                    if (this.onUpdate) this.onUpdate();
+                    return true;
+                } catch (err) {
+                    console.error('Lỗi khi bắt đầu quay:', err);
+                    alert('Không thể truy cập camera/mic. Vui lòng kiểm tra quyền.');
+                    return false;
+                }
             }
 
-            // ===== NÚT CHIA SẺ QR CODE =====
-            shareQrBtn.addEventListener('click', function() {
-                // Lấy URL hiện tại
-                const currentUrl = window.location.href;
-                qrUrl.textContent = currentUrl;
-                
-                // Tạo QR code
-                QRCode.toCanvas(qrCanvas, currentUrl, {
-                    width: 250,
-                    margin: 2,
-                    color: {
-                        dark: '#000000',
-                        light: '#ffffff'
+            // Dừng quay (giữ nguyên buffer)
+            stop() {
+                if (this.recorder && this.isRecording) {
+                    this.recorder.stop();
+                    this.isRecording = false;
+                    if (this.timerInterval) {
+                        clearInterval(this.timerInterval);
+                        this.timerInterval = null;
                     }
-                }, function(error) {
-                    if (error) {
-                        console.error(error);
-                        qrUrl.textContent = 'Lỗi tạo QR code';
+                    if (this.stream) {
+                        this.stream.getTracks().forEach(track => track.stop());
+                        this.stream = null;
                     }
-                });
-                
-                // Hiển thị modal
-                qrModal.classList.add('show');
-            });
-
-            // Đóng modal
-            qrCloseBtn.addEventListener('click', function() {
-                qrModal.classList.remove('show');
-            });
-
-            // Click outside để đóng
-            qrModal.addEventListener('click', function(e) {
-                if (e.target === qrModal) {
-                    qrModal.classList.remove('show');
+                    if (this.onUpdate) this.onUpdate();
                 }
-            });
+            }
 
-            // Khởi động
-            startGPS();
-            
-            // Thiết lập mode ban đầu (manual)
-            currentMode = 'manual';
-            updateModeUI();
+            // Lưu video (ghép buffer thành Blob)
+            save() {
+                if (this.buffer.length === 0) {
+                    alert('Chưa có dữ liệu video!');
+                    return null;
+                }
+                const blob = new Blob(this.buffer, { type: 'video/webm' });
+                return blob;
+            }
 
-            // Khởi tạo audio khi click
-            document.addEventListener('click', function initAudioOnFirstClick() {
-                initAudio();
-                document.removeEventListener('click', initAudioOnFirstClick);
-            }, { once: true });
+            // Reset toàn bộ
+            reset() {
+                this.stop();
+                this.buffer = [];
+                this.totalSize = 0;
+                this.totalDuration = 0;
+                if (this.onUpdate) this.onUpdate();
+            }
 
-            // Tính roadLimit ban đầu
-            roadLimit = calculateRoadLimit();
-        })();
+            // Lấy số đoạn
+            getSegmentCount() {
+                return this.buffer.length;
+            }
+
+            // Lấy thời gian đã quay (tính từ lúc start)
+            getElapsedSeconds() {
+                if (!this.startTime) return 0;
+                return Math.floor((Date.now() - this.startTime) / 1000);
+            }
+
+            // Format thời gian MM:SS
+            formatTime(ms) {
+                const totalSec = Math.floor(ms / 1000);
+                const min = String(Math.floor(totalSec / 60)).padStart(2, '0');
+                const sec = String(totalSec % 60).padStart(2, '0');
+                return `${min}:${sec}`;
+            }
+
+            // Format dung lượng
+            formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / 1048576).toFixed(1) + ' MB';
+            }
+        }
+
+        // ============================================================
+        //  KHỞI TẠO VÀ ĐIỀU KHIỂN UI
+        // ============================================================
+
+        const recorder = new RingVideoRecorder(15 * 60 * 1000);
+
+        // DOM elements
+        const videoPreview = document.getElementById('videoPreview');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const statusTime = document.getElementById('statusTime');
+        const segmentCount = document.getElementById('segmentCount');
+        const totalDuration = document.getElementById('totalDuration');
+        const totalSize = document.getElementById('totalSize');
+        const btnStart = document.getElementById('btnStart');
+        const btnStop = document.getElementById('btnStop');
+        const btnSave = document.getElementById('btnSave');
+        const downloadLink = document.getElementById('downloadLink');
+        const downloadAnchor = document.getElementById('downloadAnchor');
+
+        // Hàm cập nhật UI
+        function updateUI() {
+            const count = recorder.getSegmentCount();
+            segmentCount.textContent = count;
+            totalDuration.textContent = (recorder.totalDuration / 1000).toFixed(1) + 's';
+            totalSize.textContent = recorder.formatSize(recorder.totalSize);
+
+            // Trạng thái
+            if (recorder.isRecording) {
+                statusDot.className = 'status-dot recording';
+                statusText.textContent = '🔴 Đang quay';
+                const elapsed = recorder.getElapsedSeconds();
+                const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const sec = String(elapsed % 60).padStart(2, '0');
+                statusTime.textContent = `${min}:${sec}`;
+            } else {
+                statusDot.className = 'status-dot';
+                statusText.textContent = '⏸ Đã dừng';
+                if (count > 0) {
+                    statusTime.textContent = recorder.formatTime(recorder.totalDuration);
+                } else {
+                    statusTime.textContent = '00:00';
+                }
+            }
+
+            // Nút
+            btnStart.disabled = recorder.isRecording;
+            btnStop.disabled = !recorder.isRecording;
+            btnSave.disabled = (count === 0);
+
+            // Ẩn link tải khi chưa có gì
+            if (count === 0) {
+                downloadLink.style.display = 'none';
+            }
+        }
+
+        // Gán callback cho recorder
+        recorder.onUpdate = updateUI;
+
+        // ---- Sự kiện nút ----
+
+        // Bắt đầu
+        btnStart.addEventListener('click', async () => {
+            const ok = await recorder.start();
+            if (ok) {
+                downloadLink.style.display = 'none';
+                updateUI();
+            }
+        });
+
+        // Dừng
+        btnStop.addEventListener('click', () => {
+            recorder.stop();
+            updateUI();
+        });
+
+        // Lưu
+        btnSave.addEventListener('click', () => {
+            const blob = recorder.save();
+            if (!blob) return;
+
+            // Tạo link tải
+            const url = URL.createObjectURL(blob);
+            downloadAnchor.href = url;
+            const now = new Date();
+            const dateStr =
+                `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}h${String(now.getMinutes()).padStart(2,'0')}`;
+            downloadAnchor.download = `video_15phut_${dateStr}.webm`;
+
+            // Hiện link và tự động click
+            downloadLink.style.display = 'block';
+            setTimeout(() => {
+                downloadAnchor.click();
+            }, 300);
+
+            // Thông báo
+            const sizeMB = (blob.size / 1048576).toFixed(1);
+            statusText.textContent = `✅ Đã lưu ${sizeMB} MB`;
+        });
+
+        // Reset UI lúc đầu
+        updateUI();
+
+        // Thông báo khi thoát tab (dừng quay)
+        window.addEventListener('beforeunload', () => {
+            recorder.stop();
+        });
+
+        console.log('🎥 Ring Buffer Recorder đã sẵn sàng!');
+        console.log(`📐 Tối đa: ${recorder.maxDurationMs / 60000} phút, mỗi đoạn ${recorder.segmentDurationMs}ms`);
     </script>
+
 </body>
 </html>
