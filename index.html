@@ -225,28 +225,52 @@
             transform: none;
         }
 
-        .controls-row .btn-cam {
+        /* ===== NÚT CAMERA GỘP ===== */
+        .btn-cam-group {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            flex: 1 1 auto;
+            min-width: 80px;
+        }
+
+        .btn-cam-group .btn-cam {
             background: rgba(255, 255, 255, 0.06);
             color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.08);
             font-size: 13px;
-            padding: 12px 16px;
+            padding: 12px 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            justify-content: center;
+            font-weight: 600;
         }
 
-        .controls-row .btn-cam:hover:not(:disabled) {
+        .btn-cam-group .btn-cam:hover:not(:disabled) {
             background: rgba(255, 255, 255, 0.12);
-            transform: translateY(-1px);
         }
 
-        .controls-row .btn-cam.active {
-            background: rgba(100, 181, 246, 0.2);
-            border-color: rgba(100, 181, 246, 0.3);
+        .btn-cam-group .btn-cam.active {
+            background: rgba(100, 181, 246, 0.25);
+            color: #64b5f6;
         }
 
-        .controls-row .btn-cam:disabled {
+        .btn-cam-group .btn-cam:disabled {
             opacity: 0.3;
             cursor: not-allowed;
-            transform: none;
+        }
+
+        .btn-cam-group .divider {
+            width: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
         }
 
         .status-bar {
@@ -491,7 +515,7 @@
                 min-width: 60px;
             }
 
-            .controls-row .btn-cam {
+            .btn-cam-group .btn-cam {
                 padding: 10px 10px;
                 font-size: 11px;
             }
@@ -528,7 +552,7 @@
                 min-width: 50px;
             }
 
-            .controls-row .btn-cam {
+            .btn-cam-group .btn-cam {
                 padding: 8px 6px;
                 font-size: 10px;
             }
@@ -558,13 +582,19 @@
             </div>
         </div>
 
+        <!-- ===== CONTROLS ===== -->
         <div class="controls-row">
             <button class="btn btn-start" id="btnStart">▶ Bắt đầu</button>
             <button class="btn btn-stop" id="btnStop" disabled>⏹ Dừng</button>
             <button class="btn btn-save" id="btnSave" disabled>💾 Lưu</button>
             <button class="btn btn-flip" id="btnFlipMirror">🔄 Lật</button>
-            <button class="btn btn-cam active" id="camFront" data-facing="user">🤳 Trước</button>
-            <button class="btn btn-cam" id="camBack" data-facing="environment">📷 Sau</button>
+
+            <!-- ===== NÚT CAMERA GỘP ===== -->
+            <div class="btn-cam-group" id="camGroup">
+                <button class="btn-cam active" id="camFront" data-facing="user">🤳 Trước</button>
+                <span class="divider"></span>
+                <button class="btn-cam" id="camBack" data-facing="environment">📷 Sau</button>
+            </div>
         </div>
 
         <div class="status-bar">
@@ -810,7 +840,6 @@
                 this.videoWidth = 1280;
                 this.videoHeight = 720;
 
-                // Đã khởi tạo canvas chưa
                 this.canvasReady = false;
             }
 
@@ -888,9 +917,7 @@
                 return await navigator.mediaDevices.getUserMedia(constraints);
             }
 
-            // ===== SETUP CANVAS =====
             setupCanvas() {
-                // Lấy kích thước thực tế từ video
                 const videoTrack = this.stream.getVideoTracks()[0];
                 if (videoTrack) {
                     const settings = videoTrack.getSettings();
@@ -898,7 +925,6 @@
                     this.videoHeight = settings.height || 720;
                 }
 
-                // Set canvas đúng kích thước
                 this.canvas.width = this.videoWidth;
                 this.canvas.height = this.videoHeight;
                 this.canvas.style.width = '100%';
@@ -908,7 +934,6 @@
                 this.canvasReady = true;
             }
 
-            // ===== RENDER LOOP =====
             startRenderLoop() {
                 const render = () => {
                     if (!this.isRecording) return;
@@ -916,10 +941,8 @@
                     const w = this.canvas.width;
                     const h = this.canvas.height;
 
-                    // Vẽ video full canvas
                     this.ctx.drawImage(this.video, 0, 0, w, h);
 
-                    // === OVERLAY ===
                     const now = new Date();
                     const timeStr = now.toLocaleTimeString('vi-VN', {
                         hour12: false,
@@ -1003,10 +1026,8 @@
                 }
             }
 
-            // ===== START =====
             async start(facingMode = null) {
                 try {
-                    // Dừng stream cũ
                     if (this.stream) {
                         this.stream.getTracks().forEach(track => track.stop());
                         this.stream = null;
@@ -1016,17 +1037,12 @@
                     this.stream = await this.getCamera(mode);
                     this.currentFacingMode = mode;
 
-                    // Gán stream vào video
                     this.video.srcObject = this.stream;
                     await this.video.play();
 
-                    // === QUAN TRỌNG: Setup canvas ===
                     this.setupCanvas();
-
-                    // Áp dụng mirror
                     this.applyMirror();
 
-                    // Reset buffer
                     this.buffer = [];
                     this.totalSize = 0;
                     this.totalDuration = 0;
@@ -1034,16 +1050,13 @@
                     this.hasHeader = false;
                     this.isRamFull = false;
 
-                    // === Tạo stream từ canvas ===
                     this.canvasStream = this.canvas.captureStream(30);
 
-                    // Thêm audio
                     const audioTracks = this.stream.getAudioTracks();
                     if (audioTracks.length > 0) {
                         this.canvasStream.addTrack(audioTracks[0]);
                     }
 
-                    // === MediaRecorder ===
                     this.recorder = new MediaRecorder(this.canvasStream, {
                         mimeType: 'video/webm;codecs=vp8,opus',
                     });
@@ -1096,13 +1109,9 @@
                     this.isRecording = true;
                     this.startTime = Date.now();
 
-                    // GPS
                     this.gps.start();
-
-                    // Render loop
                     this.startRenderLoop();
 
-                    // Timer
                     this.timerInterval = setInterval(() => {
                         if (this.isRecording) {
                             this.autoAdjustRam();
@@ -1119,7 +1128,6 @@
                 }
             }
 
-            // ===== STOP =====
             stop() {
                 if (this.recorder && this.isRecording) {
                     this.recorder.stop();
@@ -1137,7 +1145,6 @@
                 if (this.onUpdate) this.onUpdate();
             }
 
-            // ===== SAVE =====
             save() {
                 if (this.buffer.length === 0) {
                     showToast('⚠️ Chưa có dữ liệu video!', 2000);
@@ -1167,7 +1174,6 @@
                 }
             }
 
-            // ===== SWITCH CAMERA =====
             async switchCamera(facingMode) {
                 if (facingMode === this.currentFacingMode) {
                     showToast('ℹ️ Đã ở camera này rồi!', 1500);
@@ -1176,23 +1182,22 @@
 
                 const wasRecording = this.isRecording;
 
-                // Dừng quay nếu đang quay
                 if (wasRecording) {
                     this.stop();
                 }
 
                 try {
-                    // Bắt đầu lại với camera mới
                     const success = await this.start(facingMode);
                     if (success) {
                         this.currentFacingMode = facingMode;
                         const label = facingMode === 'user' ? 'Trước' : 'Sau';
-                        showToast(`✅ Đã chuyển sang camera ${label}`, 1500);
 
-                        // Cập nhật UI
-                        document.getElementById('cameraStatus').textContent = label;
+                        // Cập nhật UI nút camera
                         document.getElementById('camFront').classList.toggle('active', facingMode === 'user');
                         document.getElementById('camBack').classList.toggle('active', facingMode === 'environment');
+                        document.getElementById('cameraStatus').textContent = label;
+
+                        showToast(`✅ Đã chuyển sang camera ${label}`, 1500);
 
                         if (this.onUpdate) this.onUpdate();
                         return true;
@@ -1205,7 +1210,6 @@
                 }
             }
 
-            // ===== MIRROR =====
             applyMirror() {
                 if (this.isMirrored && this.currentFacingMode === 'user') {
                     this.video.style.transform = 'scaleX(-1)';
@@ -1221,7 +1225,6 @@
                 if (this.onUpdate) this.onUpdate();
             }
 
-            // ===== GETTERS =====
             getSegmentCount() {
                 return this.buffer.length;
             }
@@ -1409,7 +1412,7 @@
             statusText.textContent = `✅ Đã lưu ${sizeMB} MB`;
         });
 
-        // ===== CHUYỂN CAMERA =====
+        // ===== NÚT CAMERA GỘP =====
         camFront.addEventListener('click', async () => {
             await recorder.switchCamera('user');
             updateUI();
@@ -1431,8 +1434,8 @@
             recorder.stop();
         });
 
-        console.log('🎥 Video Recorder với Overlay Time + Speed!');
-        console.log('✅ Đã sửa lỗi chuyển camera');
+        console.log('🎥 Video Recorder - Giao diện gọn gàng!');
+        console.log('✅ Nút camera trước/sau đã được gộp');
     </script>
 </body>
 </html>
