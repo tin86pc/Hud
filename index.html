@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ring Buffer - Time & Speed GPS</title>
+    <title>Video Recorder - Time & Speed Overlay</title>
     <style>
         * {
             margin: 0;
@@ -61,19 +61,61 @@
         #videoPreview {
             width: 100%;
             max-height: 400px;
-            display: block;
-            object-fit: cover;
-            transform: scaleX(-1);
+            display: none;
         }
 
-        #overlayCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
+        #renderCanvas {
             width: 100%;
-            height: 100%;
-            pointer-events: none;
+            max-height: 400px;
+            display: block;
+            object-fit: cover;
             border-radius: 16px;
+            background: #000;
+        }
+
+        .gps-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .gps-status .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .gps-status .dot.green {
+            background: #4caf50;
+            animation: pulse 1.5s infinite;
+        }
+
+        .gps-status .dot.yellow {
+            background: #ff9800;
+            animation: pulse 1.5s infinite;
+        }
+
+        .gps-status .dot.red {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
         }
 
         .camera-controls {
@@ -119,39 +161,6 @@
 
         .camera-btn .icon {
             font-size: 20px;
-        }
-
-        .gps-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            background: rgba(0, 0, 0, 0.3);
-        }
-
-        .gps-status .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .gps-status .dot.green {
-            background: #4caf50;
-            animation: pulse 1.5s infinite;
-        }
-
-        .gps-status .dot.yellow {
-            background: #ff9800;
-            animation: pulse 1.5s infinite;
-        }
-
-        .gps-status .dot.red {
-            background: #f44336;
         }
 
         .ram-settings {
@@ -273,18 +282,6 @@
             animation: pulse 1.2s infinite;
         }
 
-        @keyframes pulse {
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.4;
-                transform: scale(0.8);
-            }
-        }
-
         .status-time {
             font-family: 'Courier New', monospace;
             font-size: 18px;
@@ -316,10 +313,6 @@
             display: block;
             margin-top: 4px;
             font-size: 15px;
-        }
-
-        .info-item .warning {
-            color: #ff6b35;
         }
 
         .btn-group {
@@ -525,15 +518,14 @@
 <body>
 
     <div class="container">
-        <h1>🎥 Ring Buffer Recorder</h1>
-        <p class="subtitle">Hiển thị thời gian & tốc độ GPS trên video</p>
+        <h1>🎥 Video Recorder</h1>
+        <p class="subtitle">Overlay thời gian & tốc độ được ghi trực tiếp vào video</p>
 
         <div class="video-wrapper">
             <video id="videoPreview" autoplay muted playsinline></video>
-            <canvas id="overlayCanvas"></canvas>
+            <canvas id="renderCanvas"></canvas>
         </div>
 
-        <!-- GPS Status -->
         <div class="gps-status">
             <span class="dot red" id="gpsDot"></span>
             <span id="gpsStatus">Đang tìm GPS...</span>
@@ -559,7 +551,7 @@
                 <select id="ramSelect">
                     <option value="50">50 MB</option>
                     <option value="100">100 MB</option>
-                    <option value="200" selected>200 MB (Mặc định)</option>
+                    <option value="200" selected>200 MB</option>
                     <option value="300">300 MB</option>
                     <option value="500">500 MB</option>
                     <option value="1000">1 GB</option>
@@ -638,27 +630,23 @@
         }
 
         // ============================================================
-        // GPS TRACKER - TÍNH TỐC ĐỘ
+        // GPS TRACKER
         // ============================================================
         class GPSTracker {
             constructor() {
                 this.watchId = null;
-                this.currentSpeed = 0; // km/h
+                this.currentSpeed = 0;
                 this.currentAccuracy = null;
                 this.isActive = false;
                 this.hasFix = false;
-
-                // Lưu vị trí cũ để tính tốc độ
                 this.lastPosition = null;
                 this.lastTime = null;
 
-                // DOM elements
                 this.statusDot = document.getElementById('gpsDot');
                 this.statusText = document.getElementById('gpsStatus');
                 this.accuracyText = document.getElementById('gpsAccuracy');
                 this.speedDisplay = document.getElementById('speedDisplay');
 
-                // Callback khi có cập nhật
                 this.onUpdate = null;
             }
 
@@ -702,16 +690,13 @@
                 if (!this.isActive) return;
 
                 const coords = position.coords;
-                const speed = coords.speed; // m/s
+                const speed = coords.speed;
 
-                // Nếu GPS có speed trực tiếp (chính xác hơn)
                 if (speed !== null && speed !== undefined && speed >= 0) {
-                    this.currentSpeed = speed * 3.6; // m/s -> km/h
+                    this.currentSpeed = speed * 3.6;
                 } else {
-                    // Tính speed từ khoảng cách và thời gian
                     const lat = coords.latitude;
                     const lng = coords.longitude;
-                    const accuracy = coords.accuracy;
                     const timestamp = position.timestamp;
 
                     if (this.lastPosition) {
@@ -719,11 +704,11 @@
                             this.lastPosition.lat, this.lastPosition.lng,
                             lat, lng
                         );
-                        const timeDiff = (timestamp - this.lastTime) / 1000; // giây
+                        const timeDiff = (timestamp - this.lastTime) / 1000;
 
-                        if (timeDiff > 0 && distance > 1) { // > 1 mét mới tính
+                        if (timeDiff > 0 && distance > 1) {
                             const speedMs = distance / timeDiff;
-                            this.currentSpeed = speedMs * 3.6; // m/s -> km/h
+                            this.currentSpeed = speedMs * 3.6;
                         }
                     }
 
@@ -731,22 +716,18 @@
                     this.lastTime = timestamp;
                 }
 
-                // Làm tròn
                 this.currentSpeed = Math.round(this.currentSpeed * 10) / 10;
 
-                // Cập nhật UI
                 this.hasFix = true;
                 this.statusDot.className = 'dot green';
                 this.statusText.textContent = '✅ GPS đã kết nối';
                 this.speedDisplay.textContent = this.currentSpeed + ' km/h';
 
-                // Độ chính xác
                 if (coords.accuracy) {
                     this.currentAccuracy = Math.round(coords.accuracy);
                     this.accuracyText.textContent = `Độ chính xác: ±${this.currentAccuracy}m`;
                 }
 
-                // Gọi callback
                 if (this.onUpdate) this.onUpdate(this.currentSpeed);
             }
 
@@ -769,17 +750,13 @@
                     default:
                         this.statusText.textContent = '❌ Lỗi GPS: ' + error.message;
                 }
-
-                // Không reset speed, giữ giá trị cũ
             }
 
-            // Tính khoảng cách 2 điểm (Haversine formula)
             calculateDistance(lat1, lon1, lat2, lon2) {
-                const R = 6371000; // bán kính trái đất (mét)
+                const R = 6371000;
                 const dLat = this.toRad(lat2 - lat1);
                 const dLon = this.toRad(lon2 - lon1);
-                const a =
-                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                     Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
                     Math.sin(dLon / 2) * Math.sin(dLon / 2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
@@ -800,143 +777,9 @@
         }
 
         // ============================================================
-        // OVERLAY: VẼ THỜI GIAN & TỐC ĐỘ LÊN VIDEO
+        // VIDEO RECORDER WITH OVERLAY (ghi trực tiếp vào video)
         // ============================================================
-        class VideoOverlay {
-            constructor(canvasId, videoId, gpsTracker) {
-                this.canvas = document.getElementById(canvasId);
-                this.ctx = this.canvas.getContext('2d');
-                this.video = document.getElementById(videoId);
-                this.gps = gpsTracker;
-                this.isActive = false;
-
-                this.animationId = null;
-            }
-
-            resize() {
-                const rect = this.video.getBoundingClientRect();
-                this.canvas.width = rect.width;
-                this.canvas.height = rect.height;
-            }
-
-            start() {
-                this.isActive = true;
-                this.resize();
-                this.drawLoop();
-            }
-
-            stop() {
-                this.isActive = false;
-                if (this.animationId) {
-                    cancelAnimationFrame(this.animationId);
-                    this.animationId = null;
-                }
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            }
-
-            drawLoop() {
-                if (!this.isActive) return;
-                this.draw();
-                this.animationId = requestAnimationFrame(() => this.drawLoop());
-            }
-
-            draw() {
-                const ctx = this.ctx;
-                const w = this.canvas.width;
-                const h = this.canvas.height;
-
-                ctx.clearRect(0, 0, w, h);
-
-                // ===== THÔNG TIN =====
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString('vi-VN', {
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                const dateStr = now.toLocaleDateString('vi-VN', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                });
-
-                const speed = this.gps.getSpeed();
-                const speedText = speed > 0 ? `${speed.toFixed(1)} km/h` : '0 km/h';
-
-                // ===== CHỌN VỊ TRÍ HIỂN THỊ =====
-                const padding = 14;
-                const fontSize = Math.max(18, Math.min(28, w / 35));
-                const smallFont = fontSize * 0.7;
-
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-
-                // Đo chiều rộng
-                ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
-                const timeMetrics = ctx.measureText(`${dateStr} - ${timeStr}`);
-                ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
-                const speedMetrics = ctx.measureText(`🚀 ${speedText}`);
-
-                const textWidth = Math.max(timeMetrics.width, speedMetrics.width) + padding * 2 + 20;
-                const lineHeight = fontSize + 8;
-                const totalHeight = lineHeight * 2 + padding * 2;
-
-                const x = 12;
-                const y = 12;
-
-                // ===== VẼ BACKGROUND =====
-                const radius = 12;
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-                ctx.shadowBlur = 20;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 0;
-
-                ctx.beginPath();
-                ctx.moveTo(x + radius, y);
-                ctx.lineTo(x + textWidth - radius, y);
-                ctx.quadraticCurveTo(x + textWidth, y, x + textWidth, y + radius);
-                ctx.lineTo(x + textWidth, y + totalHeight - radius);
-                ctx.quadraticCurveTo(x + textWidth, y + totalHeight, x + textWidth - radius, y + totalHeight);
-                ctx.lineTo(x + radius, y + totalHeight);
-                ctx.quadraticCurveTo(x, y + totalHeight, x, y + totalHeight - radius);
-                ctx.lineTo(x, y + radius);
-                ctx.quadraticCurveTo(x, y, x + radius, y);
-                ctx.closePath();
-
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                ctx.fill();
-                ctx.shadowBlur = 0;
-
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-
-                // ===== VẼ TEXT =====
-                // Dòng 1: Thời gian
-                ctx.fillStyle = '#ffffff';
-                ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
-                ctx.fillText(`${dateStr} - ${timeStr}`, x + padding, y + 4);
-
-                // Dòng 2: Tốc độ
-                const speedColor = speed > 50 ? '#f44336' : speed > 30 ? '#ff9800' : '#4caf50';
-                ctx.fillStyle = speedColor;
-                ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
-                ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 4);
-
-                // Thêm icon GPS nếu có tín hiệu
-                if (this.gps.hasFix()) {
-                    ctx.fillStyle = '#4caf50';
-                    ctx.font = `${smallFont}px 'Courier New', monospace`;
-                    ctx.fillText('📡', x + textWidth - 30, y + lineHeight + 4);
-                }
-            }
-        }
-
-        // ============================================================
-        // RING BUFFER RECORDER
-        // ============================================================
-        class RingVideoRecorder {
+        class VideoRecorderWithOverlay {
             constructor(maxDurationMs = 15 * 60 * 1000, maxRamMB = 200) {
                 this.maxDurationMs = maxDurationMs;
                 this.maxRamBytes = maxRamMB * 1024 * 1024;
@@ -948,13 +791,14 @@
 
                 this.recorder = null;
                 this.stream = null;
+                this.canvasStream = null;
                 this.isRecording = false;
                 this.startTime = null;
                 this.timerInterval = null;
+                this.renderLoopId = null;
 
                 this.currentFacingMode = 'user';
                 this.isMirrored = true;
-                this.mimeType = 'video/webm;codecs=vp8,opus';
 
                 this.onUpdate = null;
                 this.isRamFull = false;
@@ -962,8 +806,19 @@
                 this.firstChunk = null;
                 this.hasHeader = false;
 
-                this.totalChunksRemoved = 0;
-                this.autoAdjustCount = 0;
+                // Canvas rendering
+                this.canvas = document.getElementById('renderCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.video = document.getElementById('videoPreview');
+
+                // GPS
+                this.gps = new GPSTracker();
+                this.gps.onUpdate = () => {};
+
+                // Tốc độ FPS cho canvas
+                this.frameCount = 0;
+                this.fps = 0;
+                this.lastFpsUpdate = Date.now();
             }
 
             setMaxRam(mb) {
@@ -993,10 +848,8 @@
                         if (oldest) {
                             this.totalSize -= oldest.size;
                             this.totalDuration -= this.segmentDurationMs;
-                            this.totalChunksRemoved++;
                         }
                     }
-                    this.autoAdjustCount++;
                 }
 
                 if (usagePercent > 95) {
@@ -1006,10 +859,8 @@
                         if (oldest) {
                             this.totalSize -= oldest.size;
                             this.totalDuration -= this.segmentDurationMs;
-                            this.totalChunksRemoved++;
                         }
                     }
-                    this.autoAdjustCount += 2;
                 }
 
                 this.ensureHeader();
@@ -1044,6 +895,120 @@
                 return await navigator.mediaDevices.getUserMedia(constraints);
             }
 
+            // ===== RENDER LOOP: VẼ VIDEO + OVERLAY LÊN CANVAS =====
+            startRenderLoop() {
+                const render = () => {
+                    if (!this.isRecording) return;
+
+                    const w = this.canvas.width;
+                    const h = this.canvas.height;
+
+                    // Vẽ video lên canvas
+                    this.ctx.drawImage(this.video, 0, 0, w, h);
+
+                    // === VẼ OVERLAY ===
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('vi-VN', {
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    const dateStr = now.toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+
+                    const speed = this.gps.getSpeed();
+                    const speedText = speed > 0 ? `${speed.toFixed(1)} km/h` : '0 km/h';
+
+                    const padding = 14;
+                    const fontSize = Math.max(18, Math.min(28, w / 35));
+                    const smallFont = fontSize * 0.7;
+                    const lineHeight = fontSize + 8;
+
+                    this.ctx.textAlign = 'left';
+                    this.ctx.textBaseline = 'top';
+
+                    // Đo kích thước
+                    this.ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
+                    const timeMetrics = this.ctx.measureText(`${dateStr} - ${timeStr}`);
+                    this.ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
+                    const speedMetrics = this.ctx.measureText(`🚀 ${speedText}`);
+
+                    const textWidth = Math.max(timeMetrics.width, speedMetrics.width) + padding * 2 + 20;
+                    const totalHeight = lineHeight * 2 + padding * 2;
+
+                    const x = 12;
+                    const y = 12;
+
+                    // Background
+                    const radius = 12;
+                    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                    this.ctx.shadowBlur = 20;
+                    this.ctx.shadowOffsetX = 0;
+                    this.ctx.shadowOffsetY = 0;
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x + radius, y);
+                    this.ctx.lineTo(x + textWidth - radius, y);
+                    this.ctx.quadraticCurveTo(x + textWidth, y, x + textWidth, y + radius);
+                    this.ctx.lineTo(x + textWidth, y + totalHeight - radius);
+                    this.ctx.quadraticCurveTo(x + textWidth, y + totalHeight, x + textWidth - radius, y + totalHeight);
+                    this.ctx.lineTo(x + radius, y + totalHeight);
+                    this.ctx.quadraticCurveTo(x, y + totalHeight, x, y + totalHeight - radius);
+                    this.ctx.lineTo(x, y + radius);
+                    this.ctx.quadraticCurveTo(x, y, x + radius, y);
+                    this.ctx.closePath();
+
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                    this.ctx.lineWidth = 1.5;
+                    this.ctx.stroke();
+
+                    // Text
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
+                    this.ctx.fillText(`${dateStr} - ${timeStr}`, x + padding, y + 4);
+
+                    const speedColor = speed > 50 ? '#f44336' : speed > 30 ? '#ff9800' : '#4caf50';
+                    this.ctx.fillStyle = speedColor;
+                    this.ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
+                    this.ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 4);
+
+                    if (this.gps.hasFix()) {
+                        this.ctx.fillStyle = '#4caf50';
+                        this.ctx.font = `${smallFont}px 'Courier New', monospace`;
+                        this.ctx.fillText('📡', x + textWidth - 30, y + lineHeight + 4);
+                    }
+
+                    // FPS tracking
+                    this.frameCount++;
+                    const nowTime = Date.now();
+                    if (nowTime - this.lastFpsUpdate >= 1000) {
+                        this.fps = this.frameCount;
+                        this.frameCount = 0;
+                        this.lastFpsUpdate = nowTime;
+                    }
+
+                    this.renderLoopId = requestAnimationFrame(render);
+                };
+
+                render();
+            }
+
+            stopRenderLoop() {
+                if (this.renderLoopId) {
+                    cancelAnimationFrame(this.renderLoopId);
+                    this.renderLoopId = null;
+                }
+            }
+
+            // ===== BẮT ĐẦU QUAY =====
             async start(facingMode = null) {
                 try {
                     if (this.stream) {
@@ -1055,22 +1020,43 @@
                     this.stream = await this.getCamera(mode);
                     this.currentFacingMode = mode;
 
-                    const videoEl = document.getElementById('videoPreview');
-                    videoEl.srcObject = this.stream;
-                    await videoEl.play();
+                    this.video.srcObject = this.stream;
+                    await this.video.play();
+
+                    // Setup canvas
+                    const videoTrack = this.stream.getVideoTracks()[0];
+                    const settings = videoTrack.getSettings();
+                    const width = settings.width || 1280;
+                    const height = settings.height || 720;
+
+                    this.canvas.width = width;
+                    this.canvas.height = height;
+                    this.canvas.style.width = '100%';
+                    this.canvas.style.height = 'auto';
+
+                    // Áp dụng mirror
                     this.applyMirror();
 
+                    // Reset
                     this.buffer = [];
                     this.totalSize = 0;
                     this.totalDuration = 0;
                     this.firstChunk = null;
                     this.hasHeader = false;
                     this.isRamFull = false;
-                    this.totalChunksRemoved = 0;
-                    this.autoAdjustCount = 0;
 
-                    this.recorder = new MediaRecorder(this.stream, {
-                        mimeType: this.mimeType,
+                    // ===== TẠO MEDIASTREAM TỪ CANVAS =====
+                    this.canvasStream = this.canvas.captureStream(30);
+
+                    // Lấy audio từ camera
+                    const audioTracks = this.stream.getAudioTracks();
+                    if (audioTracks.length > 0) {
+                        this.canvasStream.addTrack(audioTracks[0]);
+                    }
+
+                    // ===== MEDIARECORDER GHI TỪ CANVAS =====
+                    this.recorder = new MediaRecorder(this.canvasStream, {
+                        mimeType: 'video/webm;codecs=vp8,opus',
                     });
 
                     this.recorder.start(this.segmentDurationMs);
@@ -1107,7 +1093,6 @@
                             if (oldest) {
                                 this.totalSize -= oldest.size;
                                 this.totalDuration -= this.segmentDurationMs;
-                                this.totalChunksRemoved++;
                             }
                             loopCount++;
                             if (loopCount > 100) break;
@@ -1122,6 +1107,13 @@
                     this.isRecording = true;
                     this.startTime = Date.now();
 
+                    // Bắt đầu GPS
+                    this.gps.start();
+
+                    // Bắt đầu render loop
+                    this.startRenderLoop();
+
+                    // Timer tự động kiểm tra RAM
                     this.timerInterval = setInterval(() => {
                         if (this.isRecording) {
                             this.autoAdjustRam();
@@ -1142,12 +1134,17 @@
                 if (this.recorder && this.isRecording) {
                     this.recorder.stop();
                     this.isRecording = false;
-                    if (this.timerInterval) {
-                        clearInterval(this.timerInterval);
-                        this.timerInterval = null;
-                    }
-                    if (this.onUpdate) this.onUpdate();
                 }
+
+                this.gps.stop();
+                this.stopRenderLoop();
+
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+
+                if (this.onUpdate) this.onUpdate();
             }
 
             save() {
@@ -1207,11 +1204,10 @@
             }
 
             applyMirror() {
-                const videoEl = document.getElementById('videoPreview');
                 if (this.isMirrored && this.currentFacingMode === 'user') {
-                    videoEl.style.transform = 'scaleX(-1)';
+                    this.video.style.transform = 'scaleX(-1)';
                 } else {
-                    videoEl.style.transform = 'scaleX(1)';
+                    this.video.style.transform = 'scaleX(1)';
                 }
             }
 
@@ -1219,18 +1215,6 @@
                 this.isMirrored = !this.isMirrored;
                 this.applyMirror();
                 showToast(this.isMirrored ? '🔄 Đã bật gương' : '🔄 Đã tắt gương', 1500);
-                if (this.onUpdate) this.onUpdate();
-            }
-
-            reset() {
-                this.stop();
-                this.buffer = [];
-                this.totalSize = 0;
-                this.totalDuration = 0;
-                this.firstChunk = null;
-                this.hasHeader = false;
-                this.totalChunksRemoved = 0;
-                this.autoAdjustCount = 0;
                 if (this.onUpdate) this.onUpdate();
             }
 
@@ -1265,12 +1249,8 @@
                 return this.maxRamBytes / (1024 * 1024);
             }
 
-            getAutoAdjustCount() {
-                return this.autoAdjustCount;
-            }
-
-            getTotalChunksRemoved() {
-                return this.totalChunksRemoved;
+            getGPS() {
+                return this.gps;
             }
         }
 
@@ -1278,16 +1258,9 @@
         // UI CONTROLLER
         // ============================================================
 
-        // Khởi tạo GPS
-        const gps = new GPSTracker();
+        const recorder = new VideoRecorderWithOverlay(15 * 60 * 1000, 200);
+        const gps = recorder.getGPS();
 
-        // Khởi tạo Recorder
-        const recorder = new RingVideoRecorder(15 * 60 * 1000, 200);
-
-        // Khởi tạo Overlay
-        const overlay = new VideoOverlay('overlayCanvas', 'videoPreview', gps);
-
-        const videoPreview = document.getElementById('videoPreview');
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
         const statusTime = document.getElementById('statusTime');
@@ -1299,6 +1272,7 @@
         const usedRamText = document.getElementById('usedRamText');
         const maxRamText = document.getElementById('maxRamText');
         const ramBar = document.getElementById('ramBar');
+        const speedDisplay = document.getElementById('speedDisplay');
         const btnStart = document.getElementById('btnStart');
         const btnStop = document.getElementById('btnStop');
         const btnSave = document.getElementById('btnSave');
@@ -1353,6 +1327,9 @@
             camFront.classList.toggle('active', recorder.currentFacingMode === 'user');
             camBack.classList.toggle('active', recorder.currentFacingMode === 'environment');
 
+            // Cập nhật speed từ GPS
+            speedDisplay.textContent = gps.getSpeed() + ' km/h';
+
             if (recorder.isRecording) {
                 statusDot.className = 'status-dot recording';
                 statusText.textContent = '🔴 Đang quay';
@@ -1360,11 +1337,6 @@
                 const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
                 const sec = String(elapsed % 60).padStart(2, '0');
                 statusTime.textContent = `${min}:${sec}`;
-
-                if (recorder.getAutoAdjustCount() > 0) {
-                    document.querySelector('.subtitle').textContent =
-                        `🔄 Đã tự động điều chỉnh ${recorder.getAutoAdjustCount()} lần, xóa ${recorder.getTotalChunksRemoved()} đoạn`;
-                }
             } else {
                 statusDot.className = 'status-dot';
                 statusText.textContent = '⏸ Đã dừng';
@@ -1372,7 +1344,6 @@
                     statusTime.textContent = recorder.formatTime(recorder.totalDuration);
                 } else {
                     statusTime.textContent = '00:00';
-                    document.querySelector('.subtitle').textContent = 'Hiển thị thời gian & tốc độ GPS trên video';
                 }
             }
 
@@ -1391,6 +1362,11 @@
 
         recorder.onUpdate = updateUI;
 
+        // GPS update
+        gps.onUpdate = (speed) => {
+            speedDisplay.textContent = speed + ' km/h';
+        };
+
         // ===== SỰ KIỆN =====
 
         ramSelect.addEventListener('change', function() {
@@ -1405,14 +1381,9 @@
         });
 
         btnStart.addEventListener('click', async () => {
-            // Bắt đầu GPS
-            gps.start();
-
-            // Bắt đầu quay
             const ok = await recorder.start(recorder.currentFacingMode);
             if (ok) {
                 downloadLink.style.display = 'none';
-                overlay.start();
                 showToast('🎥 Đã bắt đầu quay + GPS!', 1500);
                 updateUI();
             }
@@ -1420,8 +1391,6 @@
 
         btnStop.addEventListener('click', () => {
             recorder.stop();
-            gps.stop();
-            overlay.stop();
             showToast('⏹ Đã dừng quay', 1500);
             updateUI();
         });
@@ -1441,7 +1410,7 @@
             const dateStr =
                 `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}h${String(now.getMinutes()).padStart(2,'0')}`;
             const camLabel = recorder.currentFacingMode === 'user' ? 'truoc' : 'sau';
-            downloadAnchor.download = `video_${camLabel}_${dateStr}.webm`;
+            downloadAnchor.download = `video_overlay_${camLabel}_${dateStr}.webm`;
 
             downloadLink.style.display = 'block';
             setTimeout(() => {
@@ -1452,8 +1421,7 @@
             }, 300);
 
             const sizeMB = (blob.size / 1048576).toFixed(1);
-            const durationSec = (recorder.totalDuration / 1000).toFixed(1);
-            showToast(`✅ Đã lưu ${sizeMB} MB (${durationSec}s)`, 2500);
+            showToast(`✅ Đã lưu ${sizeMB} MB`, 2500);
             statusText.textContent = `✅ Đã lưu ${sizeMB} MB`;
         });
 
@@ -1472,20 +1440,14 @@
             updateUI();
         });
 
-        // Reset UI
         updateUI();
 
         window.addEventListener('beforeunload', () => {
             recorder.stop();
-            gps.stop();
-            overlay.stop();
         });
 
-        console.log('🎥 Ring Buffer Recorder với GPS Speed!');
-        console.log(`📐 RAM tối đa: ${recorder.getMaxRamMB()} MB`);
-        console.log(`📷 Camera hiện tại: ${recorder.currentFacingMode}`);
-        console.log(`🎬 Codec: ${recorder.mimeType}`);
-        console.log('📍 GPS sẽ tự động tính tốc độ khi di chuyển');
+        console.log('🎥 Video Recorder với Overlay Time + Speed!');
+        console.log('✅ Overlay được ghi trực tiếp vào video');
     </script>
 </body>
 </html>
