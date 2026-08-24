@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ring Buffer - Auto RAM</title>
+    <title>Ring Buffer - Time & Speed GPS</title>
     <style>
         * {
             margin: 0;
@@ -26,7 +26,7 @@
             backdrop-filter: blur(15px);
             border-radius: 30px;
             padding: 40px 50px;
-            max-width: 800px;
+            max-width: 850px;
             width: 100%;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -37,25 +37,43 @@
             color: #fff;
             font-size: 28px;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             letter-spacing: 1px;
         }
 
         .subtitle {
             color: rgba(255, 255, 255, 0.6);
             font-size: 14px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
-        #videoPreview {
+        .video-wrapper {
+            position: relative;
             width: 100%;
-            max-height: 350px;
+            max-height: 400px;
             background: #000;
             border-radius: 16px;
             margin-bottom: 20px;
             border: 2px solid rgba(255, 255, 255, 0.15);
+            overflow: hidden;
+        }
+
+        #videoPreview {
+            width: 100%;
+            max-height: 400px;
+            display: block;
             object-fit: cover;
             transform: scaleX(-1);
+        }
+
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            border-radius: 16px;
         }
 
         .camera-controls {
@@ -101,6 +119,39 @@
 
         .camera-btn .icon {
             font-size: 20px;
+        }
+
+        .gps-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .gps-status .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .gps-status .dot.green {
+            background: #4caf50;
+            animation: pulse 1.5s infinite;
+        }
+
+        .gps-status .dot.yellow {
+            background: #ff9800;
+            animation: pulse 1.5s infinite;
+        }
+
+        .gps-status .dot.red {
+            background: #f44336;
         }
 
         .ram-settings {
@@ -475,9 +526,20 @@
 
     <div class="container">
         <h1>🎥 Ring Buffer Recorder</h1>
-        <p class="subtitle">Tự động điều chỉnh theo RAM - Video luôn xem được</p>
+        <p class="subtitle">Hiển thị thời gian & tốc độ GPS trên video</p>
 
-        <video id="videoPreview" autoplay muted playsinline></video>
+        <div class="video-wrapper">
+            <video id="videoPreview" autoplay muted playsinline></video>
+            <canvas id="overlayCanvas"></canvas>
+        </div>
+
+        <!-- GPS Status -->
+        <div class="gps-status">
+            <span class="dot red" id="gpsDot"></span>
+            <span id="gpsStatus">Đang tìm GPS...</span>
+            <span style="margin-left:10px;color:rgba(255,255,255,0.5);">|</span>
+            <span id="gpsAccuracy" style="color:rgba(255,255,255,0.6);font-size:12px;">Độ chính xác: --</span>
+        </div>
 
         <div class="camera-controls">
             <button class="camera-btn active" id="camFront" data-facing="user">
@@ -537,6 +599,10 @@
                 <span id="cameraStatus">Trước</span>
             </div>
             <div class="info-item">
+                🚀 Tốc độ
+                <span id="speedDisplay">0 km/h</span>
+            </div>
+            <div class="info-item">
                 📈 Mức RAM
                 <span id="ramStatus">✅ Bình thường</span>
             </div>
@@ -572,7 +638,303 @@
         }
 
         // ============================================================
-        // RING BUFFER RECORDER - TỰ ĐỘNG ĐIỀU CHỈNH THEO RAM
+        // GPS TRACKER - TÍNH TỐC ĐỘ
+        // ============================================================
+        class GPSTracker {
+            constructor() {
+                this.watchId = null;
+                this.currentSpeed = 0; // km/h
+                this.currentAccuracy = null;
+                this.isActive = false;
+                this.hasFix = false;
+
+                // Lưu vị trí cũ để tính tốc độ
+                this.lastPosition = null;
+                this.lastTime = null;
+
+                // DOM elements
+                this.statusDot = document.getElementById('gpsDot');
+                this.statusText = document.getElementById('gpsStatus');
+                this.accuracyText = document.getElementById('gpsAccuracy');
+                this.speedDisplay = document.getElementById('speedDisplay');
+
+                // Callback khi có cập nhật
+                this.onUpdate = null;
+            }
+
+            start() {
+                if (!navigator.geolocation) {
+                    this.statusText.textContent = '❌ GPS không được hỗ trợ';
+                    this.statusDot.className = 'dot red';
+                    showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger');
+                    return false;
+                }
+
+                this.isActive = true;
+
+                this.watchId = navigator.geolocation.watchPosition(
+                    (position) => this.onPositionUpdate(position),
+                    (error) => this.onError(error), {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 1000,
+                    }
+                );
+
+                this.statusText.textContent = '🔄 Đang kết nối GPS...';
+                this.statusDot.className = 'dot yellow';
+                return true;
+            }
+
+            stop() {
+                this.isActive = false;
+                if (this.watchId !== null) {
+                    navigator.geolocation.clearWatch(this.watchId);
+                    this.watchId = null;
+                }
+                this.statusText.textContent = '⏸ GPS đã dừng';
+                this.statusDot.className = 'dot red';
+                this.currentSpeed = 0;
+                this.speedDisplay.textContent = '0 km/h';
+            }
+
+            onPositionUpdate(position) {
+                if (!this.isActive) return;
+
+                const coords = position.coords;
+                const speed = coords.speed; // m/s
+
+                // Nếu GPS có speed trực tiếp (chính xác hơn)
+                if (speed !== null && speed !== undefined && speed >= 0) {
+                    this.currentSpeed = speed * 3.6; // m/s -> km/h
+                } else {
+                    // Tính speed từ khoảng cách và thời gian
+                    const lat = coords.latitude;
+                    const lng = coords.longitude;
+                    const accuracy = coords.accuracy;
+                    const timestamp = position.timestamp;
+
+                    if (this.lastPosition) {
+                        const distance = this.calculateDistance(
+                            this.lastPosition.lat, this.lastPosition.lng,
+                            lat, lng
+                        );
+                        const timeDiff = (timestamp - this.lastTime) / 1000; // giây
+
+                        if (timeDiff > 0 && distance > 1) { // > 1 mét mới tính
+                            const speedMs = distance / timeDiff;
+                            this.currentSpeed = speedMs * 3.6; // m/s -> km/h
+                        }
+                    }
+
+                    this.lastPosition = { lat, lng };
+                    this.lastTime = timestamp;
+                }
+
+                // Làm tròn
+                this.currentSpeed = Math.round(this.currentSpeed * 10) / 10;
+
+                // Cập nhật UI
+                this.hasFix = true;
+                this.statusDot.className = 'dot green';
+                this.statusText.textContent = '✅ GPS đã kết nối';
+                this.speedDisplay.textContent = this.currentSpeed + ' km/h';
+
+                // Độ chính xác
+                if (coords.accuracy) {
+                    this.currentAccuracy = Math.round(coords.accuracy);
+                    this.accuracyText.textContent = `Độ chính xác: ±${this.currentAccuracy}m`;
+                }
+
+                // Gọi callback
+                if (this.onUpdate) this.onUpdate(this.currentSpeed);
+            }
+
+            onError(error) {
+                console.warn('GPS Error:', error);
+                this.hasFix = false;
+                this.statusDot.className = 'dot red';
+
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        this.statusText.textContent = '❌ Quyền GPS bị từ chối';
+                        showToast('⚠️ Vui lòng cấp quyền truy cập vị trí', 3000, 'warning');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        this.statusText.textContent = '📡 Không có tín hiệu GPS';
+                        break;
+                    case error.TIMEOUT:
+                        this.statusText.textContent = '⏰ GPS timeout, đang thử lại...';
+                        break;
+                    default:
+                        this.statusText.textContent = '❌ Lỗi GPS: ' + error.message;
+                }
+
+                // Không reset speed, giữ giá trị cũ
+            }
+
+            // Tính khoảng cách 2 điểm (Haversine formula)
+            calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371000; // bán kính trái đất (mét)
+                const dLat = this.toRad(lat2 - lat1);
+                const dLon = this.toRad(lon2 - lon1);
+                const a =
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+            toRad(deg) {
+                return deg * Math.PI / 180;
+            }
+
+            getSpeed() {
+                return this.currentSpeed;
+            }
+
+            hasFix() {
+                return this.hasFix;
+            }
+        }
+
+        // ============================================================
+        // OVERLAY: VẼ THỜI GIAN & TỐC ĐỘ LÊN VIDEO
+        // ============================================================
+        class VideoOverlay {
+            constructor(canvasId, videoId, gpsTracker) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.video = document.getElementById(videoId);
+                this.gps = gpsTracker;
+                this.isActive = false;
+
+                this.animationId = null;
+            }
+
+            resize() {
+                const rect = this.video.getBoundingClientRect();
+                this.canvas.width = rect.width;
+                this.canvas.height = rect.height;
+            }
+
+            start() {
+                this.isActive = true;
+                this.resize();
+                this.drawLoop();
+            }
+
+            stop() {
+                this.isActive = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            drawLoop() {
+                if (!this.isActive) return;
+                this.draw();
+                this.animationId = requestAnimationFrame(() => this.drawLoop());
+            }
+
+            draw() {
+                const ctx = this.ctx;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+
+                ctx.clearRect(0, 0, w, h);
+
+                // ===== THÔNG TIN =====
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('vi-VN', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                const dateStr = now.toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+
+                const speed = this.gps.getSpeed();
+                const speedText = speed > 0 ? `${speed.toFixed(1)} km/h` : '0 km/h';
+
+                // ===== CHỌN VỊ TRÍ HIỂN THỊ =====
+                const padding = 14;
+                const fontSize = Math.max(18, Math.min(28, w / 35));
+                const smallFont = fontSize * 0.7;
+
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+
+                // Đo chiều rộng
+                ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
+                const timeMetrics = ctx.measureText(`${dateStr} - ${timeStr}`);
+                ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
+                const speedMetrics = ctx.measureText(`🚀 ${speedText}`);
+
+                const textWidth = Math.max(timeMetrics.width, speedMetrics.width) + padding * 2 + 20;
+                const lineHeight = fontSize + 8;
+                const totalHeight = lineHeight * 2 + padding * 2;
+
+                const x = 12;
+                const y = 12;
+
+                // ===== VẼ BACKGROUND =====
+                const radius = 12;
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                ctx.shadowBlur = 20;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + textWidth - radius, y);
+                ctx.quadraticCurveTo(x + textWidth, y, x + textWidth, y + radius);
+                ctx.lineTo(x + textWidth, y + totalHeight - radius);
+                ctx.quadraticCurveTo(x + textWidth, y + totalHeight, x + textWidth - radius, y + totalHeight);
+                ctx.lineTo(x + radius, y + totalHeight);
+                ctx.quadraticCurveTo(x, y + totalHeight, x, y + totalHeight - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // ===== VẼ TEXT =====
+                // Dòng 1: Thời gian
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
+                ctx.fillText(`${dateStr} - ${timeStr}`, x + padding, y + 4);
+
+                // Dòng 2: Tốc độ
+                const speedColor = speed > 50 ? '#f44336' : speed > 30 ? '#ff9800' : '#4caf50';
+                ctx.fillStyle = speedColor;
+                ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
+                ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 4);
+
+                // Thêm icon GPS nếu có tín hiệu
+                if (this.gps.hasFix()) {
+                    ctx.fillStyle = '#4caf50';
+                    ctx.font = `${smallFont}px 'Courier New', monospace`;
+                    ctx.fillText('📡', x + textWidth - 30, y + lineHeight + 4);
+                }
+            }
+        }
+
+        // ============================================================
+        // RING BUFFER RECORDER
         // ============================================================
         class RingVideoRecorder {
             constructor(maxDurationMs = 15 * 60 * 1000, maxRamMB = 200) {
@@ -597,11 +959,9 @@
                 this.onUpdate = null;
                 this.isRamFull = false;
 
-                // Lưu header
                 this.firstChunk = null;
                 this.hasHeader = false;
 
-                // Thống kê
                 this.totalChunksRemoved = 0;
                 this.autoAdjustCount = 0;
             }
@@ -621,14 +981,11 @@
                 this.isRamFull = usagePercent >= 95;
             }
 
-            // ===== HÀM TỰ ĐỘNG ĐIỀU CHỈNH RAM =====
             autoAdjustRam() {
-                if (this.maxRamBytes === 0) return;
-                if (this.buffer.length === 0) return;
+                if (this.maxRamBytes === 0 || this.buffer.length === 0) return;
 
                 const usagePercent = (this.totalSize / this.maxRamBytes) * 100;
 
-                // Cấp độ 1: Nếu dùng > 90%, xóa 5% dữ liệu cũ nhất
                 if (usagePercent > 90) {
                     const removeCount = Math.max(1, Math.floor(this.buffer.length * 0.05));
                     for (let i = 0; i < removeCount && this.buffer.length > 1; i++) {
@@ -640,18 +997,8 @@
                         }
                     }
                     this.autoAdjustCount++;
-                    showToast(`⚡ Tự động giải phóng RAM (đã xóa ${removeCount} đoạn)`, 1500, 'warning');
                 }
 
-                // Cấp độ 2: Nếu dùng > 80%, cảnh báo
-                if (usagePercent > 80 && usagePercent <= 90) {
-                    // Chỉ cảnh báo mỗi 5 giây
-                    if (this.autoAdjustCount % 5 === 0) {
-                        showToast(`⚠️ RAM đang ở mức ${Math.round(usagePercent)}%, nên lưu video sớm`, 2000, 'warning');
-                    }
-                }
-
-                // Cấp độ 3: Nếu dùng > 95%, xóa nhiều hơn
                 if (usagePercent > 95) {
                     const removeCount = Math.max(2, Math.floor(this.buffer.length * 0.15));
                     for (let i = 0; i < removeCount && this.buffer.length > 1; i++) {
@@ -663,30 +1010,22 @@
                         }
                     }
                     this.autoAdjustCount += 2;
-                    showToast(`🔥 Giải phóng RAM khẩn cấp (đã xóa ${removeCount} đoạn)`, 2500, 'danger');
                 }
 
-                // Đảm bảo header luôn ở đầu
                 this.ensureHeader();
-
                 this.checkRamLimit();
                 if (this.onUpdate) this.onUpdate();
             }
 
-            // ===== ĐẢM BẢO HEADER LUÔN Ở ĐẦU =====
             ensureHeader() {
                 if (!this.firstChunk || this.buffer.length === 0) return;
-
-                // Nếu header không ở đầu, thêm vào đầu
                 if (this.buffer[0] !== this.firstChunk) {
-                    // Tìm và xóa header cũ nếu có
                     const index = this.buffer.indexOf(this.firstChunk);
                     if (index > 0) {
                         this.buffer.splice(index, 1);
                         this.totalSize -= this.firstChunk.size;
                         this.totalDuration -= this.segmentDurationMs;
                     }
-                    // Thêm header vào đầu
                     this.buffer.unshift(this.firstChunk);
                     this.totalSize += this.firstChunk.size;
                     this.totalDuration += this.segmentDurationMs;
@@ -721,7 +1060,6 @@
                     await videoEl.play();
                     this.applyMirror();
 
-                    // Reset
                     this.buffer = [];
                     this.totalSize = 0;
                     this.totalDuration = 0;
@@ -740,18 +1078,15 @@
                     this.recorder.ondataavailable = (event) => {
                         if (event.data.size === 0) return;
 
-                        // Lưu header
                         if (!this.hasHeader) {
                             this.firstChunk = event.data;
                             this.hasHeader = true;
                         }
 
-                        // Thêm dữ liệu mới
                         this.buffer.push(event.data);
                         this.totalSize += event.data.size;
                         this.totalDuration += this.segmentDurationMs;
 
-                        // Xóa dữ liệu cũ theo thời gian (15 phút)
                         while (this.totalDuration > this.maxDurationMs && this.buffer.length > 0) {
                             const oldest = this.buffer.shift();
                             if (oldest) {
@@ -760,13 +1095,10 @@
                             }
                         }
 
-                        // ===== TỰ ĐỘNG ĐIỀU CHỈNH RAM =====
-                        // Gọi mỗi 10 chunk để tiết kiệm hiệu năng
                         if (this.buffer.length % 10 === 0) {
                             this.autoAdjustRam();
                         }
 
-                        // Kiểm tra RAM nếu vượt quá giới hạn (xóa ngay)
                         let loopCount = 0;
                         while (this.maxRamBytes > 0 &&
                             this.totalSize > this.maxRamBytes &&
@@ -781,7 +1113,6 @@
                             if (loopCount > 100) break;
                         }
 
-                        // Đảm bảo header
                         this.ensureHeader();
                         this.checkRamLimit();
 
@@ -791,7 +1122,6 @@
                     this.isRecording = true;
                     this.startTime = Date.now();
 
-                    // Timer tự động kiểm tra RAM mỗi 2 giây
                     this.timerInterval = setInterval(() => {
                         if (this.isRecording) {
                             this.autoAdjustRam();
@@ -820,7 +1150,6 @@
                 }
             }
 
-            // ===== LƯU VIDEO =====
             save() {
                 if (this.buffer.length === 0) {
                     showToast('⚠️ Chưa có dữ liệu video!', 2000);
@@ -829,8 +1158,6 @@
 
                 try {
                     let chunks = [...this.buffer];
-
-                    // Đảm bảo header ở đầu
                     if (this.firstChunk && !chunks.includes(this.firstChunk)) {
                         chunks.unshift(this.firstChunk);
                     }
@@ -843,13 +1170,6 @@
                         showToast('❌ File rỗng!', 2000, 'danger');
                         return null;
                     }
-
-                    // Tính toán thông tin
-                    const durationSec = this.totalDuration / 1000;
-                    const sizeMB = blob.size / (1024 * 1024);
-
-                    console.log(`📊 Thống kê: ${chunks.length} đoạn, ${durationSec}s, ${sizeMB.toFixed(1)} MB`);
-                    console.log(`🔄 Đã tự động xóa ${this.totalChunksRemoved} đoạn để giải phóng RAM`);
 
                     return blob;
                 } catch (err) {
@@ -958,7 +1278,14 @@
         // UI CONTROLLER
         // ============================================================
 
+        // Khởi tạo GPS
+        const gps = new GPSTracker();
+
+        // Khởi tạo Recorder
         const recorder = new RingVideoRecorder(15 * 60 * 1000, 200);
+
+        // Khởi tạo Overlay
+        const overlay = new VideoOverlay('overlayCanvas', 'videoPreview', gps);
 
         const videoPreview = document.getElementById('videoPreview');
         const statusDot = document.getElementById('statusDot');
@@ -997,7 +1324,6 @@
             const usagePercent = recorder.getRamUsagePercent();
             ramBar.style.width = Math.min(usagePercent, 100) + '%';
 
-            // Màu sắc thanh RAM
             ramBar.className = 'fill';
             if (usagePercent >= 95) {
                 ramBar.classList.add('red');
@@ -1007,7 +1333,6 @@
                 ramBar.classList.add('green');
             }
 
-            // Trạng thái RAM
             if (recorder.maxRamBytes === 0) {
                 ramStatus.textContent = '♾️ Không giới hạn';
                 ramStatus.style.color = '#64b5f6';
@@ -1022,14 +1347,12 @@
                 ramStatus.style.color = '#4caf50';
             }
 
-            // Camera
             const camLabel = recorder.currentFacingMode === 'user' ? 'Trước 🤳' : 'Sau 📷';
             cameraStatus.textContent = camLabel;
 
             camFront.classList.toggle('active', recorder.currentFacingMode === 'user');
             camBack.classList.toggle('active', recorder.currentFacingMode === 'environment');
 
-            // Recording status
             if (recorder.isRecording) {
                 statusDot.className = 'status-dot recording';
                 statusText.textContent = '🔴 Đang quay';
@@ -1038,7 +1361,6 @@
                 const sec = String(elapsed % 60).padStart(2, '0');
                 statusTime.textContent = `${min}:${sec}`;
 
-                // Hiển thị số lần tự động điều chỉnh
                 if (recorder.getAutoAdjustCount() > 0) {
                     document.querySelector('.subtitle').textContent =
                         `🔄 Đã tự động điều chỉnh ${recorder.getAutoAdjustCount()} lần, xóa ${recorder.getTotalChunksRemoved()} đoạn`;
@@ -1050,11 +1372,10 @@
                     statusTime.textContent = recorder.formatTime(recorder.totalDuration);
                 } else {
                     statusTime.textContent = '00:00';
-                    document.querySelector('.subtitle').textContent = 'Tự động điều chỉnh theo RAM - Video luôn xem được';
+                    document.querySelector('.subtitle').textContent = 'Hiển thị thời gian & tốc độ GPS trên video';
                 }
             }
 
-            // Buttons
             btnStart.disabled = recorder.isRecording;
             btnStop.disabled = !recorder.isRecording;
             btnSave.disabled = (count === 0);
@@ -1084,16 +1405,23 @@
         });
 
         btnStart.addEventListener('click', async () => {
+            // Bắt đầu GPS
+            gps.start();
+
+            // Bắt đầu quay
             const ok = await recorder.start(recorder.currentFacingMode);
             if (ok) {
                 downloadLink.style.display = 'none';
-                showToast('🎥 Đã bắt đầu quay!', 1500);
+                overlay.start();
+                showToast('🎥 Đã bắt đầu quay + GPS!', 1500);
                 updateUI();
             }
         });
 
         btnStop.addEventListener('click', () => {
             recorder.stop();
+            gps.stop();
+            overlay.stop();
             showToast('⏹ Đã dừng quay', 1500);
             updateUI();
         });
@@ -1149,12 +1477,15 @@
 
         window.addEventListener('beforeunload', () => {
             recorder.stop();
+            gps.stop();
+            overlay.stop();
         });
 
-        console.log('🎥 Ring Buffer Recorder đã sẵn sàng!');
+        console.log('🎥 Ring Buffer Recorder với GPS Speed!');
         console.log(`📐 RAM tối đa: ${recorder.getMaxRamMB()} MB`);
         console.log(`📷 Camera hiện tại: ${recorder.currentFacingMode}`);
         console.log(`🎬 Codec: ${recorder.mimeType}`);
+        console.log('📍 GPS sẽ tự động tính tốc độ khi di chuyển');
     </script>
 </body>
 </html>
