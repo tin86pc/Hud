@@ -26,13 +26,12 @@
             backdrop-filter: blur(15px);
             border-radius: 24px;
             padding: 20px 24px 28px;
-            max-width: 820px;
+            max-width: 850px;
             width: 100%;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -66,34 +65,36 @@
             border-radius: 16px;
             overflow: hidden;
             border: 2px solid rgba(255, 255, 255, 0.08);
-            aspect-ratio: 16/9;
         }
 
+        /* Video ẩn, chỉ dùng để lấy dữ liệu */
         #videoPreview {
             width: 100%;
-            height: 100%;
+            height: auto;
             display: none;
         }
 
+        /* Canvas hiển thị full */
         #renderCanvas {
             width: 100%;
-            height: 100%;
+            height: auto;
             display: block;
-            object-fit: cover;
             background: #000;
+            aspect-ratio: 16 / 9;
+            object-fit: contain;
         }
 
-        /* ===== GPS STATUS - ĐÈ LÊN VIDEO ===== */
+        /* ===== GPS OVERLAY TRÊN VIDEO ===== */
         .gps-overlay {
             position: absolute;
-            bottom: 12px;
-            right: 14px;
+            bottom: 14px;
+            right: 16px;
             display: flex;
             align-items: center;
             gap: 10px;
             padding: 6px 14px 6px 10px;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
             border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             font-size: 12px;
@@ -134,7 +135,7 @@
             margin-left: 2px;
         }
 
-        /* ===== CONTROLS - NÚT BẤM NGAY DƯỚI VIDEO ===== */
+        /* ===== CONTROLS ===== */
         .controls-row {
             display: flex;
             gap: 10px;
@@ -386,7 +387,7 @@
             white-space: nowrap;
         }
 
-        /* ===== DOWNLOAD LINK ===== */
+        /* ===== DOWNLOAD ===== */
         .download-link {
             margin-top: 12px;
             display: none;
@@ -407,7 +408,7 @@
             border-color: #64b5f6;
         }
 
-        /* ===== RAM SETTINGS (thu gọn) ===== */
+        /* ===== RAM SETTINGS ===== */
         .ram-settings {
             display: flex;
             align-items: center;
@@ -558,7 +559,6 @@
 
     <div class="container">
 
-        <!-- ===== HEADER ===== -->
         <div class="header">
             <h1>🎥 Video Recorder</h1>
             <span class="badge">Overlay Time + Speed</span>
@@ -569,7 +569,7 @@
             <video id="videoPreview" autoplay muted playsinline></video>
             <canvas id="renderCanvas"></canvas>
 
-            <!-- GPS Overlay trên video -->
+            <!-- GPS Overlay -->
             <div class="gps-overlay" id="gpsOverlay">
                 <span class="dot red" id="gpsDot"></span>
                 <span id="gpsStatus">GPS</span>
@@ -580,7 +580,7 @@
             </div>
         </div>
 
-        <!-- ===== CONTROLS - NÚT BẤM NGAY DƯỚI VIDEO ===== -->
+        <!-- ===== CONTROLS ===== -->
         <div class="controls-row">
             <button class="btn btn-start" id="btnStart">▶ Bắt đầu</button>
             <button class="btn btn-stop" id="btnStop" disabled>⏹ Dừng</button>
@@ -590,7 +590,7 @@
             <button class="btn btn-cam" id="camBack" data-facing="environment">📷 Sau</button>
         </div>
 
-        <!-- ===== STATUS BAR ===== -->
+        <!-- ===== STATUS ===== -->
         <div class="status-bar">
             <div class="left">
                 <span class="dot" id="statusDot"></span>
@@ -605,7 +605,7 @@
             </div>
         </div>
 
-        <!-- ===== RAM BAR ===== -->
+        <!-- ===== RAM ===== -->
         <div class="ram-bar-wrap">
             <span class="label">💾 RAM</span>
             <div class="bar-track">
@@ -617,7 +617,6 @@
             </span>
         </div>
 
-        <!-- ===== RAM SETTINGS ===== -->
         <div class="ram-settings">
             <label>
                 Giới hạn:
@@ -633,13 +632,11 @@
             </label>
         </div>
 
-        <!-- ===== DOWNLOAD ===== -->
         <div class="download-link" id="downloadLink">
             <a href="#" id="downloadAnchor" download="video.webm">📥 Tải video xuống</a>
         </div>
     </div>
 
-    <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
     <script>
@@ -835,9 +832,8 @@
                 this.gps = new GPSTracker();
                 this.gps.onUpdate = () => {};
 
-                this.frameCount = 0;
-                this.fps = 0;
-                this.lastFpsUpdate = Date.now();
+                this.videoWidth = 1280;
+                this.videoHeight = 720;
             }
 
             setMaxRam(mb) {
@@ -914,6 +910,7 @@
                 return await navigator.mediaDevices.getUserMedia(constraints);
             }
 
+            // ===== RENDER LOOP =====
             startRenderLoop() {
                 const render = () => {
                     if (!this.isRecording) return;
@@ -921,6 +918,7 @@
                     const w = this.canvas.width;
                     const h = this.canvas.height;
 
+                    // Vẽ video full canvas
                     this.ctx.drawImage(this.video, 0, 0, w, h);
 
                     // === OVERLAY ===
@@ -994,14 +992,6 @@
                     this.ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
                     this.ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 3);
 
-                    this.frameCount++;
-                    const nowTime = Date.now();
-                    if (nowTime - this.lastFpsUpdate >= 1000) {
-                        this.fps = this.frameCount;
-                        this.frameCount = 0;
-                        this.lastFpsUpdate = nowTime;
-                    }
-
                     this.renderLoopId = requestAnimationFrame(render);
                 };
 
@@ -1015,6 +1005,7 @@
                 }
             }
 
+            // ===== START =====
             async start(facingMode = null) {
                 try {
                     if (this.stream) {
@@ -1029,15 +1020,18 @@
                     this.video.srcObject = this.stream;
                     await this.video.play();
 
+                    // Lấy kích thước thực tế từ video
                     const videoTrack = this.stream.getVideoTracks()[0];
                     const settings = videoTrack.getSettings();
-                    const width = settings.width || 1280;
-                    const height = settings.height || 720;
+                    this.videoWidth = settings.width || 1280;
+                    this.videoHeight = settings.height || 720;
 
-                    this.canvas.width = width;
-                    this.canvas.height = height;
+                    // === QUAN TRỌNG: Set canvas đúng kích thước ===
+                    this.canvas.width = this.videoWidth;
+                    this.canvas.height = this.videoHeight;
                     this.canvas.style.width = '100%';
-                    this.canvas.style.height = '100%';
+                    this.canvas.style.height = 'auto';
+                    this.canvas.style.aspectRatio = `${this.videoWidth} / ${this.videoHeight}`;
 
                     this.applyMirror();
 
@@ -1048,8 +1042,10 @@
                     this.hasHeader = false;
                     this.isRamFull = false;
 
+                    // Tạo stream từ canvas
                     this.canvasStream = this.canvas.captureStream(30);
 
+                    // Thêm audio
                     const audioTracks = this.stream.getAudioTracks();
                     if (audioTracks.length > 0) {
                         this.canvasStream.addTrack(audioTracks[0]);
@@ -1343,9 +1339,7 @@
 
         recorder.onUpdate = updateUI;
 
-        gps.onUpdate = (speed) => {
-            // GPS đã tự cập nhật UI
-        };
+        gps.onUpdate = (speed) => {};
 
         // ===== SỰ KIỆN =====
 
@@ -1427,7 +1421,7 @@
         });
 
         console.log('🎥 Video Recorder với Overlay Time + Speed!');
-        console.log('✅ Overlay được ghi trực tiếp vào video');
+        console.log('✅ Canvas được set đúng kích thước video');
     </script>
 </body>
 </html>
