@@ -18,14 +18,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 12px;
+            padding: 10px;
         }
 
         .container {
             background: #0d0d0d;
             border-radius: 20px;
             padding: 14px 16px 18px;
-            max-width: 480px;
+            max-width: 400px;
             width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.04);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
@@ -56,7 +56,7 @@
             border: 1px solid rgba(255, 255, 255, 0.03);
         }
 
-        /* ===== VIDEO ===== */
+        /* ===== VIDEO - DỌC ===== */
         .video-wrapper {
             position: relative;
             width: 100%;
@@ -64,24 +64,25 @@
             border-radius: 14px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.03);
-            aspect-ratio: 16 / 9;
         }
 
         #videoPreview {
             width: 100%;
-            height: 100%;
+            height: auto;
             display: none;
         }
 
         #renderCanvas {
             width: 100%;
-            height: 100%;
+            height: auto;
             display: block;
             background: #000;
+            aspect-ratio: 9 / 16;
+            /* <--- CHỐT: Tỉ lệ dọc 9:16 */
             object-fit: cover;
         }
 
-        /* ===== GPS STATUS NHỎ GỌN ===== */
+        /* ===== GPS STATUS NHỎ ===== */
         .gps-status-mini {
             position: absolute;
             bottom: 12px;
@@ -138,7 +139,7 @@
             align-items: center;
             gap: 5px;
             flex: 1 1 auto;
-            min-width: 56px;
+            min-width: 52px;
             justify-content: center;
         }
 
@@ -216,7 +217,7 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.04);
             flex: 1 1 auto;
-            min-width: 64px;
+            min-width: 60px;
         }
 
         .btn-cam-group .btn-cam {
@@ -469,6 +470,7 @@
             .container {
                 padding: 10px 12px 14px;
                 border-radius: 16px;
+                max-width: 100%;
             }
 
             .header h1 {
@@ -478,7 +480,7 @@
             .controls-row .btn {
                 padding: 9px 10px;
                 font-size: 11px;
-                min-width: 48px;
+                min-width: 44px;
             }
 
             .btn-cam-group .btn-cam {
@@ -504,7 +506,7 @@
             .controls-row .btn {
                 padding: 7px 6px;
                 font-size: 10px;
-                min-width: 40px;
+                min-width: 36px;
             }
 
             .btn-cam-group .btn-cam {
@@ -527,7 +529,6 @@
             <video id="videoPreview" autoplay muted playsinline></video>
             <canvas id="renderCanvas"></canvas>
 
-            <!-- GPS Status mini - chỉ hiển thị chấm trạng thái -->
             <div class="gps-status-mini" id="gpsStatusMini">
                 <span class="dot red" id="gpsDot"></span>
                 <span id="gpsText" style="font-size:8px;">GPS</span>
@@ -780,8 +781,8 @@
                 this.gps = new GPSTracker();
                 this.gps.onUpdate = () => {};
 
-                this.videoWidth = 1280;
-                this.videoHeight = 720;
+                this.videoWidth = 720;
+                this.videoHeight = 1280;
 
                 this.canvasReady = false;
             }
@@ -852,8 +853,8 @@
                 const constraints = {
                     video: {
                         facingMode: facingMode,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
+                        width: { ideal: 720 },
+                        height: { ideal: 1280 },
                     },
                     audio: true,
                 };
@@ -864,15 +865,16 @@
                 const videoTrack = this.stream.getVideoTracks()[0];
                 if (videoTrack) {
                     const settings = videoTrack.getSettings();
-                    this.videoWidth = settings.width || 1280;
-                    this.videoHeight = settings.height || 720;
+                    this.videoWidth = settings.width || 720;
+                    this.videoHeight = settings.height || 1280;
                 }
 
+                // Set canvas theo tỉ lệ dọc
                 this.canvas.width = this.videoWidth;
                 this.canvas.height = this.videoHeight;
                 this.canvas.style.width = '100%';
-                this.canvas.style.height = '100%';
-                this.canvas.style.objectFit = 'cover';
+                this.canvas.style.height = 'auto';
+                this.canvas.style.aspectRatio = `${this.videoWidth} / ${this.videoHeight}`;
 
                 this.canvasReady = true;
             }
@@ -884,7 +886,7 @@
                     const w = this.canvas.width;
                     const h = this.canvas.height;
 
-                    // Vẽ video
+                    // Vẽ video full canvas (dọc)
                     this.ctx.drawImage(this.video, 0, 0, w, h);
 
                     // === OVERLAY ===
@@ -904,13 +906,11 @@
                     const speed = this.gps.getSpeed();
                     const speedText = speed > 0 ? `${speed.toFixed(1)} km/h` : '0 km/h';
 
-                    // === KÍCH THƯỚC FONT ===
+                    // === KÍCH THƯỚC FONT CHO DỌC ===
                     const padding = 14;
-                    // Font thời gian
-                    const timeFontSize = Math.max(18, Math.min(28, w / 32));
-                    // Font tốc độ TO HƠN thời gian
-                    const speedFontSize = timeFontSize * 1.3;
-                    const lineHeight = timeFontSize + 8;
+                    const timeFontSize = Math.max(20, Math.min(30, w / 22));
+                    const speedFontSize = timeFontSize * 1.5; // Tốc độ TO hơn nhiều
+                    const lineHeight = timeFontSize + 10;
 
                     this.ctx.textAlign = 'left';
                     this.ctx.textBaseline = 'top';
@@ -922,7 +922,7 @@
                     const speedMetrics = this.ctx.measureText(`🚀 ${speedText}`);
 
                     const textWidth = Math.max(timeMetrics.width, speedMetrics.width) + padding * 2 + 20;
-                    const totalHeight = lineHeight + speedFontSize + padding * 2 + 8;
+                    const totalHeight = lineHeight + speedFontSize + padding * 2 + 10;
 
                     const x = 14;
                     const y = 14;
@@ -966,11 +966,9 @@
                     this.ctx.font = `bold ${speedFontSize}px 'Courier New', monospace`;
                     this.ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 4);
 
-                    // Thêm bóng đổ cho tốc độ để nổi bật
-                    this.ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    // Shadow cho tốc độ
+                    this.ctx.shadowColor = 'rgba(0,0,0,0.3)';
                     this.ctx.shadowBlur = 10;
-                    this.ctx.shadowOffsetX = 0;
-                    this.ctx.shadowOffsetY = 0;
 
                     this.renderLoopId = requestAnimationFrame(render);
                 };
@@ -1125,7 +1123,6 @@
                         return null;
                     }
 
-                    // Tự động tải xuống
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     const now = new Date();
@@ -1366,9 +1363,8 @@
             recorder.stop();
         });
 
-        console.log('📹 Camera Hành Trình đã sẵn sàng!');
-        console.log('✅ Bỏ GPS label, tốc độ to hơn thời gian');
-        console.log('✅ Giao diện dọc');
+        console.log('📹 Camera Hành Trình - DỌC THỰC SỰ!');
+        console.log('✅ Tỉ lệ 9:16, tốc độ TO hơn 1.5 lần');
     </script>
 </body>
 </html>
