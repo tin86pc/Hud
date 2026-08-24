@@ -18,92 +18,274 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 16px;
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(15px);
-            border-radius: 30px;
-            padding: 40px 50px;
-            max-width: 850px;
+            border-radius: 24px;
+            padding: 20px 24px 28px;
+            max-width: 820px;
             width: 100%;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        h1 {
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .header h1 {
             color: #fff;
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 700;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
-        .subtitle {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-            margin-bottom: 20px;
+        .header .badge {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 4px 14px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
+        /* ===== VIDEO WRAPPER ===== */
         .video-wrapper {
             position: relative;
             width: 100%;
-            max-height: 400px;
             background: #000;
             border-radius: 16px;
-            margin-bottom: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.15);
             overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            aspect-ratio: 16/9;
         }
 
         #videoPreview {
             width: 100%;
-            max-height: 400px;
+            height: 100%;
             display: none;
         }
 
         #renderCanvas {
             width: 100%;
-            max-height: 400px;
+            height: 100%;
             display: block;
             object-fit: cover;
-            border-radius: 16px;
             background: #000;
         }
 
-        .gps-status {
-            display: inline-flex;
+        /* ===== GPS STATUS - ĐÈ LÊN VIDEO ===== */
+        .gps-overlay {
+            position: absolute;
+            bottom: 12px;
+            right: 14px;
+            display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
+            gap: 10px;
+            padding: 6px 14px 6px 10px;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
             border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            pointer-events: none;
+            z-index: 5;
         }
 
-        .gps-status .dot {
+        .gps-overlay .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .gps-overlay .dot.green {
+            background: #4caf50;
+        }
+        .gps-overlay .dot.yellow {
+            background: #ff9800;
+        }
+        .gps-overlay .dot.red {
+            background: #f44336;
+        }
+
+        .gps-overlay .speed-big {
+            font-weight: 700;
+            font-size: 16px;
+            color: #fff;
+            margin-left: 2px;
+        }
+
+        .gps-overlay .speed-big .unit {
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 2px;
+        }
+
+        /* ===== CONTROLS - NÚT BẤM NGAY DƯỚI VIDEO ===== */
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .controls-row .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1 1 auto;
+            min-width: 80px;
+            justify-content: center;
+        }
+
+        .controls-row .btn:active {
+            transform: scale(0.95);
+        }
+
+        .controls-row .btn-start {
+            background: #4caf50;
+            color: #fff;
+        }
+
+        .controls-row .btn-start:hover:not(:disabled) {
+            background: #43a047;
+            transform: translateY(-1px);
+        }
+
+        .controls-row .btn-start:disabled {
+            background: #2e7d32;
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .controls-row .btn-stop {
+            background: #f44336;
+            color: #fff;
+        }
+
+        .controls-row .btn-stop:hover:not(:disabled) {
+            background: #d32f2f;
+            transform: translateY(-1px);
+        }
+
+        .controls-row .btn-stop:disabled {
+            background: #7f1f1a;
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .controls-row .btn-save {
+            background: #ff6b35;
+            color: #fff;
+        }
+
+        .controls-row .btn-save:hover:not(:disabled) {
+            background: #e55a2b;
+            transform: translateY(-1px);
+        }
+
+        .controls-row .btn-save:disabled {
+            background: #a04020;
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .controls-row .btn-flip {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .controls-row .btn-flip:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .controls-row .btn-flip:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .controls-row .btn-cam {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            padding: 12px 16px;
+        }
+
+        .controls-row .btn-cam:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .controls-row .btn-cam.active {
+            background: rgba(100, 181, 246, 0.2);
+            border-color: rgba(100, 181, 246, 0.3);
+        }
+
+        .controls-row .btn-cam:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== STATUS BAR ===== */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .status-bar .left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+        }
+
+        .status-bar .left .dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            display: inline-block;
+            background: #555;
+            transition: background 0.3s;
         }
 
-        .gps-status .dot.green {
-            background: #4caf50;
-            animation: pulse 1.5s infinite;
-        }
-
-        .gps-status .dot.yellow {
-            background: #ff9800;
-            animation: pulse 1.5s infinite;
-        }
-
-        .gps-status .dot.red {
-            background: #f44336;
+        .status-bar .left .dot.recording {
+            background: #ff3b30;
+            animation: pulse 1.2s infinite;
         }
 
         @keyframes pulse {
@@ -118,132 +300,72 @@
             }
         }
 
-        .camera-controls {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .camera-btn {
-            padding: 10px 24px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50px;
-            background: rgba(255, 255, 255, 0.05);
+        .status-bar .left .time {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
             color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: 16px;
+            min-width: 50px;
+        }
+
+        .status-bar .right {
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-
-        .camera-btn:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .camera-btn.active {
-            background: rgba(100, 181, 246, 0.3);
-            border-color: #64b5f6;
-            box-shadow: 0 0 20px rgba(100, 181, 246, 0.2);
-        }
-
-        .camera-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .camera-btn .icon {
-            font-size: 20px;
-        }
-
-        .ram-settings {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 16px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
+            gap: 16px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
             flex-wrap: wrap;
         }
 
-        .ram-settings label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
+        .status-bar .right span {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .status-bar .right .value {
+            color: #fff;
             font-weight: 600;
+        }
+
+        /* ===== RAM BAR ===== */
+        .ram-bar-wrap {
             display: flex;
             align-items: center;
             gap: 10px;
+            margin-top: 10px;
         }
 
-        .ram-settings select {
-            padding: 8px 16px;
-            border-radius: 30px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            font-size: 14px;
+        .ram-bar-wrap .label {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
             font-weight: 600;
-            cursor: pointer;
-            outline: none;
-            transition: border-color 0.3s;
-            min-width: 120px;
+            white-space: nowrap;
         }
 
-        .ram-settings select:hover {
-            border-color: rgba(255, 255, 255, 0.4);
-        }
-
-        .ram-settings select:focus {
-            border-color: #64b5f6;
-        }
-
-        .ram-settings select option {
-            background: #302b63;
-            color: #fff;
-        }
-
-        .ram-info {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .ram-info .bar {
-            width: 120px;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
+        .ram-bar-wrap .bar-track {
+            flex: 1;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.06);
             border-radius: 10px;
             overflow: hidden;
-            position: relative;
+            min-width: 60px;
         }
 
-        .ram-info .bar .fill {
+        .ram-bar-wrap .bar-track .fill {
             height: 100%;
             border-radius: 10px;
-            transition: width 0.3s ease, background 0.3s ease;
+            transition: width 0.4s ease, background 0.4s ease;
             width: 0%;
         }
 
-        .ram-info .bar .fill.green {
+        .ram-bar-wrap .bar-track .fill.green {
             background: linear-gradient(90deg, #4caf50, #8bc34a);
         }
 
-        .ram-info .bar .fill.yellow {
+        .ram-bar-wrap .bar-track .fill.yellow {
             background: linear-gradient(90deg, #ffeb3b, #ff9800);
         }
 
-        .ram-info .bar .fill.red {
+        .ram-bar-wrap .bar-track .fill.red {
             background: linear-gradient(90deg, #ff5722, #f44336);
             animation: blink 0.8s infinite;
         }
@@ -258,178 +380,25 @@
             }
         }
 
-        .status {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            color: #fff;
-            font-size: 15px;
-            flex-wrap: wrap;
+        .ram-bar-wrap .info-text {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            white-space: nowrap;
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #555;
-            transition: background 0.3s;
-        }
-
-        .status-dot.recording {
-            background: #ff3b30;
-            animation: pulse 1.2s infinite;
-        }
-
-        .status-time {
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            font-weight: 600;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 4px 14px;
-            border-radius: 30px;
-        }
-
-        .info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            padding: 12px 20px;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 13px;
-        }
-
-        .info-item {
-            text-align: center;
-        }
-
-        .info-item span {
-            font-weight: 600;
-            color: #fff;
-            display: block;
-            margin-top: 4px;
-            font-size: 15px;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 14px 34px;
-            border: none;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1 1 auto;
-            min-width: 130px;
-            justify-content: center;
-        }
-
-        .btn:active {
-            transform: scale(0.95);
-        }
-
-        .btn-start {
-            background: #4caf50;
-            color: #fff;
-            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
-        }
-
-        .btn-start:hover:not(:disabled) {
-            background: #43a047;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(76, 175, 80, 0.4);
-        }
-
-        .btn-start:disabled {
-            background: #2e7d32;
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn-save {
-            background: #ff6b35;
-            color: #fff;
-            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
-        }
-
-        .btn-save:hover:not(:disabled) {
-            background: #e55a2b;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(255, 107, 53, 0.4);
-        }
-
-        .btn-save:disabled {
-            background: #a04020;
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn-stop {
-            background: #f44336;
-            color: #fff;
-            box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
-        }
-
-        .btn-stop:hover:not(:disabled) {
-            background: #d32f2f;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(244, 67, 54, 0.4);
-        }
-
-        .btn-stop:disabled {
-            background: #7f1f1a;
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn-flip {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-flip:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .btn-flip:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            transform: none;
-        }
-
+        /* ===== DOWNLOAD LINK ===== */
         .download-link {
-            margin-top: 20px;
+            margin-top: 12px;
             display: none;
+            text-align: center;
         }
 
         .download-link a {
             color: #64b5f6;
             text-decoration: none;
             font-weight: 600;
-            font-size: 15px;
-            border-bottom: 2px solid rgba(100, 181, 246, 0.3);
+            font-size: 14px;
+            border-bottom: 2px solid rgba(100, 181, 246, 0.2);
             padding-bottom: 4px;
             transition: border-color 0.3s;
         }
@@ -438,6 +407,52 @@
             border-color: #64b5f6;
         }
 
+        /* ===== RAM SETTINGS (thu gọn) ===== */
+        .ram-settings {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .ram-settings label {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ram-settings select {
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .ram-settings select:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .ram-settings select:focus {
+            border-color: rgba(100, 181, 246, 0.3);
+        }
+
+        .ram-settings select option {
+            background: #302b63;
+            color: #fff;
+        }
+
+        /* ===== TOAST ===== */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -445,14 +460,14 @@
             transform: translateX(-50%) translateY(100px);
             background: rgba(0, 0, 0, 0.85);
             color: #fff;
-            padding: 14px 28px;
-            border-radius: 50px;
-            font-size: 14px;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 13px;
             font-weight: 500;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             opacity: 0;
-            transition: all 0.5s ease;
+            transition: all 0.4s ease;
             pointer-events: none;
             z-index: 999;
             max-width: 90%;
@@ -464,53 +479,77 @@
         }
 
         .toast.warning {
-            background: rgba(255, 87, 34, 0.9);
+            background: rgba(255, 87, 34, 0.85);
         }
 
         .toast.danger {
-            background: rgba(244, 67, 54, 0.95);
+            background: rgba(244, 67, 54, 0.9);
         }
 
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
             .container {
-                padding: 20px 16px;
+                padding: 12px 14px 18px;
             }
 
-            .btn {
-                min-width: 100%;
-                padding: 12px 20px;
+            .header h1 {
+                font-size: 18px;
             }
 
-            .info {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 6px;
+            .controls-row .btn {
+                padding: 10px 12px;
+                font-size: 12px;
+                min-width: 60px;
             }
 
-            h1 {
-                font-size: 22px;
+            .controls-row .btn-cam {
+                padding: 10px 10px;
+                font-size: 11px;
             }
 
-            .camera-controls {
-                gap: 8px;
+            .gps-overlay {
+                bottom: 8px;
+                right: 10px;
+                padding: 4px 10px 4px 8px;
+                font-size: 10px;
             }
 
-            .camera-btn {
-                padding: 8px 16px;
+            .gps-overlay .speed-big {
                 font-size: 13px;
             }
 
+            .status-bar {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .status-bar .left .time {
+                font-size: 14px;
+            }
+
+            .ram-bar-wrap .info-text {
+                font-size: 10px;
+            }
+
             .ram-settings {
-                flex-direction: column;
-                gap: 12px;
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .controls-row {
+                gap: 6px;
             }
 
-            .ram-settings label {
-                width: 100%;
-                justify-content: center;
+            .controls-row .btn {
+                padding: 8px 8px;
+                font-size: 11px;
+                min-width: 50px;
             }
 
-            .ram-info .bar {
-                width: 80px;
+            .controls-row .btn-cam {
+                padding: 8px 6px;
+                font-size: 10px;
             }
         }
     </style>
@@ -518,36 +557,70 @@
 <body>
 
     <div class="container">
-        <h1>🎥 Video Recorder</h1>
-        <p class="subtitle">Overlay thời gian & tốc độ được ghi trực tiếp vào video</p>
 
+        <!-- ===== HEADER ===== -->
+        <div class="header">
+            <h1>🎥 Video Recorder</h1>
+            <span class="badge">Overlay Time + Speed</span>
+        </div>
+
+        <!-- ===== VIDEO ===== -->
         <div class="video-wrapper">
             <video id="videoPreview" autoplay muted playsinline></video>
             <canvas id="renderCanvas"></canvas>
+
+            <!-- GPS Overlay trên video -->
+            <div class="gps-overlay" id="gpsOverlay">
+                <span class="dot red" id="gpsDot"></span>
+                <span id="gpsStatus">GPS</span>
+                <span style="color:rgba(255,255,255,0.2);">|</span>
+                <span class="speed-big">
+                    <span id="speedDisplay">0</span><span class="unit">km/h</span>
+                </span>
+            </div>
         </div>
 
-        <div class="gps-status">
-            <span class="dot red" id="gpsDot"></span>
-            <span id="gpsStatus">Đang tìm GPS...</span>
-            <span style="margin-left:10px;color:rgba(255,255,255,0.5);">|</span>
-            <span id="gpsAccuracy" style="color:rgba(255,255,255,0.6);font-size:12px;">Độ chính xác: --</span>
+        <!-- ===== CONTROLS - NÚT BẤM NGAY DƯỚI VIDEO ===== -->
+        <div class="controls-row">
+            <button class="btn btn-start" id="btnStart">▶ Bắt đầu</button>
+            <button class="btn btn-stop" id="btnStop" disabled>⏹ Dừng</button>
+            <button class="btn btn-save" id="btnSave" disabled>💾 Lưu</button>
+            <button class="btn btn-flip" id="btnFlipMirror">🔄 Lật</button>
+            <button class="btn btn-cam active" id="camFront" data-facing="user">🤳 Trước</button>
+            <button class="btn btn-cam" id="camBack" data-facing="environment">📷 Sau</button>
         </div>
 
-        <div class="camera-controls">
-            <button class="camera-btn active" id="camFront" data-facing="user">
-                <span class="icon">🤳</span> Camera trước
-            </button>
-            <button class="camera-btn" id="camBack" data-facing="environment">
-                <span class="icon">📷</span> Camera sau
-            </button>
-            <button class="camera-btn" id="btnFlipMirror">
-                <span class="icon">🔄</span> Lật gương
-            </button>
+        <!-- ===== STATUS BAR ===== -->
+        <div class="status-bar">
+            <div class="left">
+                <span class="dot" id="statusDot"></span>
+                <span id="statusText">Chưa bắt đầu</span>
+                <span class="time" id="statusTime">00:00</span>
+            </div>
+            <div class="right">
+                <span>📦 <span class="value" id="segmentCount">0</span></span>
+                <span>⏱️ <span class="value" id="totalDuration">0s</span></span>
+                <span>📊 <span class="value" id="totalSize">0 KB</span></span>
+                <span>📷 <span class="value" id="cameraStatus">Trước</span></span>
+            </div>
         </div>
 
+        <!-- ===== RAM BAR ===== -->
+        <div class="ram-bar-wrap">
+            <span class="label">💾 RAM</span>
+            <div class="bar-track">
+                <div class="fill green" id="ramBar" style="width:0%"></div>
+            </div>
+            <span class="info-text">
+                <span id="usedRamText">0</span> / <span id="maxRamText">200</span> MB
+                <span id="ramStatus" style="margin-left:6px;color:#4caf50;">✅</span>
+            </span>
+        </div>
+
+        <!-- ===== RAM SETTINGS ===== -->
         <div class="ram-settings">
             <label>
-                💾 Giới hạn RAM:
+                Giới hạn:
                 <select id="ramSelect">
                     <option value="50">50 MB</option>
                     <option value="100">100 MB</option>
@@ -558,59 +631,15 @@
                     <option value="0">Không giới hạn</option>
                 </select>
             </label>
-            <div class="ram-info">
-                <span id="usedRamText">0 MB</span>
-                <div class="bar">
-                    <div class="fill green" id="ramBar" style="width:0%"></div>
-                </div>
-                <span id="maxRamText">200 MB</span>
-            </div>
         </div>
 
-        <div class="status">
-            <span class="status-dot" id="statusDot"></span>
-            <span id="statusText">Chưa bắt đầu</span>
-            <span class="status-time" id="statusTime">00:00</span>
-        </div>
-
-        <div class="info">
-            <div class="info-item">
-                📦 Số đoạn
-                <span id="segmentCount">0</span>
-            </div>
-            <div class="info-item">
-                ⏱️ Thời lượng
-                <span id="totalDuration">0s</span>
-            </div>
-            <div class="info-item">
-                📊 Dung lượng
-                <span id="totalSize">0 KB</span>
-            </div>
-            <div class="info-item">
-                📷 Camera
-                <span id="cameraStatus">Trước</span>
-            </div>
-            <div class="info-item">
-                🚀 Tốc độ
-                <span id="speedDisplay">0 km/h</span>
-            </div>
-            <div class="info-item">
-                📈 Mức RAM
-                <span id="ramStatus">✅ Bình thường</span>
-            </div>
-        </div>
-
-        <div class="btn-group">
-            <button class="btn btn-start" id="btnStart">▶ Bắt đầu</button>
-            <button class="btn btn-stop" id="btnStop" disabled>⏹ Dừng</button>
-            <button class="btn btn-save" id="btnSave" disabled>💾 Lưu video</button>
-        </div>
-
+        <!-- ===== DOWNLOAD ===== -->
         <div class="download-link" id="downloadLink">
             <a href="#" id="downloadAnchor" download="video.webm">📥 Tải video xuống</a>
         </div>
     </div>
 
+    <!-- ===== TOAST ===== -->
     <div class="toast" id="toast"></div>
 
     <script>
@@ -636,7 +665,6 @@
             constructor() {
                 this.watchId = null;
                 this.currentSpeed = 0;
-                this.currentAccuracy = null;
                 this.isActive = false;
                 this.hasFix = false;
                 this.lastPosition = null;
@@ -644,7 +672,6 @@
 
                 this.statusDot = document.getElementById('gpsDot');
                 this.statusText = document.getElementById('gpsStatus');
-                this.accuracyText = document.getElementById('gpsAccuracy');
                 this.speedDisplay = document.getElementById('speedDisplay');
 
                 this.onUpdate = null;
@@ -652,7 +679,7 @@
 
             start() {
                 if (!navigator.geolocation) {
-                    this.statusText.textContent = '❌ GPS không được hỗ trợ';
+                    this.statusText.textContent = '❌ Không hỗ trợ';
                     this.statusDot.className = 'dot red';
                     showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger');
                     return false;
@@ -669,7 +696,7 @@
                     }
                 );
 
-                this.statusText.textContent = '🔄 Đang kết nối GPS...';
+                this.statusText.textContent = 'Đang tìm...';
                 this.statusDot.className = 'dot yellow';
                 return true;
             }
@@ -680,10 +707,10 @@
                     navigator.geolocation.clearWatch(this.watchId);
                     this.watchId = null;
                 }
-                this.statusText.textContent = '⏸ GPS đã dừng';
+                this.statusText.textContent = 'Đã dừng';
                 this.statusDot.className = 'dot red';
                 this.currentSpeed = 0;
-                this.speedDisplay.textContent = '0 km/h';
+                this.speedDisplay.textContent = '0';
             }
 
             onPositionUpdate(position) {
@@ -720,13 +747,8 @@
 
                 this.hasFix = true;
                 this.statusDot.className = 'dot green';
-                this.statusText.textContent = '✅ GPS đã kết nối';
-                this.speedDisplay.textContent = this.currentSpeed + ' km/h';
-
-                if (coords.accuracy) {
-                    this.currentAccuracy = Math.round(coords.accuracy);
-                    this.accuracyText.textContent = `Độ chính xác: ±${this.currentAccuracy}m`;
-                }
+                this.statusText.textContent = 'GPS OK';
+                this.speedDisplay.textContent = this.currentSpeed.toFixed(1);
 
                 if (this.onUpdate) this.onUpdate(this.currentSpeed);
             }
@@ -738,17 +760,17 @@
 
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
-                        this.statusText.textContent = '❌ Quyền GPS bị từ chối';
+                        this.statusText.textContent = 'Quyền bị từ chối';
                         showToast('⚠️ Vui lòng cấp quyền truy cập vị trí', 3000, 'warning');
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        this.statusText.textContent = '📡 Không có tín hiệu GPS';
+                        this.statusText.textContent = 'Không tín hiệu';
                         break;
                     case error.TIMEOUT:
-                        this.statusText.textContent = '⏰ GPS timeout, đang thử lại...';
+                        this.statusText.textContent = 'Timeout...';
                         break;
                     default:
-                        this.statusText.textContent = '❌ Lỗi GPS: ' + error.message;
+                        this.statusText.textContent = 'Lỗi GPS';
                 }
             }
 
@@ -777,7 +799,7 @@
         }
 
         // ============================================================
-        // VIDEO RECORDER WITH OVERLAY (ghi trực tiếp vào video)
+        // VIDEO RECORDER WITH OVERLAY
         // ============================================================
         class VideoRecorderWithOverlay {
             constructor(maxDurationMs = 15 * 60 * 1000, maxRamMB = 200) {
@@ -806,16 +828,13 @@
                 this.firstChunk = null;
                 this.hasHeader = false;
 
-                // Canvas rendering
                 this.canvas = document.getElementById('renderCanvas');
                 this.ctx = this.canvas.getContext('2d');
                 this.video = document.getElementById('videoPreview');
 
-                // GPS
                 this.gps = new GPSTracker();
                 this.gps.onUpdate = () => {};
 
-                // Tốc độ FPS cho canvas
                 this.frameCount = 0;
                 this.fps = 0;
                 this.lastFpsUpdate = Date.now();
@@ -895,7 +914,6 @@
                 return await navigator.mediaDevices.getUserMedia(constraints);
             }
 
-            // ===== RENDER LOOP: VẼ VIDEO + OVERLAY LÊN CANVAS =====
             startRenderLoop() {
                 const render = () => {
                     if (!this.isRecording) return;
@@ -903,10 +921,9 @@
                     const w = this.canvas.width;
                     const h = this.canvas.height;
 
-                    // Vẽ video lên canvas
                     this.ctx.drawImage(this.video, 0, 0, w, h);
 
-                    // === VẼ OVERLAY ===
+                    // === OVERLAY ===
                     const now = new Date();
                     const timeStr = now.toLocaleTimeString('vi-VN', {
                         hour12: false,
@@ -923,30 +940,28 @@
                     const speed = this.gps.getSpeed();
                     const speedText = speed > 0 ? `${speed.toFixed(1)} km/h` : '0 km/h';
 
-                    const padding = 14;
-                    const fontSize = Math.max(18, Math.min(28, w / 35));
+                    const padding = 12;
+                    const fontSize = Math.max(16, Math.min(26, w / 38));
                     const smallFont = fontSize * 0.7;
-                    const lineHeight = fontSize + 8;
+                    const lineHeight = fontSize + 6;
 
                     this.ctx.textAlign = 'left';
                     this.ctx.textBaseline = 'top';
 
-                    // Đo kích thước
                     this.ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
                     const timeMetrics = this.ctx.measureText(`${dateStr} - ${timeStr}`);
                     this.ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
                     const speedMetrics = this.ctx.measureText(`🚀 ${speedText}`);
 
-                    const textWidth = Math.max(timeMetrics.width, speedMetrics.width) + padding * 2 + 20;
+                    const textWidth = Math.max(timeMetrics.width, speedMetrics.width) + padding * 2 + 16;
                     const totalHeight = lineHeight * 2 + padding * 2;
 
-                    const x = 12;
-                    const y = 12;
+                    const x = 10;
+                    const y = 10;
 
-                    // Background
-                    const radius = 12;
+                    const radius = 10;
                     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-                    this.ctx.shadowBlur = 20;
+                    this.ctx.shadowBlur = 18;
                     this.ctx.shadowOffsetX = 0;
                     this.ctx.shadowOffsetY = 0;
 
@@ -962,31 +977,23 @@
                     this.ctx.quadraticCurveTo(x, y, x + radius, y);
                     this.ctx.closePath();
 
-                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
                     this.ctx.fill();
                     this.ctx.shadowBlur = 0;
 
-                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-                    this.ctx.lineWidth = 1.5;
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                    this.ctx.lineWidth = 1;
                     this.ctx.stroke();
 
-                    // Text
                     this.ctx.fillStyle = '#ffffff';
                     this.ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
-                    this.ctx.fillText(`${dateStr} - ${timeStr}`, x + padding, y + 4);
+                    this.ctx.fillText(`${dateStr} - ${timeStr}`, x + padding, y + 3);
 
                     const speedColor = speed > 50 ? '#f44336' : speed > 30 ? '#ff9800' : '#4caf50';
                     this.ctx.fillStyle = speedColor;
                     this.ctx.font = `bold ${smallFont}px 'Courier New', monospace`;
-                    this.ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 4);
+                    this.ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 3);
 
-                    if (this.gps.hasFix()) {
-                        this.ctx.fillStyle = '#4caf50';
-                        this.ctx.font = `${smallFont}px 'Courier New', monospace`;
-                        this.ctx.fillText('📡', x + textWidth - 30, y + lineHeight + 4);
-                    }
-
-                    // FPS tracking
                     this.frameCount++;
                     const nowTime = Date.now();
                     if (nowTime - this.lastFpsUpdate >= 1000) {
@@ -1008,7 +1015,6 @@
                 }
             }
 
-            // ===== BẮT ĐẦU QUAY =====
             async start(facingMode = null) {
                 try {
                     if (this.stream) {
@@ -1023,7 +1029,6 @@
                     this.video.srcObject = this.stream;
                     await this.video.play();
 
-                    // Setup canvas
                     const videoTrack = this.stream.getVideoTracks()[0];
                     const settings = videoTrack.getSettings();
                     const width = settings.width || 1280;
@@ -1032,12 +1037,10 @@
                     this.canvas.width = width;
                     this.canvas.height = height;
                     this.canvas.style.width = '100%';
-                    this.canvas.style.height = 'auto';
+                    this.canvas.style.height = '100%';
 
-                    // Áp dụng mirror
                     this.applyMirror();
 
-                    // Reset
                     this.buffer = [];
                     this.totalSize = 0;
                     this.totalDuration = 0;
@@ -1045,16 +1048,13 @@
                     this.hasHeader = false;
                     this.isRamFull = false;
 
-                    // ===== TẠO MEDIASTREAM TỪ CANVAS =====
                     this.canvasStream = this.canvas.captureStream(30);
 
-                    // Lấy audio từ camera
                     const audioTracks = this.stream.getAudioTracks();
                     if (audioTracks.length > 0) {
                         this.canvasStream.addTrack(audioTracks[0]);
                     }
 
-                    // ===== MEDIARECORDER GHI TỪ CANVAS =====
                     this.recorder = new MediaRecorder(this.canvasStream, {
                         mimeType: 'video/webm;codecs=vp8,opus',
                     });
@@ -1107,13 +1107,9 @@
                     this.isRecording = true;
                     this.startTime = Date.now();
 
-                    // Bắt đầu GPS
                     this.gps.start();
-
-                    // Bắt đầu render loop
                     this.startRenderLoop();
 
-                    // Timer tự động kiểm tra RAM
                     this.timerInterval = setInterval(() => {
                         if (this.isRecording) {
                             this.autoAdjustRam();
@@ -1272,7 +1268,6 @@
         const usedRamText = document.getElementById('usedRamText');
         const maxRamText = document.getElementById('maxRamText');
         const ramBar = document.getElementById('ramBar');
-        const speedDisplay = document.getElementById('speedDisplay');
         const btnStart = document.getElementById('btnStart');
         const btnStop = document.getElementById('btnStop');
         const btnSave = document.getElementById('btnSave');
@@ -1292,8 +1287,8 @@
             totalDuration.textContent = (recorder.totalDuration / 1000).toFixed(1) + 's';
             totalSize.textContent = recorder.formatSize(recorder.totalSize);
 
-            usedRamText.textContent = sizeMB.toFixed(1) + ' MB';
-            maxRamText.textContent = maxMB === 0 ? '♾️' : maxMB + ' MB';
+            usedRamText.textContent = sizeMB.toFixed(1);
+            maxRamText.textContent = maxMB === 0 ? '∞' : maxMB;
 
             const usagePercent = recorder.getRamUsagePercent();
             ramBar.style.width = Math.min(usagePercent, 100) + '%';
@@ -1301,44 +1296,30 @@
             ramBar.className = 'fill';
             if (usagePercent >= 95) {
                 ramBar.classList.add('red');
+                ramStatus.textContent = '🔥';
             } else if (usagePercent >= 80) {
                 ramBar.classList.add('yellow');
+                ramStatus.textContent = '⚡';
             } else {
                 ramBar.classList.add('green');
+                ramStatus.textContent = '✅';
             }
 
-            if (recorder.maxRamBytes === 0) {
-                ramStatus.textContent = '♾️ Không giới hạn';
-                ramStatus.style.color = '#64b5f6';
-            } else if (usagePercent >= 95) {
-                ramStatus.textContent = `🔥 Gần đầy (${Math.round(usagePercent)}%)`;
-                ramStatus.style.color = '#f44336';
-            } else if (usagePercent >= 80) {
-                ramStatus.textContent = `⚡ Đang cao (${Math.round(usagePercent)}%)`;
-                ramStatus.style.color = '#ff9800';
-            } else {
-                ramStatus.textContent = `✅ Bình thường (${Math.round(usagePercent)}%)`;
-                ramStatus.style.color = '#4caf50';
-            }
-
-            const camLabel = recorder.currentFacingMode === 'user' ? 'Trước 🤳' : 'Sau 📷';
+            const camLabel = recorder.currentFacingMode === 'user' ? 'Trước' : 'Sau';
             cameraStatus.textContent = camLabel;
 
             camFront.classList.toggle('active', recorder.currentFacingMode === 'user');
             camBack.classList.toggle('active', recorder.currentFacingMode === 'environment');
 
-            // Cập nhật speed từ GPS
-            speedDisplay.textContent = gps.getSpeed() + ' km/h';
-
             if (recorder.isRecording) {
-                statusDot.className = 'status-dot recording';
+                statusDot.className = 'dot recording';
                 statusText.textContent = '🔴 Đang quay';
                 const elapsed = recorder.getElapsedSeconds();
                 const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
                 const sec = String(elapsed % 60).padStart(2, '0');
                 statusTime.textContent = `${min}:${sec}`;
             } else {
-                statusDot.className = 'status-dot';
+                statusDot.className = 'dot';
                 statusText.textContent = '⏸ Đã dừng';
                 if (count > 0) {
                     statusTime.textContent = recorder.formatTime(recorder.totalDuration);
@@ -1362,9 +1343,8 @@
 
         recorder.onUpdate = updateUI;
 
-        // GPS update
         gps.onUpdate = (speed) => {
-            speedDisplay.textContent = speed + ' km/h';
+            // GPS đã tự cập nhật UI
         };
 
         // ===== SỰ KIỆN =====
