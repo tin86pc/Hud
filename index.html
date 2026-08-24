@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ring Buffer Video Recorder</title>
+    <title>Ring Buffer - Auto RAM</title>
     <style>
         * {
             margin: 0;
@@ -26,7 +26,7 @@
             backdrop-filter: blur(15px);
             border-radius: 30px;
             padding: 40px 50px;
-            max-width: 750px;
+            max-width: 800px;
             width: 100%;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -103,6 +103,101 @@
             font-size: 20px;
         }
 
+        .ram-settings {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .ram-settings label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ram-settings select {
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s;
+            min-width: 120px;
+        }
+
+        .ram-settings select:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .ram-settings select:focus {
+            border-color: #64b5f6;
+        }
+
+        .ram-settings select option {
+            background: #302b63;
+            color: #fff;
+        }
+
+        .ram-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ram-info .bar {
+            width: 120px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .ram-info .bar .fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease, background 0.3s ease;
+            width: 0%;
+        }
+
+        .ram-info .bar .fill.green {
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+        }
+
+        .ram-info .bar .fill.yellow {
+            background: linear-gradient(90deg, #ffeb3b, #ff9800);
+        }
+
+        .ram-info .bar .fill.red {
+            background: linear-gradient(90deg, #ff5722, #f44336);
+            animation: blink 0.8s infinite;
+        }
+
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
         .status {
             display: flex;
             justify-content: center;
@@ -150,7 +245,7 @@
 
         .info {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 10px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
@@ -170,6 +265,10 @@
             display: block;
             margin-top: 4px;
             font-size: 15px;
+        }
+
+        .info-item .warning {
+            color: #ff6b35;
         }
 
         .btn-group {
@@ -312,11 +411,20 @@
             transition: all 0.5s ease;
             pointer-events: none;
             z-index: 999;
+            max-width: 90%;
         }
 
         .toast.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.warning {
+            background: rgba(255, 87, 34, 0.9);
+        }
+
+        .toast.danger {
+            background: rgba(244, 67, 54, 0.95);
         }
 
         @media (max-width: 600px) {
@@ -346,6 +454,20 @@
                 padding: 8px 16px;
                 font-size: 13px;
             }
+
+            .ram-settings {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .ram-settings label {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .ram-info .bar {
+                width: 80px;
+            }
         }
     </style>
 </head>
@@ -353,7 +475,7 @@
 
     <div class="container">
         <h1>🎥 Ring Buffer Recorder</h1>
-        <p class="subtitle">Luôn ghi lại 15 phút gần nhất — bấm Lưu bất cứ lúc nào</p>
+        <p class="subtitle">Tự động điều chỉnh theo RAM - Video luôn xem được</p>
 
         <video id="videoPreview" autoplay muted playsinline></video>
 
@@ -367,6 +489,28 @@
             <button class="camera-btn" id="btnFlipMirror">
                 <span class="icon">🔄</span> Lật gương
             </button>
+        </div>
+
+        <div class="ram-settings">
+            <label>
+                💾 Giới hạn RAM:
+                <select id="ramSelect">
+                    <option value="50">50 MB</option>
+                    <option value="100">100 MB</option>
+                    <option value="200" selected>200 MB (Mặc định)</option>
+                    <option value="300">300 MB</option>
+                    <option value="500">500 MB</option>
+                    <option value="1000">1 GB</option>
+                    <option value="0">Không giới hạn</option>
+                </select>
+            </label>
+            <div class="ram-info">
+                <span id="usedRamText">0 MB</span>
+                <div class="bar">
+                    <div class="fill green" id="ramBar" style="width:0%"></div>
+                </div>
+                <span id="maxRamText">200 MB</span>
+            </div>
         </div>
 
         <div class="status">
@@ -392,12 +536,16 @@
                 📷 Camera
                 <span id="cameraStatus">Trước</span>
             </div>
+            <div class="info-item">
+                📈 Mức RAM
+                <span id="ramStatus">✅ Bình thường</span>
+            </div>
         </div>
 
         <div class="btn-group">
             <button class="btn btn-start" id="btnStart">▶ Bắt đầu</button>
             <button class="btn btn-stop" id="btnStop" disabled>⏹ Dừng</button>
-            <button class="btn btn-save" id="btnSave" disabled>💾 Lưu 15 phút</button>
+            <button class="btn btn-save" id="btnSave" disabled>💾 Lưu video</button>
         </div>
 
         <div class="download-link" id="downloadLink">
@@ -413,10 +561,10 @@
         // ============================================================
         let toastTimeout = null;
 
-        function showToast(message, duration = 2500) {
+        function showToast(message, duration = 2500, type = '') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
-            toast.classList.add('show');
+            toast.className = 'toast show ' + type;
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
@@ -424,34 +572,125 @@
         }
 
         // ============================================================
-        // RING BUFFER RECORDER (FIXED - xuất file đúng chuẩn)
+        // RING BUFFER RECORDER - TỰ ĐỘNG ĐIỀU CHỈNH THEO RAM
         // ============================================================
         class RingVideoRecorder {
-            constructor(maxDurationMs = 15 * 60 * 1000) {
+            constructor(maxDurationMs = 15 * 60 * 1000, maxRamMB = 200) {
                 this.maxDurationMs = maxDurationMs;
+                this.maxRamBytes = maxRamMB * 1024 * 1024;
                 this.segmentDurationMs = 1000;
 
-                // Lưu các đoạn dữ liệu thô
                 this.buffer = [];
                 this.totalSize = 0;
                 this.totalDuration = 0;
 
-                // MediaRecorder chính
                 this.recorder = null;
                 this.stream = null;
                 this.isRecording = false;
                 this.startTime = null;
                 this.timerInterval = null;
 
-                // Camera
                 this.currentFacingMode = 'user';
                 this.isMirrored = true;
-
-                // Video metadata (quan trọng để xuất file đúng)
-                this.mimeType = 'video/webm;codecs=vp9,opus';
-                this.firstChunk = true;
+                this.mimeType = 'video/webm;codecs=vp8,opus';
 
                 this.onUpdate = null;
+                this.isRamFull = false;
+
+                // Lưu header
+                this.firstChunk = null;
+                this.hasHeader = false;
+
+                // Thống kê
+                this.totalChunksRemoved = 0;
+                this.autoAdjustCount = 0;
+            }
+
+            setMaxRam(mb) {
+                this.maxRamBytes = mb * 1024 * 1024;
+                this.checkRamLimit();
+                if (this.onUpdate) this.onUpdate();
+            }
+
+            checkRamLimit() {
+                if (this.maxRamBytes === 0) {
+                    this.isRamFull = false;
+                    return;
+                }
+                const usagePercent = (this.totalSize / this.maxRamBytes) * 100;
+                this.isRamFull = usagePercent >= 95;
+            }
+
+            // ===== HÀM TỰ ĐỘNG ĐIỀU CHỈNH RAM =====
+            autoAdjustRam() {
+                if (this.maxRamBytes === 0) return;
+                if (this.buffer.length === 0) return;
+
+                const usagePercent = (this.totalSize / this.maxRamBytes) * 100;
+
+                // Cấp độ 1: Nếu dùng > 90%, xóa 5% dữ liệu cũ nhất
+                if (usagePercent > 90) {
+                    const removeCount = Math.max(1, Math.floor(this.buffer.length * 0.05));
+                    for (let i = 0; i < removeCount && this.buffer.length > 1; i++) {
+                        const oldest = this.buffer.shift();
+                        if (oldest) {
+                            this.totalSize -= oldest.size;
+                            this.totalDuration -= this.segmentDurationMs;
+                            this.totalChunksRemoved++;
+                        }
+                    }
+                    this.autoAdjustCount++;
+                    showToast(`⚡ Tự động giải phóng RAM (đã xóa ${removeCount} đoạn)`, 1500, 'warning');
+                }
+
+                // Cấp độ 2: Nếu dùng > 80%, cảnh báo
+                if (usagePercent > 80 && usagePercent <= 90) {
+                    // Chỉ cảnh báo mỗi 5 giây
+                    if (this.autoAdjustCount % 5 === 0) {
+                        showToast(`⚠️ RAM đang ở mức ${Math.round(usagePercent)}%, nên lưu video sớm`, 2000, 'warning');
+                    }
+                }
+
+                // Cấp độ 3: Nếu dùng > 95%, xóa nhiều hơn
+                if (usagePercent > 95) {
+                    const removeCount = Math.max(2, Math.floor(this.buffer.length * 0.15));
+                    for (let i = 0; i < removeCount && this.buffer.length > 1; i++) {
+                        const oldest = this.buffer.shift();
+                        if (oldest) {
+                            this.totalSize -= oldest.size;
+                            this.totalDuration -= this.segmentDurationMs;
+                            this.totalChunksRemoved++;
+                        }
+                    }
+                    this.autoAdjustCount += 2;
+                    showToast(`🔥 Giải phóng RAM khẩn cấp (đã xóa ${removeCount} đoạn)`, 2500, 'danger');
+                }
+
+                // Đảm bảo header luôn ở đầu
+                this.ensureHeader();
+
+                this.checkRamLimit();
+                if (this.onUpdate) this.onUpdate();
+            }
+
+            // ===== ĐẢM BẢO HEADER LUÔN Ở ĐẦU =====
+            ensureHeader() {
+                if (!this.firstChunk || this.buffer.length === 0) return;
+
+                // Nếu header không ở đầu, thêm vào đầu
+                if (this.buffer[0] !== this.firstChunk) {
+                    // Tìm và xóa header cũ nếu có
+                    const index = this.buffer.indexOf(this.firstChunk);
+                    if (index > 0) {
+                        this.buffer.splice(index, 1);
+                        this.totalSize -= this.firstChunk.size;
+                        this.totalDuration -= this.segmentDurationMs;
+                    }
+                    // Thêm header vào đầu
+                    this.buffer.unshift(this.firstChunk);
+                    this.totalSize += this.firstChunk.size;
+                    this.totalDuration += this.segmentDurationMs;
+                }
             }
 
             async getCamera(facingMode = 'user') {
@@ -482,30 +721,38 @@
                     await videoEl.play();
                     this.applyMirror();
 
-                    // Reset buffer khi bắt đầu quay mới
+                    // Reset
                     this.buffer = [];
                     this.totalSize = 0;
                     this.totalDuration = 0;
-                    this.firstChunk = true;
+                    this.firstChunk = null;
+                    this.hasHeader = false;
+                    this.isRamFull = false;
+                    this.totalChunksRemoved = 0;
+                    this.autoAdjustCount = 0;
 
-                    // Tạo MediaRecorder với MIME type chuẩn
                     this.recorder = new MediaRecorder(this.stream, {
                         mimeType: this.mimeType,
                     });
 
-                    // Ghi dữ liệu mỗi 1 giây
                     this.recorder.start(this.segmentDurationMs);
 
                     this.recorder.ondataavailable = (event) => {
                         if (event.data.size === 0) return;
 
-                        // Lưu vào buffer
+                        // Lưu header
+                        if (!this.hasHeader) {
+                            this.firstChunk = event.data;
+                            this.hasHeader = true;
+                        }
+
+                        // Thêm dữ liệu mới
                         this.buffer.push(event.data);
                         this.totalSize += event.data.size;
                         this.totalDuration += this.segmentDurationMs;
 
-                        // Xóa đoạn cũ nếu quá 15 phút
-                        while (this.totalDuration > this.maxDurationMs) {
+                        // Xóa dữ liệu cũ theo thời gian (15 phút)
+                        while (this.totalDuration > this.maxDurationMs && this.buffer.length > 0) {
                             const oldest = this.buffer.shift();
                             if (oldest) {
                                 this.totalSize -= oldest.size;
@@ -513,28 +760,56 @@
                             }
                         }
 
+                        // ===== TỰ ĐỘNG ĐIỀU CHỈNH RAM =====
+                        // Gọi mỗi 10 chunk để tiết kiệm hiệu năng
+                        if (this.buffer.length % 10 === 0) {
+                            this.autoAdjustRam();
+                        }
+
+                        // Kiểm tra RAM nếu vượt quá giới hạn (xóa ngay)
+                        let loopCount = 0;
+                        while (this.maxRamBytes > 0 &&
+                            this.totalSize > this.maxRamBytes &&
+                            this.buffer.length > 1) {
+                            const oldest = this.buffer.shift();
+                            if (oldest) {
+                                this.totalSize -= oldest.size;
+                                this.totalDuration -= this.segmentDurationMs;
+                                this.totalChunksRemoved++;
+                            }
+                            loopCount++;
+                            if (loopCount > 100) break;
+                        }
+
+                        // Đảm bảo header
+                        this.ensureHeader();
+                        this.checkRamLimit();
+
                         if (this.onUpdate) this.onUpdate();
                     };
 
                     this.isRecording = true;
                     this.startTime = Date.now();
 
+                    // Timer tự động kiểm tra RAM mỗi 2 giây
                     this.timerInterval = setInterval(() => {
+                        if (this.isRecording) {
+                            this.autoAdjustRam();
+                        }
                         if (this.onUpdate) this.onUpdate();
-                    }, 500);
+                    }, 2000);
 
                     if (this.onUpdate) this.onUpdate();
                     return true;
                 } catch (err) {
                     console.error('Lỗi:', err);
-                    showToast('❌ Không thể truy cập camera!');
+                    showToast('❌ Không thể truy cập camera!', 3000, 'danger');
                     return false;
                 }
             }
 
             stop() {
                 if (this.recorder && this.isRecording) {
-                    // Quan trọng: gọi stop để ghi nốt dữ liệu còn lại
                     this.recorder.stop();
                     this.isRecording = false;
                     if (this.timerInterval) {
@@ -545,70 +820,48 @@
                 }
             }
 
-            // ===== CÁCH LƯU VIDEO MỚI - TẠO FILE HỢP LỆ =====
+            // ===== LƯU VIDEO =====
             save() {
                 if (this.buffer.length === 0) {
-                    showToast('⚠️ Chưa có dữ liệu video!');
+                    showToast('⚠️ Chưa có dữ liệu video!', 2000);
                     return null;
                 }
 
-                // Cách 1: Ghép tất cả blob lại
-                // Cách 2: Tạo một blob mới và thêm header đúng định dạng
                 try {
-                    // Lấy tất cả các đoạn
-                    const chunks = this.buffer;
+                    let chunks = [...this.buffer];
 
-                    // Nếu chỉ có 1 đoạn, trả về luôn
-                    if (chunks.length === 1) {
-                        return new Blob(chunks, { type: 'video/webm' });
+                    // Đảm bảo header ở đầu
+                    if (this.firstChunk && !chunks.includes(this.firstChunk)) {
+                        chunks.unshift(this.firstChunk);
                     }
 
-                    // Với nhiều đoạn, ta ghép chúng lại
-                    // WebM cho phép ghép trực tiếp các cluster
-                    const combinedBlob = new Blob(chunks, { type: 'video/webm' });
-                    return combinedBlob;
-                } catch (err) {
-                    console.error('Lỗi khi tạo blob:', err);
-                    showToast('❌ Lỗi tạo file video!');
-                    return null;
-                }
-            }
-
-            // ===== PHƯƠNG PHÁP DỰ PHÒNG: DÙNG CHUỖI GHI ĐÈ =====
-            // Nếu cách trên vẫn không được, ta dùng cách này
-            saveAlternative() {
-                if (this.buffer.length === 0) {
-                    showToast('⚠️ Chưa có dữ liệu video!');
-                    return null;
-                }
-
-                try {
-                    // Tạo mảng mới để đảm bảo thứ tự
-                    const sortedChunks = [...this.buffer];
-
-                    // Ghép và tạo blob
-                    const blob = new Blob(sortedChunks, {
+                    const blob = new Blob(chunks, {
                         type: 'video/webm'
                     });
 
-                    // Kiểm tra kích thước
                     if (blob.size === 0) {
-                        showToast('❌ File rỗng!');
+                        showToast('❌ File rỗng!', 2000, 'danger');
                         return null;
                     }
 
+                    // Tính toán thông tin
+                    const durationSec = this.totalDuration / 1000;
+                    const sizeMB = blob.size / (1024 * 1024);
+
+                    console.log(`📊 Thống kê: ${chunks.length} đoạn, ${durationSec}s, ${sizeMB.toFixed(1)} MB`);
+                    console.log(`🔄 Đã tự động xóa ${this.totalChunksRemoved} đoạn để giải phóng RAM`);
+
                     return blob;
                 } catch (err) {
-                    console.error('Lỗi alternative:', err);
-                    showToast('❌ Lỗi tạo file!');
+                    console.error('Lỗi khi tạo blob:', err);
+                    showToast('❌ Lỗi tạo file video!', 3000, 'danger');
                     return null;
                 }
             }
 
-            // ===== CHUYỂN CAMERA =====
             async switchCamera(facingMode) {
                 if (facingMode === this.currentFacingMode) {
-                    showToast('ℹ️ Đã ở camera này rồi!');
+                    showToast('ℹ️ Đã ở camera này rồi!', 1500);
                     return false;
                 }
 
@@ -622,13 +875,13 @@
                     if (success) {
                         this.currentFacingMode = facingMode;
                         const label = facingMode === 'user' ? 'Trước' : 'Sau';
-                        showToast(`✅ Đã chuyển sang camera ${label}`);
+                        showToast(`✅ Đã chuyển sang camera ${label}`, 1500);
                         if (this.onUpdate) this.onUpdate();
                         return true;
                     }
                     return false;
                 } catch (err) {
-                    showToast('❌ Không thể chuyển camera!');
+                    showToast('❌ Không thể chuyển camera!', 2000, 'danger');
                     return false;
                 }
             }
@@ -645,7 +898,7 @@
             toggleMirror() {
                 this.isMirrored = !this.isMirrored;
                 this.applyMirror();
-                showToast(this.isMirrored ? '🔄 Đã bật gương' : '🔄 Đã tắt gương');
+                showToast(this.isMirrored ? '🔄 Đã bật gương' : '🔄 Đã tắt gương', 1500);
                 if (this.onUpdate) this.onUpdate();
             }
 
@@ -654,6 +907,10 @@
                 this.buffer = [];
                 this.totalSize = 0;
                 this.totalDuration = 0;
+                this.firstChunk = null;
+                this.hasHeader = false;
+                this.totalChunksRemoved = 0;
+                this.autoAdjustCount = 0;
                 if (this.onUpdate) this.onUpdate();
             }
 
@@ -664,6 +921,11 @@
             getElapsedSeconds() {
                 if (!this.startTime) return 0;
                 return Math.floor((Date.now() - this.startTime) / 1000);
+            }
+
+            getRamUsagePercent() {
+                if (this.maxRamBytes === 0) return 0;
+                return Math.min((this.totalSize / this.maxRamBytes) * 100, 100);
             }
 
             formatTime(ms) {
@@ -678,13 +940,25 @@
                 if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
                 return (bytes / 1048576).toFixed(1) + ' MB';
             }
+
+            getMaxRamMB() {
+                return this.maxRamBytes / (1024 * 1024);
+            }
+
+            getAutoAdjustCount() {
+                return this.autoAdjustCount;
+            }
+
+            getTotalChunksRemoved() {
+                return this.totalChunksRemoved;
+            }
         }
 
         // ============================================================
         // UI CONTROLLER
         // ============================================================
 
-        const recorder = new RingVideoRecorder(15 * 60 * 1000);
+        const recorder = new RingVideoRecorder(15 * 60 * 1000, 200);
 
         const videoPreview = document.getElementById('videoPreview');
         const statusDot = document.getElementById('statusDot');
@@ -694,6 +968,10 @@
         const totalDuration = document.getElementById('totalDuration');
         const totalSize = document.getElementById('totalSize');
         const cameraStatus = document.getElementById('cameraStatus');
+        const ramStatus = document.getElementById('ramStatus');
+        const usedRamText = document.getElementById('usedRamText');
+        const maxRamText = document.getElementById('maxRamText');
+        const ramBar = document.getElementById('ramBar');
         const btnStart = document.getElementById('btnStart');
         const btnStop = document.getElementById('btnStop');
         const btnSave = document.getElementById('btnSave');
@@ -702,19 +980,56 @@
         const camBack = document.getElementById('camBack');
         const downloadLink = document.getElementById('downloadLink');
         const downloadAnchor = document.getElementById('downloadAnchor');
+        const ramSelect = document.getElementById('ramSelect');
 
         function updateUI() {
             const count = recorder.getSegmentCount();
+            const sizeMB = recorder.totalSize / (1024 * 1024);
+            const maxMB = recorder.getMaxRamMB();
+
             segmentCount.textContent = count;
             totalDuration.textContent = (recorder.totalDuration / 1000).toFixed(1) + 's';
             totalSize.textContent = recorder.formatSize(recorder.totalSize);
 
+            usedRamText.textContent = sizeMB.toFixed(1) + ' MB';
+            maxRamText.textContent = maxMB === 0 ? '♾️' : maxMB + ' MB';
+
+            const usagePercent = recorder.getRamUsagePercent();
+            ramBar.style.width = Math.min(usagePercent, 100) + '%';
+
+            // Màu sắc thanh RAM
+            ramBar.className = 'fill';
+            if (usagePercent >= 95) {
+                ramBar.classList.add('red');
+            } else if (usagePercent >= 80) {
+                ramBar.classList.add('yellow');
+            } else {
+                ramBar.classList.add('green');
+            }
+
+            // Trạng thái RAM
+            if (recorder.maxRamBytes === 0) {
+                ramStatus.textContent = '♾️ Không giới hạn';
+                ramStatus.style.color = '#64b5f6';
+            } else if (usagePercent >= 95) {
+                ramStatus.textContent = `🔥 Gần đầy (${Math.round(usagePercent)}%)`;
+                ramStatus.style.color = '#f44336';
+            } else if (usagePercent >= 80) {
+                ramStatus.textContent = `⚡ Đang cao (${Math.round(usagePercent)}%)`;
+                ramStatus.style.color = '#ff9800';
+            } else {
+                ramStatus.textContent = `✅ Bình thường (${Math.round(usagePercent)}%)`;
+                ramStatus.style.color = '#4caf50';
+            }
+
+            // Camera
             const camLabel = recorder.currentFacingMode === 'user' ? 'Trước 🤳' : 'Sau 📷';
             cameraStatus.textContent = camLabel;
 
             camFront.classList.toggle('active', recorder.currentFacingMode === 'user');
             camBack.classList.toggle('active', recorder.currentFacingMode === 'environment');
 
+            // Recording status
             if (recorder.isRecording) {
                 statusDot.className = 'status-dot recording';
                 statusText.textContent = '🔴 Đang quay';
@@ -722,6 +1037,12 @@
                 const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
                 const sec = String(elapsed % 60).padStart(2, '0');
                 statusTime.textContent = `${min}:${sec}`;
+
+                // Hiển thị số lần tự động điều chỉnh
+                if (recorder.getAutoAdjustCount() > 0) {
+                    document.querySelector('.subtitle').textContent =
+                        `🔄 Đã tự động điều chỉnh ${recorder.getAutoAdjustCount()} lần, xóa ${recorder.getTotalChunksRemoved()} đoạn`;
+                }
             } else {
                 statusDot.className = 'status-dot';
                 statusText.textContent = '⏸ Đã dừng';
@@ -729,9 +1050,11 @@
                     statusTime.textContent = recorder.formatTime(recorder.totalDuration);
                 } else {
                     statusTime.textContent = '00:00';
+                    document.querySelector('.subtitle').textContent = 'Tự động điều chỉnh theo RAM - Video luôn xem được';
                 }
             }
 
+            // Buttons
             btnStart.disabled = recorder.isRecording;
             btnStop.disabled = !recorder.isRecording;
             btnSave.disabled = (count === 0);
@@ -749,50 +1072,60 @@
 
         // ===== SỰ KIỆN =====
 
+        ramSelect.addEventListener('change', function() {
+            const value = parseInt(this.value);
+            if (value === 0) {
+                showToast('♾️ Đã tắt giới hạn RAM', 1500);
+            } else {
+                showToast(`💾 Đã đặt giới hạn RAM: ${value} MB`, 1500);
+            }
+            recorder.setMaxRam(value);
+            updateUI();
+        });
+
         btnStart.addEventListener('click', async () => {
             const ok = await recorder.start(recorder.currentFacingMode);
             if (ok) {
                 downloadLink.style.display = 'none';
-                showToast('🎥 Đã bắt đầu quay!');
+                showToast('🎥 Đã bắt đầu quay!', 1500);
                 updateUI();
             }
         });
 
         btnStop.addEventListener('click', () => {
             recorder.stop();
-            showToast('⏹ Đã dừng quay');
+            showToast('⏹ Đã dừng quay', 1500);
             updateUI();
         });
 
         btnSave.addEventListener('click', () => {
-            // Thử cách 1
-            let blob = recorder.save();
-
-            // Nếu thất bại, thử cách 2
-            if (!blob || blob.size === 0) {
-                blob = recorder.saveAlternative();
-            }
+            const blob = recorder.save();
 
             if (!blob || blob.size === 0) {
-                showToast('❌ Không thể tạo file video!');
+                showToast('❌ Không thể tạo file video!', 3000, 'danger');
                 return;
             }
 
             const url = URL.createObjectURL(blob);
             downloadAnchor.href = url;
+
             const now = new Date();
             const dateStr =
                 `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}h${String(now.getMinutes()).padStart(2,'0')}`;
             const camLabel = recorder.currentFacingMode === 'user' ? 'truoc' : 'sau';
-            downloadAnchor.download = `video_15phut_${camLabel}_${dateStr}.webm`;
+            downloadAnchor.download = `video_${camLabel}_${dateStr}.webm`;
 
             downloadLink.style.display = 'block';
             setTimeout(() => {
                 downloadAnchor.click();
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                }, 5000);
             }, 300);
 
             const sizeMB = (blob.size / 1048576).toFixed(1);
-            showToast(`✅ Đã lưu ${sizeMB} MB`);
+            const durationSec = (recorder.totalDuration / 1000).toFixed(1);
+            showToast(`✅ Đã lưu ${sizeMB} MB (${durationSec}s)`, 2500);
             statusText.textContent = `✅ Đã lưu ${sizeMB} MB`;
         });
 
@@ -819,8 +1152,9 @@
         });
 
         console.log('🎥 Ring Buffer Recorder đã sẵn sàng!');
-        console.log(`📐 Tối đa: ${recorder.maxDurationMs / 60000} phút`);
+        console.log(`📐 RAM tối đa: ${recorder.getMaxRamMB()} MB`);
         console.log(`📷 Camera hiện tại: ${recorder.currentFacingMode}`);
+        console.log(`🎬 Codec: ${recorder.mimeType}`);
     </script>
 </body>
 </html>
