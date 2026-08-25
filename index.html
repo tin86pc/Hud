@@ -39,6 +39,9 @@
             --font-small: 3vmin;
             --bar-h: 1.8vmin;
             --dot-size: 2.2vmin;
+
+            /* === Kích thước preview video (đổi số này để to/nhỏ) === */
+            --preview-scale: 0.65; /* 0.65 = 65% kích thước màn hình */
         }
 
         html, body {
@@ -57,18 +60,21 @@
             height: 100vh;
             overflow: hidden;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* === Vùng Video === */
+        /* === Vùng Video Preview NHỎ LẠI === */
         .video-wrap {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: relative;
+            width: calc(100vw * var(--preview-scale));
+            height: calc(100vh * var(--preview-scale));
             background: #000;
             overflow: hidden;
             z-index: 1;
+            border-radius: 4vmin;
+            box-shadow: 0 0 8vmin rgba(0,0,0,0.8);
         }
 
         #videoPreview {
@@ -607,7 +613,6 @@ class VideoRecorder {
         const gpsStatus = this.gps.getStatus();
         const speedStr = speed.toFixed(1) + ' km/h';
 
-        // Tính tỉ lệ vmin dựa trên chiều ngang canvas
         const vmin = Math.min(cw, ch) / 100;
         const baseSize = 3.5 * vmin;
         const timeSize = 5 * vmin;
