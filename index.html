@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Camera — Preview = Video RAM</title>
+    <title>Camera HUD — Preview = Video RAM</title>
     <style>
         * {
             margin: 0;
@@ -41,6 +41,17 @@
             width: 1px;
             height: 1px;
         }
+        .camera-status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.7);
+            font-size: 4vmin;
+            text-align: center;
+            z-index: 5;
+            pointer-events: none;
+        }
 
         .ui-wrapper {
             position: absolute;
@@ -50,15 +61,15 @@
             transform-origin: center center;
             transition: transform 0.3s ease;
             z-index: 10;
-            width: 70vmin;
+            width: 75vmin;
         }
         .ui-wrapper.landscape {
             transform: translate(-50%, -50%) rotate(90deg);
+            width: 75vmin;
         }
 
         .control-modal {
             width: 100%;
-            min-height: 30vmin;
             background: rgba(20, 20, 25, 0.92);
             border: 1px solid rgba(255, 255, 255, 0.18);
             border-radius: 4vmin;
@@ -83,6 +94,7 @@
             justify-content: space-around;
             align-items: center;
             width: 100%;
+            gap: 2vmin;
         }
         .btn {
             width: 14vmin;
@@ -172,6 +184,7 @@
     <div class="canvas-container" id="canvasContainer">
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
+        <div class="camera-status" id="cameraStatus">Đang khởi động camera...</div>
     </div>
 
     <div class="ui-wrapper" id="uiWrapper">
@@ -193,7 +206,7 @@
                     <option value="300">300MB</option>
                     <option value="500">500MB</option>
                     <option value="1000">1GB</option>
-                    <option value="0">Không giới hạn</option>
+                    <option value="0">∞</option>
                 </select>
             </div>
         </div>
@@ -214,6 +227,7 @@ function showToast(msg, dur = 2500, type = '') {
 const controlModal = document.getElementById('controlModal');
 const canvasContainer = document.getElementById('canvasContainer');
 const uiWrapper = document.getElementById('uiWrapper');
+const cameraStatus = document.getElementById('cameraStatus');
 let hideTimer = null;
 const SHOW_DURATION = 5000;
 
@@ -310,6 +324,7 @@ class VideoRecorder {
         this.recorder = null;
         this.recording = false;
         this.segTime = 1000;
+        this.cameraReady = false;
     }
 
     setMaxMB(mb) {
@@ -319,6 +334,8 @@ class VideoRecorder {
     }
 
     async initCam(facing = 'user') {
+        cameraStatus.style.display = 'block';
+        cameraStatus.textContent = 'Đang khởi động camera...';
         const cons = {
             video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: true
@@ -328,11 +345,19 @@ class VideoRecorder {
             this.facing = facing;
             this.video.srcObject = this.stream;
             await this.video.play();
+            await new Promise(resolve => {
+                if (this.video.videoWidth) resolve();
+                else this.video.onloadedmetadata = resolve;
+            });
+            this.cameraReady = true;
+            cameraStatus.style.display = 'none';
             this.startDraw();
             this.gps.start();
             this.startRecording();
+            showToast('✅ Camera đã sẵn sàng', 2000, 'success');
             return true;
         } catch (err) {
+            cameraStatus.textContent = '❌ Không truy cập được camera';
             showToast('❌ Không truy cập được camera', 3000, 'danger');
             console.error(err);
             return false;
@@ -363,7 +388,6 @@ class VideoRecorder {
         if (this.recording) return;
         this.chunks = []; this.totalSize = 0; this.firstChunk = null; this.hasHeader = false;
 
-        // === Canvas = nguồn video lưu vào RAM ===
         this.canvasStream = this.canvas.captureStream(30);
         const aTrack = this.stream?.getAudioTracks()[0];
         if (aTrack) this.canvasStream.addTrack(aTrack);
@@ -410,7 +434,6 @@ class VideoRecorder {
             showToast('Chưa có video để lưu', 2500, 'warning');
             return;
         }
-        // Gom tất cả chunks trong RAM thành file
         const list = this.chunks[0] !== this.firstChunk ? [this.firstChunk, ...this.chunks] : this.chunks;
         const blob = new Blob(list, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
@@ -457,32 +480,44 @@ class VideoRecorder {
         const speed = this.gps.getSpeed();
         const speedStr = speed.toFixed(1) + ' km/h';
 
-        const vmin = Math.min(cw, ch) / 100;
-        const baseSize = 3.5 * vmin;
-        const timeSize = 5 * vmin;
-        const speedSize = 6 * vmin;
-        const padX = 4 * vmin;
-        const padY = 3 * vmin;
-        const margin = 4 * vmin;
-        const radius = 4 * vmin;
-        const lineGap = 2 * vmin;
-        const dotR = 1.1 * vmin;
+        // Tự điều chỉnh kích thước chữ theo hướng màn hình
+        const minDim = Math.min(cw, ch);
+        const baseFontScale = this.isLandscape ? 0.028 : 0.035;
+        const timeFontScale = this.isLandscape ? 0.045 : 0.055;
+        const speedFontScale = this.isLandscape ? 0.055 : 0.065;
+
+        const baseSize = minDim * baseFontScale;
+        const timeSize = minDim * timeFontScale;
+        const speedSize = minDim * speedFontScale;
+
+        const padX = baseSize * 1.8;
+        const padY = baseSize * 1.2;
+        const margin = minDim * 0.045;
+        const radius = baseSize * 0.8;
+        const lineGap = baseSize * 0.6;
+        const dotR = baseSize * 0.35;
 
         this.ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const dateW = this.ctx.measureText(date).width;
+
         this.ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const timeW = this.ctx.measureText(time).width;
+
         this.ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const speedW = this.ctx.measureText(speedStr).width;
 
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
 
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        this.roundRect(this.ctx, margin, margin, boxW, boxH, radius);
+        const hudX = margin;
+        const hudY = margin;
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        this.roundRect(this.ctx, hudX, hudY, boxW, boxH, radius);
         this.ctx.fill();
 
-        let tx = margin + padX, ty = margin + padY + baseSize * 0.8;
+        let tx = hudX + padX;
+        let ty = hudY + padY + baseSize * 0.8;
 
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         this.ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -498,8 +533,9 @@ class VideoRecorder {
         this.ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         this.ctx.fillText(speedStr, tx, ty);
 
-        const dotX = margin + padX - dotR;
-        const dotY = margin + padY + baseSize * 0.5;
+        const dotX = hudX + padX - dotR;
+        const dotY = hudY + padY + baseSize * 0.5;
+
         this.ctx.beginPath();
         this.ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
         this.ctx.fillStyle = '#34c759';
@@ -509,10 +545,13 @@ class VideoRecorder {
     startDraw() {
         if (this.rendering) return;
         this.rendering = true;
+
         const draw = () => {
             if (!this.rendering) return;
+
             const vw = this.video.videoWidth;
             const vh = this.video.videoHeight;
+
             if (!vw || !vh) {
                 requestAnimationFrame(draw);
                 return;
@@ -531,7 +570,9 @@ class VideoRecorder {
                 this.canvas.width = outW;
                 this.canvas.height = outH;
             }
-            const cw = outW, ch = outH;
+
+            const cw = outW;
+            const ch = outH;
             this.ctx.clearRect(0, 0, cw, ch);
 
             const scaleX = cw / vw;
@@ -551,6 +592,7 @@ class VideoRecorder {
 
             requestAnimationFrame(draw);
         };
+
         draw();
     }
 }
