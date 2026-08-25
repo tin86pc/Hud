@@ -68,7 +68,7 @@
             object-fit: cover;
         }
 
-        /* ===== Giao diện điều khiển - trong suốt, không che nội dung cần vẽ ===== */
+        /* ===== Giao diện điều khiển - trong suốt ===== */
         .overlay {
             position: absolute;
             inset: 0;
@@ -171,7 +171,6 @@
             50% { opacity: 0.4; }
         }
 
-        /* ==== THÔNG TIN TỐC ĐỘ - chỉ hiển thị trên màn hình, không che góc vẽ ==== */
         .speed-panel {
             display: flex;
             flex-direction: column;
@@ -206,10 +205,9 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.6);
         }
 
-        /* ==== KHOẢNG TRỐNG GIỮA ===== */
         .center-spacer { flex: 1; }
 
-        /* ==== THANH THÔNG TIN DƯỚI ===== */
+        /* ==== THANH THÔNG TIN DƯỚI ==== */
         .info-bar {
             display: flex;
             justify-content: space-between;
@@ -234,7 +232,7 @@
             font-variant-numeric: tabular-nums;
         }
 
-        /* ==== THANH RAM ===== */
+        /* ==== THANH RAM ==== */
         .ram-bar-wrapper {
             padding: 0 12px 10px;
         }
@@ -247,6 +245,7 @@
             backdrop-filter: blur(12px);
             border: 1px solid var(--panel-border);
             border-radius: var(--radius-md);
+            flex-wrap: wrap;
         }
         .ram-label {
             font-size: 10px;
@@ -310,7 +309,7 @@
         }
         .ram-selector select:focus { border-color: var(--accent-blue); }
 
-        /* ==== NÚT ĐIỀU KHIỂN ===== */
+        /* ==== NÚT ĐIỀU KHIỂN ==== */
         .controls-bar {
             display: flex;
             align-items: center;
@@ -350,7 +349,7 @@
         .ctrl-btn.secondary {
             width: 44px;
             height: 44px;
-            font-size: 16px;
+            font-size: 18px;
             border-radius: 50%;
         }
 
@@ -361,6 +360,17 @@
         }
         .ctrl-btn.save-btn:hover:not(:disabled) {
             background: rgba(255, 107, 53, 0.2);
+        }
+
+        /* Nút chuyển camera - gộp thành 1 nút */
+        .cam-switch-btn {
+            color: var(--text-secondary);
+        }
+        .cam-switch-btn.front {
+            color: var(--accent-blue);
+        }
+        .cam-switch-btn.back {
+            color: var(--accent-green);
         }
 
         /* Nút quay lớn */
@@ -408,33 +418,6 @@
             100% { transform: scale(1.35); opacity: 0; }
         }
 
-        /* Nhóm camera trước/sau */
-        .cam-toggle {
-            display: flex;
-            background: var(--panel-bg);
-            border-radius: 50px;
-            border: 1px solid var(--panel-border);
-            overflow: hidden;
-        }
-        .cam-toggle-btn {
-            width: 44px;
-            height: 44px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        .cam-toggle-btn.active {
-            color: var(--accent-blue);
-            background: rgba(0, 122, 255, 0.12);
-        }
-        .cam-toggle-btn:disabled { opacity: 0.25; cursor: not-allowed; }
-
         /* ==== THÔNG BÁO TOAST ==== */
         .toast {
             position: fixed;
@@ -465,30 +448,72 @@
         .toast.danger { border-color: rgba(255, 59, 48, 0.3); }
         .toast.success { border-color: rgba(52, 199, 89, 0.3); }
 
-        /* ==== Responsive ==== */
+        /* ==== Responsive & Giao diện NGANG ==== */
         @media (max-width: 400px) {
             .speed-value { font-size: 24px; }
             .btn-record { width: 60px; height: 60px; font-size: 22px; }
             .ctrl-btn { width: 48px; height: 48px; font-size: 16px; }
-            .ctrl-btn.secondary { width: 40px; height: 40px; font-size: 14px; }
-            .cam-toggle-btn { width: 40px; height: 40px; font-size: 14px; }
+            .ctrl-btn.secondary { width: 40px; height: 40px; font-size: 16px; }
         }
 
         @media (orientation: landscape) {
             .overlay {
                 padding: 10px max(10px, env(safe-area-inset-left));
                 flex-direction: row;
+                justify-content: space-between;
             }
-            .top-bar { flex-direction: column; justify-content: flex-start; height: 100%; }
+
+            .top-bar {
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: flex-start;
+                height: 100%;
+                width: 200px;
+            }
+
+            .top-right {
+                align-items: flex-start;
+                width: 100%;
+            }
+
             .bottom-stack {
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
+                align-items: flex-end;
                 height: 100%;
-                max-width: 200px;
+                width: 180px;
+                flex-shrink: 0;
             }
-            .controls-bar { justify-content: space-between; padding: 6px 0; }
-            .ram-bar-wrapper { padding: 0 0 8px; }
+
+            .info-bar {
+                flex-direction: column;
+                gap: 6px;
+                align-items: flex-end;
+                text-align: right;
+            }
+
+            .ram-bar-wrapper {
+                padding: 10px 0;
+                width: 100%;
+            }
+
+            .ram-panel {
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 6px;
+            }
+
+            .ram-track {
+                width: 100%;
+            }
+
+            .controls-bar {
+                flex-direction: column;
+                justify-content: center;
+                gap: 12px;
+                padding: 0;
+            }
         }
     </style>
 </head>
@@ -501,7 +526,7 @@
         <canvas id="renderCanvas"></canvas>
     </div>
 
-    <!-- Giao diện điều khiển - trên nhưng trong suốt -->
+    <!-- Giao diện điều khiển -->
     <div class="overlay">
         <div class="top-bar">
             <div class="top-left">
@@ -581,9 +606,8 @@
                     <button class="ctrl-btn secondary save-btn" id="btnDownload" disabled title="Lưu video">💾</button>
                 </div>
 
-                <div class="cam-toggle">
-                    <button class="cam-toggle-btn active" id="camFrontBtn" data-facing="user" title="Camera trước">📷</button>
-                    <button class="cam-toggle-btn" id="camBackBtn" data-facing="environment" title="Camera sau">⟳</button>
+                <div class="ctrl-group">
+                    <button class="ctrl-btn secondary cam-switch-btn front" id="camSwitchBtn" title="Chuyển camera">📷</button>
                 </div>
             </div>
         </div>
@@ -693,7 +717,7 @@ class GPSTracker {
 }
 
 // ============================================================
-// VIDEO RECORDER - VẼ THÔNG TIN VÀO CANVAS (ĐI VÀO VIDEO)
+// VIDEO RECORDER - VẼ THÔNG TIN VÀO CANVAS
 // ============================================================
 class DashCamRecorder {
     constructor(maxRamMB = 200) {
@@ -741,19 +765,30 @@ class DashCamRecorder {
     }
 
     async switchCamera(facing) {
-        if (facing === this.facing) return showToast('Đã ở camera này', 1500);
+        if (facing === this.facing) {
+            showToast('Đang dùng camera này', 1500);
+            return;
+        }
         const wasRecording = this.recording;
         if (this.recording) this.stopRecording();
         this.stream?.getTracks().forEach(t => t.stop());
         await this.initCamera(facing);
         if (wasRecording) await this.startRecording();
-        this.updateCamButtons();
-        showToast(`Đã chuyển camera ${facing === 'user' ? 'trước' : 'sau'}`, 1500);
+        this.updateCamButton();
+        showToast(`Đã chuyển sang camera ${facing === 'user' ? 'trước' : 'sau'}`, 1500);
     }
 
-    updateCamButtons() {
-        document.getElementById('camFrontBtn').classList.toggle('active', this.facing === 'user');
-        document.getElementById('camBackBtn').classList.toggle('active', this.facing === 'environment');
+    updateCamButton() {
+        const btn = document.getElementById('camSwitchBtn');
+        if (this.facing === 'user') {
+            btn.textContent = '📷';
+            btn.classList.remove('back');
+            btn.classList.add('front');
+        } else {
+            btn.textContent = '🔄';
+            btn.classList.remove('front');
+            btn.classList.add('back');
+        }
     }
 
     async startRecording() {
@@ -838,7 +873,7 @@ class DashCamRecorder {
             }
 
             // =================================================
-            // ✅ VẼ THÔNG TIN TRỰC TIẾP VÀO CANVAS → LƯU VÀO VIDEO
+            // VẼ THÔNG TIN VÀO CANVAS → LƯU VÀO VIDEO
             // =================================================
             const now = new Date();
             const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -846,7 +881,6 @@ class DashCamRecorder {
             const speed = this.gps.getSpeed();
             const speedStr = speed.toFixed(1);
 
-            // === Vẽ ở GÓC TRÊN BÊN TRÁI - không bị che bởi giao diện điều khiển ===
             const margin = Math.max(12, cw * 0.02);
             const boxW = Math.max(220, cw * 0.22);
             const boxH = Math.max(90, ch * 0.13);
@@ -876,13 +910,12 @@ class DashCamRecorder {
             this.ctx.lineWidth = 1;
             this.ctx.stroke();
 
-            // Ngày tháng năm
+            // Ngày giờ
             this.ctx.fillStyle = 'rgba(255,255,255,0.9)';
             this.ctx.font = `bold ${Math.max(16, cw / 55)}px -apple-system, sans-serif`;
             this.ctx.textAlign = 'left';
             this.ctx.fillText(`${dateStr}`, boxX + margin, boxY + margin + 5);
 
-            // Giờ phút giây
             this.ctx.font = `bold ${Math.max(22, cw / 42)}px -apple-system, sans-serif`;
             this.ctx.fillText(`${timeStr}`, boxX + margin, boxY + margin + 32);
 
@@ -894,7 +927,7 @@ class DashCamRecorder {
 
             this.ctx.restore();
 
-            // Cập nhật hiển thị trên màn hình điện thoại
+            // Cập nhật hiển thị trên màn hình
             document.getElementById('dateTime').textContent = `${dateStr} ${timeStr}`;
 
             requestAnimationFrame(draw);
@@ -942,7 +975,7 @@ class DashCamRecorder {
 }
 
 // ============================================================
-// KHOI TAO & KET NOI UI
+// KHỞI TẠO & KẾT NỐI UI
 // ============================================================
 const recorder = new DashCamRecorder(200);
 
@@ -950,19 +983,16 @@ function syncUI() {
     const isRec = recorder.recording;
     const hasData = recorder.buffer.length > 0;
 
-    // Nút quay
     const btn = document.getElementById('btnRecordMain');
     const icon = document.getElementById('recordIcon');
     btn.className = 'btn-record ' + (isRec ? 'recording' : 'idle');
     icon.textContent = isRec ? '⏹' : '▶';
     document.getElementById('recIndicator').classList.toggle('show', isRec);
 
-    // Thông tin
     document.getElementById('segmentCount').textContent = recorder.buffer.length;
     document.getElementById('totalDuration').textContent = (recorder.totalDuration / 1000).toFixed(1) + 's';
     document.getElementById('totalSize').textContent = recorder.formatSize(recorder.totalSize);
 
-    // RAM
     const maxMB = recorder.maxRam === Infinity ? 0 : Math.round(recorder.maxRam / 1048576);
     const usedMB = Math.round(recorder.totalSize / 1048576);
     const percent = recorder.maxRam === Infinity ? 0 : Math.min((recorder.totalSize / recorder.maxRam) * 100, 100);
@@ -971,7 +1001,6 @@ function syncUI() {
     document.getElementById('usedRam').textContent = usedMB;
     document.getElementById('maxRam').textContent = maxMB || '∞';
 
-    // Nút lưu
     document.getElementById('btnDownload').disabled = !hasData;
 }
 
@@ -983,8 +1012,10 @@ document.getElementById('btnRecordMain').addEventListener('click', () => {
 });
 document.getElementById('btnDownload').addEventListener('click', () => recorder.saveVideo());
 document.getElementById('btnMirror').addEventListener('click', () => recorder.toggleMirror());
-document.getElementById('camFrontBtn').addEventListener('click', () => recorder.switchCamera('user'));
-document.getElementById('camBackBtn').addEventListener('click', () => recorder.switchCamera('environment'));
+document.getElementById('camSwitchBtn').addEventListener('click', async () => {
+    const newFacing = recorder.facing === 'user' ? 'environment' : 'user';
+    await recorder.switchCamera(newFacing);
+});
 document.getElementById('ramLimitSelect').addEventListener('change', e => {
     recorder.setMaxRamMB(parseInt(e.target.value));
     syncUI();
@@ -992,7 +1023,7 @@ document.getElementById('ramLimitSelect').addEventListener('change', e => {
 
 // Khởi tạo
 recorder.initCamera('user').then(() => {
-    recorder.updateCamButtons();
+    recorder.updateCamButton();
     syncUI();
 });
 
