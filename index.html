@@ -25,7 +25,6 @@
             --accent-red: #ff3b30;
 
             /* === Tất cả kích thước theo vmin === */
-            --unit: 1vmin;
             --btn-size: 14vmin;
             --btn-border: 0.5vmin;
             --modal-w: 65vmin;
@@ -40,8 +39,8 @@
             --bar-h: 1.8vmin;
             --dot-size: 2.2vmin;
 
-            /* === Kích thước preview video (đổi số này để to/nhỏ) === */
-            --preview-scale: 0.65; /* 0.65 = 65% kích thước màn hình */
+            /* === Tỉ lệ hiển thị & ghi video: 90% === */
+            --preview-scale: 0.9;
         }
 
         html, body {
@@ -65,7 +64,7 @@
             justify-content: center;
         }
 
-        /* === Vùng Video Preview NHỎ LẠI === */
+        /* === Vùng Video Preview 90% === */
         .video-wrap {
             position: relative;
             width: calc(100vw * var(--preview-scale));
@@ -73,8 +72,8 @@
             background: #000;
             overflow: hidden;
             z-index: 1;
-            border-radius: 4vmin;
-            box-shadow: 0 0 8vmin rgba(0,0,0,0.8);
+            border-radius: 3vmin;
+            box-shadow: 0 0 6vmin rgba(0,0,0,0.6);
         }
 
         #videoPreview {
@@ -475,7 +474,10 @@ class VideoRecorder {
         this.facing = 'user';
         this.mirror = false;
         this.rendering = false;
-        this.w = 1280; this.h = 720;
+        this.baseW = 1280; this.baseH = 720;
+        this.scaleFactor = 0.9; // Giảm độ phân giải file ra 90%
+        this.w = Math.round(this.baseW * this.scaleFactor);
+        this.h = Math.round(this.baseH * this.scaleFactor);
         this.stream = null;
         this.canvasStream = null;
         this.recorder = null;
@@ -491,7 +493,7 @@ class VideoRecorder {
 
     async initCam(facing = 'user') {
         const cons = {
-            video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
+            video: { facingMode: facing, width: { ideal: this.baseW }, height: { ideal: this.baseH } },
             audio: true
         };
         try {
@@ -499,9 +501,7 @@ class VideoRecorder {
             this.facing = facing;
             this.video.srcObject = this.stream;
             await this.video.play();
-            const s = this.stream.getVideoTracks()[0].getSettings();
-            this.w = s.width || 1280;
-            this.h = s.height || 720;
+            // Đặt canvas = 90% độ phân giải camera → file ra cũng 90%
             this.canvas.width = this.w;
             this.canvas.height = this.h;
             this.startDraw();
@@ -613,6 +613,7 @@ class VideoRecorder {
         const gpsStatus = this.gps.getStatus();
         const speedStr = speed.toFixed(1) + ' km/h';
 
+        // Tính tỉ lệ vmin theo kích thước canvas (đã thu nhỏ)
         const vmin = Math.min(cw, ch) / 100;
         const baseSize = 3.5 * vmin;
         const timeSize = 5 * vmin;
@@ -687,8 +688,8 @@ class VideoRecorder {
             const cw = this.canvas.width, ch = this.canvas.height;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            const vw = this.video.videoWidth || cw;
-            const vh = this.video.videoHeight || ch;
+            const vw = this.video.videoWidth || this.baseW;
+            const vh = this.video.videoHeight || this.baseH;
             const r = vw / vh, cr = cw / ch;
             let dw, dh, x, y;
             if (r > cr) { dh = ch; dw = dh * r; x = (cw - dw) / 2; y = 0; }
