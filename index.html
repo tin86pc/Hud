@@ -62,6 +62,8 @@
             position: absolute;
             top: 0;
             left: 0;
+            opacity: 0; /* Ẩn video gốc, chỉ dùng làm nguồn, canvas hiển thị */
+            pointer-events: none;
         }
 
         #renderCanvas {
@@ -76,7 +78,7 @@
             pointer-events: none;
         }
 
-        /* === Thông tin trên video === */
+        /* === HUD trên màn hình (giữ tham chiếu trạng thái) === */
         .hud {
             position: absolute;
             top: 16px;
@@ -86,6 +88,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            opacity: 0; /* Ẩn HUD HTML, vẽ trực tiếp lên canvas */
         }
 
         .gps-badge {
@@ -285,7 +288,7 @@
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
 
-        <!-- Thông tin trên video -->
+        <!-- HUD tham chiếu (để lấy trạng thái GPS) -->
         <div class="hud">
             <div class="gps-badge">
                 <span class="gps-dot red" id="gpsDot"></span>
@@ -362,11 +365,13 @@ class GPSTracker {
         this.speed = 0;
         this.active = false;
         this.lastPos = null;
+        this.gpsStatus = 'searching'; // searching / ok / lost / denied
     }
 
     start() {
         if (!navigator.geolocation) {
             showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger');
+            this.gpsStatus = 'denied';
             return false;
         }
         this.active = true;
@@ -376,6 +381,7 @@ class GPSTracker {
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 1000 }
         );
         this.updUI('Tìm tín hiệu...', 'yellow');
+        this.gpsStatus = 'searching';
         return true;
     }
 
@@ -384,6 +390,7 @@ class GPSTracker {
         if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
         this.speed = 0;
         this.updUI('Tắt', 'red');
+        this.gpsStatus = 'lost';
     }
 
     handle(pos) {
@@ -395,6 +402,7 @@ class GPSTracker {
             this.speed = this.calcSpeed(c, pos.timestamp);
         }
         this.updUI('GPS', 'green');
+        this.gpsStatus = 'ok';
         document.getElementById('speedDisplay').textContent = this.speed.toFixed(1) + ' km/h';
         const speedEl = document.getElementById('speedDisplay');
         speedEl.style.color = this.speed >= 50 ? '#ff3b30' : this.speed >= 30 ? '#ff9500' : '#34c759';
@@ -425,6 +433,7 @@ class GPSTracker {
             3: ['Mất tín hiệu', 'yellow']
         }[e.code] || ['Lỗi GPS', 'red'];
         this.updUI(m[0], m[1]);
+        this.gpsStatus = e.code === 1 ? 'denied' : 'lost';
     }
 
     updUI(txt, color) {
@@ -433,9 +442,10 @@ class GPSTracker {
     }
 
     getSpeed() { return this.speed; }
+    getStatus() { return this.gpsStatus; }
 }
 
-// === Quản lý Video Lưu trên RAM ===
+// === Quản lý Video + Vẽ HUD TRỰC TIẾP LÊN CANVAS ===
 class VideoRecorder {
     constructor(maxMB = 200) {
         this.max = maxMB === 0 ? Infinity : maxMB * 1024 * 1024;
@@ -576,6 +586,92 @@ class VideoRecorder {
         document.getElementById('btnSave').disabled = this.chunks.length === 0;
     }
 
+    // === Vẽ HUD TRỰC TIẾP LÊN CANVAS ===
+    drawHUD() {
+        const cw = this.canvas.width, ch = this.canvas.height;
+        const ctx = this.ctx;
+
+        // Lấy dữ liệu
+        const now = new Date();
+        const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        const speed = this.gps.getSpeed();
+        const gpsStatus = this.gps.getStatus();
+        const speedStr = speed.toFixed(1) + ' km/h';
+
+        // Tính kích thước font tương đối
+        const baseSize = Math.max(cw * 0.022, 12);
+        const timeSize = Math.max(cw * 0.038, 18);
+        const speedSize = Math.max(cw * 0.045, 22);
+        const padX = Math.max(cw * 0.025, 12);
+        const padY = Math.max(ch * 0.02, 8);
+        const margin = Math.max(cw * 0.025, 12);
+        const radius = Math.max(cw * 0.012, 8);
+        const lineGap = timeSize * 0.4;
+
+        // Đo kích thước chữ
+        ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const dateW = ctx.measureText(date).width;
+        ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const timeW = ctx.measureText(time).width;
+        ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const speedW = ctx.measureText(speedStr).width;
+
+        // Nền mờ
+        const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
+        const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
+        const bx = margin, by = margin;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.roundRect(ctx, bx, by, boxW, boxH, radius);
+        ctx.fill();
+        ctx.restore();
+
+        // Vẽ chữ
+        let tx = bx + padX, ty = by + padY + baseSize * 0.8;
+
+        // Ngày tháng
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        ctx.fillText(date, tx, ty);
+        ty += baseSize + lineGap;
+
+        // Thời gian
+        ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        ctx.fillText(time, tx, ty);
+        ty += timeSize + lineGap;
+
+        // Tốc độ + màu theo mức
+        const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
+        ctx.fillStyle = speedColor;
+        ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        ctx.fillText(speedStr, tx, ty);
+
+        // Vẽ dấu trạng thái GPS
+        const dotX = bx + padX + 4;
+        const dotY = by + padY + baseSize * 0.5;
+        const dotR = Math.max(baseSize * 0.35, 4);
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+        ctx.fillStyle = gpsStatus === 'ok' ? '#34c759' : gpsStatus === 'searching' ? '#ff9500' : '#ff3b30';
+        ctx.fill();
+    }
+
+    roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    }
+
     startDraw() {
         if (this.rendering) return;
         this.rendering = true;
@@ -600,6 +696,9 @@ class VideoRecorder {
             } else {
                 this.ctx.drawImage(this.video, x, y, dw, dh);
             }
+
+            // === Vẽ thông tin lên canvas ===
+            this.drawHUD();
 
             requestAnimationFrame(draw);
         };
