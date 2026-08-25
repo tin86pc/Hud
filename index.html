@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Camera Hành Trình</title>
+    <title>Camera — Preview = Video RAM</title>
     <style>
         * {
             margin: 0;
@@ -23,22 +23,16 @@
             position: relative;
             width: 100vw;
             height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #000;
         }
         .canvas-container {
             position: absolute;
             inset: 0;
             background: #000;
-            overflow: hidden;
         }
         #renderCanvas {
             width: 100%;
             height: 100%;
             display: block;
-            object-fit: cover;
         }
         #videoPreview {
             position: absolute;
@@ -47,12 +41,23 @@
             width: 1px;
             height: 1px;
         }
-        .control-modal {
+
+        .ui-wrapper {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
+            transform: translate(-50%, -50%) rotate(0deg);
+            transform-origin: center center;
+            transition: transform 0.3s ease;
+            z-index: 10;
             width: 70vmin;
+        }
+        .ui-wrapper.landscape {
+            transform: translate(-50%, -50%) rotate(90deg);
+        }
+
+        .control-modal {
+            width: 100%;
             min-height: 30vmin;
             background: rgba(20, 20, 25, 0.92);
             border: 1px solid rgba(255, 255, 255, 0.18);
@@ -63,16 +68,14 @@
             align-items: center;
             gap: 3vmin;
             padding: 4vmin;
-            z-index: 10;
             backdrop-filter: blur(20px);
             opacity: 0;
             visibility: hidden;
-            transition: all 0.25s ease;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
         }
         .control-modal.visible {
             opacity: 1;
             visibility: visible;
-            transform: translate(-50%, -50%) scale(1);
         }
         .btn-row {
             display: flex;
@@ -93,7 +96,7 @@
             align-items: center;
             justify-content: center;
             font-size: 6vmin;
-            transition: all 0.15s ease;
+            transition: transform 0.15s ease;
             touch-action: manipulation;
             -webkit-user-select: none;
             user-select: none;
@@ -162,12 +165,6 @@
         .toast.success { border-color: rgba(52, 199, 89, 0.4); }
         .toast.warning { border-color: rgba(255, 149, 0, 0.4); }
         .toast.danger { border-color: rgba(255, 59, 48, 0.4); }
-        @media (orientation: landscape) {
-            .control-modal { width: 30vmin; min-height: 70vmin; }
-            .btn-row { flex-direction: column; gap: 3vmin; }
-            .ram-row { flex-direction: column; align-items: flex-start; }
-            .ram-bar-bg { width: 100%; }
-        }
     </style>
 </head>
 <body>
@@ -176,26 +173,29 @@
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
     </div>
-    <div class="control-modal" id="controlModal">
-        <div class="btn-row">
-            <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
-            <button class="btn btn-rotate" id="btnRotate" title="Xoay 90°">🔄</button>
-            <button class="btn btn-save" id="btnSave" disabled title="Lưu video">💾</button>
-            <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
-        </div>
-        <div class="ram-row">
-            <span>RAM:</span>
-            <div class="ram-bar-bg"><div class="ram-bar-fill green" id="ramBar"></div></div>
-            <span class="ram-text" id="ramText">0/200MB</span>
-            <select id="ramLimit">
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="200" selected>200</option>
-                <option value="300">300</option>
-                <option value="500">500</option>
-                <option value="1000">1GB</option>
-                <option value="0">∞</option>
-            </select>
+
+    <div class="ui-wrapper" id="uiWrapper">
+        <div class="control-modal" id="controlModal">
+            <div class="btn-row">
+                <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
+                <button class="btn btn-rotate" id="btnRotate" title="Xoay dọc/ngang">🔄</button>
+                <button class="btn btn-save" id="btnSave" disabled title="Lưu video từ RAM">💾</button>
+                <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
+            </div>
+            <div class="ram-row">
+                <span>RAM:</span>
+                <div class="ram-bar-bg"><div class="ram-bar-fill green" id="ramBar"></div></div>
+                <span class="ram-text" id="ramText">0/200MB</span>
+                <select id="ramLimit">
+                    <option value="50">50MB</option>
+                    <option value="100">100MB</option>
+                    <option value="200" selected>200MB</option>
+                    <option value="300">300MB</option>
+                    <option value="500">500MB</option>
+                    <option value="1000">1GB</option>
+                    <option value="0">Không giới hạn</option>
+                </select>
+            </div>
         </div>
     </div>
 </div>
@@ -213,8 +213,10 @@ function showToast(msg, dur = 2500, type = '') {
 
 const controlModal = document.getElementById('controlModal');
 const canvasContainer = document.getElementById('canvasContainer');
+const uiWrapper = document.getElementById('uiWrapper');
 let hideTimer = null;
 const SHOW_DURATION = 5000;
+
 function showControls() {
     controlModal.classList.add('visible');
     clearTimeout(hideTimer);
@@ -239,14 +241,10 @@ class GPSTracker {
         this.speed = 0;
         this.active = false;
         this.lastPos = null;
-        this.gpsStatus = 'searching';
-        this.statusText = 'Tìm tín hiệu...';
-        this.statusColor = 'yellow';
     }
     start() {
         if (!navigator.geolocation) {
             showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger');
-            this.gpsStatus = 'denied';
             return false;
         }
         this.active = true;
@@ -263,16 +261,12 @@ class GPSTracker {
         this.speed = 0;
     }
     handle(pos) {
-        if (!this.active) return;
         const c = pos.coords;
         if (c.speed !== null && c.speed >= 0) {
             this.speed = Math.round(c.speed * 3.6 * 10) / 10;
         } else {
             this.speed = this.calcSpeed(c, pos.timestamp);
         }
-        this.gpsStatus = 'ok';
-        this.statusText = 'GPS';
-        this.statusColor = 'green';
     }
     calcSpeed(coords, ts) {
         if (!this.lastPos) {
@@ -291,19 +285,9 @@ class GPSTracker {
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
     err(e) {
-        const m = {
-            1: ['Cấp quyền vị trí', 'red'],
-            2: ['Không có tín hiệu', 'red'],
-            3: ['Mất tín hiệu', 'yellow']
-        }[e.code] || ['Lỗi GPS', 'red'];
-        this.statusText = m[0];
-        this.statusColor = m[1];
-        this.gpsStatus = e.code === 1 ? 'denied' : 'lost';
+        console.warn('GPS error:', e.code);
     }
     getSpeed() { return this.speed; }
-    getStatus() { return this.gpsStatus; }
-    getStatusText() { return this.statusText; }
-    getStatusColor() { return this.statusColor; }
 }
 
 class VideoRecorder {
@@ -319,7 +303,7 @@ class VideoRecorder {
         this.gps = new GPSTracker();
         this.facing = 'user';
         this.mirror = false;
-        this.rotate = 0;
+        this.isLandscape = false;
         this.rendering = false;
         this.stream = null;
         this.canvasStream = null;
@@ -370,20 +354,24 @@ class VideoRecorder {
     }
 
     toggleRotate() {
-        this.rotate = (this.rotate + 90) % 360;
-        const labels = { 0: '0°', 90: '90°', 180: '180°', 270: '270°' };
-        showToast(`🔄 Xoay: ${labels[this.rotate]}`, 2000);
+        this.isLandscape = !this.isLandscape;
+        uiWrapper.classList.toggle('landscape', this.isLandscape);
+        showToast(this.isLandscape ? '🔄 Đã xoay Ngang' : '🔄 Đã xoay Dọc', 2000);
     }
 
     startRecording() {
         if (this.recording) return;
         this.chunks = []; this.totalSize = 0; this.firstChunk = null; this.hasHeader = false;
+
+        // === Canvas = nguồn video lưu vào RAM ===
         this.canvasStream = this.canvas.captureStream(30);
         const aTrack = this.stream?.getAudioTracks()[0];
         if (aTrack) this.canvasStream.addTrack(aTrack);
+
         let mime = 'video/webm;codecs=vp9,opus';
         if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp8,opus';
         if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
+
         this.recorder = new MediaRecorder(this.canvasStream, { mimeType: mime });
         this.recorder.ondataavailable = e => this.onChunk(e);
         this.recorder.start(this.segTime);
@@ -422,6 +410,7 @@ class VideoRecorder {
             showToast('Chưa có video để lưu', 2500, 'warning');
             return;
         }
+        // Gom tất cả chunks trong RAM thành file
         const list = this.chunks[0] !== this.firstChunk ? [this.firstChunk, ...this.chunks] : this.chunks;
         const blob = new Blob(list, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
@@ -460,7 +449,6 @@ class VideoRecorder {
     }
 
     drawHUD() {
-        const ctx = this.ctx;
         const cw = this.canvas.width;
         const ch = this.canvas.height;
         const now = new Date();
@@ -468,7 +456,6 @@ class VideoRecorder {
         const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         const speed = this.gps.getSpeed();
         const speedStr = speed.toFixed(1) + ' km/h';
-        const gpsColor = this.gps.getStatusColor();
 
         const vmin = Math.min(cw, ch) / 100;
         const baseSize = 3.5 * vmin;
@@ -481,42 +468,42 @@ class VideoRecorder {
         const lineGap = 2 * vmin;
         const dotR = 1.1 * vmin;
 
-        ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const dateW = ctx.measureText(date).width;
-        ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const timeW = ctx.measureText(time).width;
-        ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const speedW = ctx.measureText(speedStr).width;
+        this.ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const dateW = this.ctx.measureText(date).width;
+        this.ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const timeW = this.ctx.measureText(time).width;
+        this.ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const speedW = this.ctx.measureText(speedStr).width;
 
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        this.roundRect(ctx, margin, margin, boxW, boxH, radius);
-        ctx.fill();
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.roundRect(this.ctx, margin, margin, boxW, boxH, radius);
+        this.ctx.fill();
 
         let tx = margin + padX, ty = margin + padY + baseSize * 0.8;
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        ctx.fillText(date, tx, ty);
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        this.ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.fillText(date, tx, ty);
         ty += baseSize + lineGap;
 
-        ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        ctx.fillText(time, tx, ty);
+        this.ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.fillText(time, tx, ty);
         ty += timeSize + lineGap;
 
         const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
-        ctx.fillStyle = speedColor;
-        ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        ctx.fillText(speedStr, tx, ty);
+        this.ctx.fillStyle = speedColor;
+        this.ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.fillText(speedStr, tx, ty);
 
         const dotX = margin + padX - dotR;
         const dotY = margin + padY + baseSize * 0.5;
-        ctx.beginPath();
-        ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
-        ctx.fillStyle = gpsColor === 'green' ? '#34c759' : gpsColor === 'yellow' ? '#ff9500' : '#ff3b30';
-        ctx.fill();
+        this.ctx.beginPath();
+        this.ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#34c759';
+        this.ctx.fill();
     }
 
     startDraw() {
@@ -531,9 +518,8 @@ class VideoRecorder {
                 return;
             }
 
-            // Bước 1: Xác định kích thước logic sau khi xoay
             let outW, outH;
-            if (this.rotate === 90 || this.rotate === 270) {
+            if (this.isLandscape) {
                 outW = vh;
                 outH = vw;
             } else {
@@ -541,7 +527,6 @@ class VideoRecorder {
                 outH = vh;
             }
 
-            // Cập nhật canvas
             if (this.canvas.width !== outW || this.canvas.height !== outH) {
                 this.canvas.width = outW;
                 this.canvas.height = outH;
@@ -549,24 +534,19 @@ class VideoRecorder {
             const cw = outW, ch = outH;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            // Bước 2: Tính tỉ lệ COVER (điền đầy khung, cắt bớt nếu cần, không viền đen)
             const scaleX = cw / vw;
             const scaleY = ch / vh;
-            const scale = Math.max(scaleX, scaleY); // max = cover, min = contain
+            const scale = Math.max(scaleX, scaleY);
             const dw = vw * scale;
             const dh = vh * scale;
-            const dx = (cw - dw) / 2;
-            const dy = (ch - dh) / 2;
 
-            // Bước 3: Xoay + lật + vẽ video — TẤT CẢ trong cùng hệ tọa độ
             this.ctx.save();
             this.ctx.translate(cw / 2, ch / 2);
-            this.ctx.rotate((this.rotate * Math.PI) / 180);
+            if (this.isLandscape) this.ctx.rotate(Math.PI / 2);
             if (this.mirror) this.ctx.scale(-1, 1);
             this.ctx.drawImage(this.video, -dw / 2, -dh / 2, dw, dh);
             this.ctx.restore();
 
-            // Bước 4: Vẽ HUD — SAU khi xoay, tọa độ gốc đã đúng
             this.drawHUD();
 
             requestAnimationFrame(draw);
