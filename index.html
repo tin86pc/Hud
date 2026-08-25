@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Camera HUD — Preview = Video RAM</title>
+    <title>Camera HUD — Chỉ xoay chữ, video nguyên</title>
     <style>
         * {
             margin: 0;
@@ -191,7 +191,7 @@
         <div class="control-modal" id="controlModal">
             <div class="btn-row">
                 <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
-                <button class="btn btn-rotate" id="btnRotate" title="Xoay dọc/ngang">🔄</button>
+                <button class="btn btn-rotate" id="btnRotate" title="Xoay chữ/HUD">🔄</button>
                 <button class="btn btn-save" id="btnSave" disabled title="Lưu video từ RAM">💾</button>
                 <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
             </div>
@@ -317,7 +317,7 @@ class VideoRecorder {
         this.gps = new GPSTracker();
         this.facing = 'user';
         this.mirror = false;
-        this.isLandscape = false;
+        this.rotateHUD = 0; // góc xoay chữ/HUD: 0 hoặc 90 độ
         this.rendering = false;
         this.stream = null;
         this.canvasStream = null;
@@ -379,9 +379,9 @@ class VideoRecorder {
     }
 
     toggleRotate() {
-        this.isLandscape = !this.isLandscape;
-        uiWrapper.classList.toggle('landscape', this.isLandscape);
-        showToast(this.isLandscape ? '🔄 Đã xoay Ngang' : '🔄 Đã xoay Dọc', 2000);
+        this.rotateHUD = this.rotateHUD === 0 ? 90 : 0;
+        uiWrapper.classList.toggle('landscape', this.rotateHUD === 90);
+        showToast(this.rotateHUD === 90 ? '🔄 Chữ xoay ngang' : '🔄 Chữ trở lại dọc', 2000);
     }
 
     startRecording() {
@@ -480,34 +480,37 @@ class VideoRecorder {
         const speed = this.gps.getSpeed();
         const speedStr = speed.toFixed(1) + ' km/h';
 
-        // Tự điều chỉnh kích thước chữ theo hướng màn hình
         const minDim = Math.min(cw, ch);
-        const baseFontScale = this.isLandscape ? 0.028 : 0.035;
-        const timeFontScale = this.isLandscape ? 0.045 : 0.055;
-        const speedFontScale = this.isLandscape ? 0.055 : 0.065;
+        const baseFontSize = minDim * 0.045;
+        const timeFontSize = minDim * 0.07;
+        const speedFontSize = minDim * 0.08;
 
-        const baseSize = minDim * baseFontScale;
-        const timeSize = minDim * timeFontScale;
-        const speedSize = minDim * speedFontScale;
+        const padX = baseFontSize * 1.8;
+        const padY = baseFontSize * 1.3;
+        const margin = minDim * 0.05;
+        const radius = baseFontSize * 0.85;
+        const lineGap = baseFontSize * 0.65;
+        const dotR = baseFontSize * 0.35;
 
-        const padX = baseSize * 1.8;
-        const padY = baseSize * 1.2;
-        const margin = minDim * 0.045;
-        const radius = baseSize * 0.8;
-        const lineGap = baseSize * 0.6;
-        const dotR = baseSize * 0.35;
+        // Lưu trạng thái và xoay hệ tọa độ cho chữ
+        this.ctx.save();
+        if (this.rotateHUD === 90) {
+            this.ctx.translate(cw / 2, ch / 2);
+            this.ctx.rotate(Math.PI / 2);
+            this.ctx.translate(-ch / 2, -cw / 2); // đảo lại kích thước khi xoay
+        }
 
-        this.ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.font = `bold ${baseFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const dateW = this.ctx.measureText(date).width;
 
-        this.ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.font = `bold ${timeFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const timeW = this.ctx.measureText(time).width;
 
-        this.ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.font = `bold ${speedFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const speedW = this.ctx.measureText(speedStr).width;
 
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
-        const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
+        const boxH = padY * 2 + baseFontSize + timeFontSize + speedFontSize + lineGap * 2;
 
         const hudX = margin;
         const hudY = margin;
@@ -517,29 +520,31 @@ class VideoRecorder {
         this.ctx.fill();
 
         let tx = hudX + padX;
-        let ty = hudY + padY + baseSize * 0.8;
+        let ty = hudY + padY + baseFontSize * 0.8;
 
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        this.ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.font = `bold ${baseFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         this.ctx.fillText(date, tx, ty);
-        ty += baseSize + lineGap;
+        ty += baseFontSize + lineGap;
 
-        this.ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.font = `bold ${timeFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         this.ctx.fillText(time, tx, ty);
-        ty += timeSize + lineGap;
+        ty += timeFontSize + lineGap;
 
         const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
         this.ctx.fillStyle = speedColor;
-        this.ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.font = `bold ${speedFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         this.ctx.fillText(speedStr, tx, ty);
 
         const dotX = hudX + padX - dotR;
-        const dotY = hudY + padY + baseSize * 0.5;
+        const dotY = hudY + padY + baseFontSize * 0.5;
 
         this.ctx.beginPath();
         this.ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
         this.ctx.fillStyle = '#34c759';
         this.ctx.fill();
+
+        this.ctx.restore();
     }
 
     startDraw() {
@@ -557,37 +562,44 @@ class VideoRecorder {
                 return;
             }
 
-            let outW, outH;
-            if (this.isLandscape) {
-                outW = vh;
-                outH = vw;
-            } else {
-                outW = vw;
-                outH = vh;
+            const container = document.getElementById('canvasContainer');
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+
+            if (this.canvas.width !== cw || this.canvas.height !== ch) {
+                this.canvas.width = cw;
+                this.canvas.height = ch;
             }
 
-            if (this.canvas.width !== outW || this.canvas.height !== outH) {
-                this.canvas.width = outW;
-                this.canvas.height = outH;
-            }
-
-            const cw = outW;
-            const ch = outH;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            const scaleX = cw / vw;
-            const scaleY = ch / vh;
-            const scale = Math.max(scaleX, scaleY);
-            const dw = vw * scale;
-            const dh = vh * scale;
+            // === VIDEO KHÔNG BAO GIỜ XOAY ===
+            const videoRatio = vw / vh;
+            const containerRatio = cw / ch;
+
+            let drawW, drawH, offsetX, offsetY;
+
+            if (containerRatio > videoRatio) {
+                drawW = cw;
+                drawH = cw / videoRatio;
+            } else {
+                drawH = ch;
+                drawW = ch * videoRatio;
+            }
+            offsetX = (cw - drawW) / 2;
+            offsetY = (ch - drawH) / 2;
 
             this.ctx.save();
-            this.ctx.translate(cw / 2, ch / 2);
-            if (this.isLandscape) this.ctx.rotate(Math.PI / 2);
-            if (this.mirror) this.ctx.scale(-1, 1);
-            this.ctx.drawImage(this.video, -dw / 2, -dh / 2, dw, dh);
+            if (this.mirror) {
+                this.ctx.translate(cw, 0);
+                this.ctx.scale(-1, 1);
+                this.ctx.drawImage(this.video, offsetX, offsetY, drawW, drawH);
+            } else {
+                this.ctx.drawImage(this.video, offsetX, offsetY, drawW, drawH);
+            }
             this.ctx.restore();
 
+            // === CHỈ HUD/CHỮ ĐƯỢC XOAY ===
             this.drawHUD();
 
             requestAnimationFrame(draw);
