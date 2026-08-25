@@ -15,18 +15,14 @@
         :root {
             --bg-dark: #000;
             --panel-bg: rgba(15, 15, 20, 0.9);
-            --panel-border: rgba(255, 255, 255, 0.12);
+            --panel-border: rgba(255, 255, 255, 0.15);
             --text-primary: #fff;
-            --text-secondary: rgba(255, 255, 255, 0.75);
-            --text-muted: rgba(255, 255, 255, 0.45);
-            --accent-red: #ff3b30;
+            --text-secondary: rgba(255, 255, 255, 0.8);
             --accent-green: #34c759;
-            --accent-yellow: #ff9500;
             --accent-blue: #007aff;
-            --accent-orange: #ff6b35;
 
-            --control-h: 100px;
-            --control-w-landscape: 140px;
+            --control-h: 120px;
+            --control-w-landscape: 150px;
         }
 
         html, body {
@@ -34,6 +30,8 @@
             font-family: -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             background: var(--bg-dark);
             overflow: hidden;
+            position: fixed;
+            width: 100%;
         }
 
         .app {
@@ -52,6 +50,7 @@
             height: calc(100vh - var(--control-h));
             background: #000;
             overflow: hidden;
+            z-index: 1;
         }
 
         #videoPreview {
@@ -59,6 +58,9 @@
             height: 100%;
             display: block;
             object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         #renderCanvas {
@@ -69,38 +71,55 @@
             height: 100%;
             display: block;
             object-fit: cover;
+            z-index: 2;
+            pointer-events: none; /* QUAN TRỌNG: không chặn sự kiện chuột */
         }
 
         /* === Thông tin trên video === */
         .hud {
             position: absolute;
-            top: 12px;
-            left: 12px;
-            z-index: 10;
+            top: 16px;
+            left: 16px;
+            z-index: 3;
             pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .gps-badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            background: rgba(0, 0, 0, 0.35);
-            border-radius: 20px;
-            font-size: 13px;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 24px;
+            font-size: 15px;
             color: var(--text-secondary);
             backdrop-filter: blur(10px);
+            white-space: nowrap;
         }
 
         .gps-dot {
-            width: 9px;
-            height: 9px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             flex-shrink: 0;
         }
         .gps-dot.green { background: var(--accent-green); }
-        .gps-dot.yellow { background: var(--accent-yellow); }
-        .gps-dot.red { background: var(--accent-red); }
+        .gps-dot.yellow { background: #ff9500; }
+        .gps-dot.red { background: #ff3b30; }
+
+        .speed-badge {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-green);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 16px;
+            border-radius: 16px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+        }
 
         /* === Thanh Điều Khiển === */
         .control-bar {
@@ -111,35 +130,43 @@
             height: var(--control-h);
             background: var(--panel-bg);
             border-top: 1px solid var(--panel-border);
-            padding: 12px 16px;
+            padding: 16px 24px;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            z-index: 5;
-        }
-
-        .btn-row {
-            display: flex;
+            flex-direction: row;
             justify-content: space-around;
             align-items: center;
+            z-index: 10; /* Cao nhất: đảm bảo nút ở trên cùng */
         }
 
         .btn {
-            width: 56px;
-            height: 56px;
+            width: 72px;  /* Lớn hơn dễ chạm */
+            height: 72px;
             border-radius: 50%;
-            border: none;
-            background: rgba(255,255,255,0.08);
+            border: 2px solid var(--panel-border);
+            background: rgba(255, 255, 255, 0.08);
             color: var(--text-secondary);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            transition: all 0.2s;
-            border: 1px solid var(--panel-border);
+            font-size: 28px;
+            transition: all 0.15s ease;
+            touch-action: manipulation; /* Tối ưu chạm trên di động */
+            min-width: 72px;
+            min-height: 72px;
+            -webkit-user-select: none;
+            user-select: none;
         }
-        .btn:active { transform: scale(0.92); background: rgba(255,255,255,0.15); }
+
+        .btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:focus {
+            outline: 2px solid rgba(0, 122, 255, 0.5);
+            outline-offset: 2px;
+        }
 
         .btn-mirror { color: var(--text-secondary); }
         .btn-cam { color: var(--accent-blue); }
@@ -147,18 +174,18 @@
         /* === Thông báo === */
         .toast {
             position: fixed;
-            bottom: calc(var(--control-h) + 16px);
+            bottom: calc(var(--control-h) + 20px);
             left: 50%;
             transform: translateX(-50%) translateY(10px);
             background: var(--panel-bg);
             color: var(--text-primary);
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 14px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 15px;
             backdrop-filter: blur(15px);
             border: 1px solid var(--panel-border);
             opacity: 0;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
             pointer-events: none;
             z-index: 100;
             max-width: 90vw;
@@ -181,13 +208,8 @@
                 bottom: 0;
                 flex-direction: column;
                 justify-content: center;
-                gap: 32px;
-                padding: 20px 16px;
-            }
-
-            .btn-row {
-                flex-direction: column;
-                gap: 24px;
+                gap: 40px;
+                padding: 20px;
             }
 
             .toast {
@@ -208,27 +230,27 @@
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
 
-        <!-- Thông tin GPS trên video -->
+        <!-- Thông tin trên video -->
         <div class="hud">
             <div class="gps-badge">
                 <span class="gps-dot red" id="gpsDot"></span>
                 <span id="gpsLabel">Tìm tín hiệu</span>
             </div>
+            <div class="speed-badge" id="speedDisplay">0.0 km/h</div>
         </div>
     </div>
 
     <!-- Thanh Điều Khiển -->
     <div class="control-bar">
-        <div class="btn-row">
-            <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
-            <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
-        </div>
+        <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
+        <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
     </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+// === Hiển thị thông báo ===
 let toastTimer = null;
 function showToast(msg, dur = 2000) {
     const t = document.getElementById('toast');
@@ -238,6 +260,7 @@ function showToast(msg, dur = 2000) {
     toastTimer = setTimeout(() => t.classList.remove('show'), dur);
 }
 
+// === Theo dõi GPS & Tốc độ ===
 class GPSTracker {
     constructor() {
         this.watchId = null;
@@ -277,6 +300,10 @@ class GPSTracker {
             this.speed = this.calcSpeed(c, pos.timestamp);
         }
         this.updUI('GPS', 'green');
+        document.getElementById('speedDisplay').textContent = this.speed.toFixed(1) + ' km/h';
+        // Đổi màu theo tốc độ
+        const speedEl = document.getElementById('speedDisplay');
+        speedEl.style.color = this.speed >= 50 ? '#ff3b30' : this.speed >= 30 ? '#ff9500' : '#34c759';
     }
 
     calcSpeed(coords, ts) {
@@ -314,6 +341,7 @@ class GPSTracker {
     getSpeed() { return this.speed; }
 }
 
+// === Camera & Canvas ===
 class CameraView {
     constructor() {
         this.stream = null;
@@ -332,22 +360,33 @@ class CameraView {
             video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: false
         };
-        this.stream = await navigator.mediaDevices.getUserMedia(cons);
-        this.facing = facing;
-        this.video.srcObject = this.stream;
-        await this.video.play();
-        const s = this.stream.getVideoTracks()[0].getSettings();
-        this.w = s.width || 1280; this.h = s.height || 720;
-        this.canvas.width = this.w; this.canvas.height = this.h;
-        this.startDraw();
-        this.gps.start();
+        try {
+            this.stream = await navigator.mediaDevices.getUserMedia(cons);
+            this.facing = facing;
+            this.video.srcObject = this.stream;
+            await this.video.play();
+            const s = this.stream.getVideoTracks()[0].getSettings();
+            this.w = s.width || 1280;
+            this.h = s.height || 720;
+            this.canvas.width = this.w;
+            this.canvas.height = this.h;
+            this.startDraw();
+            this.gps.start();
+            return true;
+        } catch (err) {
+            showToast('❌ Không truy cập được camera');
+            console.error(err);
+            return false;
+        }
     }
 
     async switchCam() {
         const newFacing = this.facing === 'user' ? 'environment' : 'user';
-        this.stream?.getTracks().forEach(t => t.stop());
+        if (this.stream) {
+            this.stream.getTracks().forEach(t => t.stop());
+        }
         await this.initCam(newFacing);
-        showToast(`Đã chuyển camera ${newFacing === 'user' ? 'trước' : 'sau'}`);
+        showToast(`Đã chuyển camera: ${newFacing === 'user' ? 'Trước' : 'Sau'}`);
     }
 
     toggleMirror() {
@@ -363,7 +402,8 @@ class CameraView {
             const cw = this.canvas.width, ch = this.canvas.height;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            const vw = this.video.videoWidth, vh = this.video.videoHeight;
+            const vw = this.video.videoWidth || cw;
+            const vh = this.video.videoHeight || ch;
             const r = vw / vh, cr = cw / ch;
             let dw, dh, x, y;
             if (r > cr) { dh = ch; dw = dh * r; x = (cw - dw) / 2; y = 0; }
@@ -379,76 +419,31 @@ class CameraView {
                 this.ctx.drawImage(this.video, x, y, dw, dh);
             }
 
-            // Vẽ thông tin: ngày, giờ, tốc độ
-            const now = new Date();
-            const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-            const spd = this.gps.getSpeed();
-            const spdTxt = spd.toFixed(1) + ' km/h';
-
-            const fsDate = Math.max(cw * 0.022, 12);
-            const fsTime = Math.max(cw * 0.035, 18);
-            const fsSpd = Math.max(cw * 0.038, 20);
-            const padX = Math.max(cw * 0.022, 10);
-            const padY = Math.max(ch * 0.018, 7);
-            const margin = Math.max(cw * 0.018, 10);
-            const radius = Math.max(cw * 0.01, 6);
-            const lineGap = fsTime * 0.3;
-
-            this.ctx.font = `bold ${fsDate}px -apple-system, sans-serif`;
-            const wDate = this.ctx.measureText(date).width;
-            this.ctx.font = `bold ${fsTime}px -apple-system, sans-serif`;
-            const wTime = this.ctx.measureText(time).width;
-            this.ctx.font = `bold ${fsSpd}px -apple-system, sans-serif`;
-            const wSpd = this.ctx.measureText(spdTxt).width;
-
-            const boxW = Math.max(wDate, wTime, wSpd) + padX * 2;
-            const boxH = padY * 2 + fsDate + fsTime + fsSpd + lineGap * 2;
-            const bx = margin, by = margin;
-
-            this.ctx.save();
-            this.ctx.fillStyle = 'rgba(0,0,0,0.35)';
-            this.ctx.beginPath();
-            this.ctx.moveTo(bx + radius, by);
-            this.ctx.lineTo(bx + boxW - radius, by);
-            this.ctx.quadraticCurveTo(bx + boxW, by, bx + boxW, by + radius);
-            this.ctx.lineTo(bx + boxW, by + boxH - radius);
-            this.ctx.quadraticCurveTo(bx + boxW, by + boxH, bx + boxW - radius, by + boxH);
-            this.ctx.lineTo(bx + radius, by + boxH);
-            this.ctx.quadraticCurveTo(bx, by + boxH, bx, by + boxH - radius);
-            this.ctx.lineTo(bx, by + radius);
-            this.ctx.quadraticCurveTo(bx, by, bx + radius, by);
-            this.ctx.closePath();
-            this.ctx.fill();
-            this.ctx.restore();
-
-            const tx = bx + padX;
-            let ty = by + padY + fsDate * 0.8;
-
-            this.ctx.fillStyle = 'rgba(255,255,255,0.95)';
-            this.ctx.font = `bold ${fsDate}px -apple-system, sans-serif`;
-            this.ctx.fillText(date, tx, ty);
-            ty += fsDate + lineGap;
-
-            this.ctx.font = `bold ${fsTime}px -apple-system, sans-serif`;
-            this.ctx.fillText(time, tx, ty);
-            ty += fsTime + lineGap;
-
-            this.ctx.fillStyle = spd >= 50 ? '#ff3b30' : spd >= 30 ? '#ff9500' : '#34c759';
-            this.ctx.font = `bold ${fsSpd}px -apple-system, sans-serif`;
-            this.ctx.fillText(spdTxt, tx, ty);
-
             requestAnimationFrame(draw);
         };
         draw();
     }
 }
 
+// === Khởi tạo & Gắn sự kiện ===
 const cam = new CameraView();
 
-document.getElementById('btnMirror').addEventListener('click', () => cam.toggleMirror());
-document.getElementById('btnCam').addEventListener('click', () => cam.switchCam());
+// Gắn cả 2 loại sự kiện để đảm bảo hoạt động trên mọi trình duyệt
+const btnMirror = document.getElementById('btnMirror');
+const btnCam = document.getElementById('btnCam');
 
+function attachClick(el, handler) {
+    el.addEventListener('click', handler, { passive: true });
+    el.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        handler();
+    }, { passive: false });
+}
+
+attachClick(btnMirror, () => cam.toggleMirror());
+attachClick(btnCam, () => cam.switchCam());
+
+// Khởi động
 cam.initCam('user');
 
 window.addEventListener('beforeunload', () => cam.gps.stop());
