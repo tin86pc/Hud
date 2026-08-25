@@ -14,15 +14,13 @@
 
         :root {
             --bg-dark: #000;
-            --panel-bg: rgba(15, 15, 20, 0.9);
-            --panel-border: rgba(255, 255, 255, 0.15);
+            --panel-bg: rgba(20, 20, 25, 0.92);
+            --panel-border: rgba(255, 255, 255, 0.18);
             --text-primary: #fff;
             --text-secondary: rgba(255, 255, 255, 0.8);
             --accent-green: #34c759;
             --accent-blue: #007aff;
-
-            --control-h: 120px;
-            --control-w-landscape: 150px;
+            --accent-orange: #ff9500;
         }
 
         html, body {
@@ -108,7 +106,7 @@
             flex-shrink: 0;
         }
         .gps-dot.green { background: var(--accent-green); }
-        .gps-dot.yellow { background: #ff9500; }
+        .gps-dot.yellow { background: var(--accent-orange); }
         .gps-dot.red { background: #ff3b30; }
 
         .speed-badge {
@@ -122,33 +120,37 @@
             backdrop-filter: blur(10px);
         }
 
-        /* === Modal / Thanh Điều Khiển - MẶC ĐỊNH ẨN === */
-        .control-bar {
+        /* === MODAL Ở GIỮA - MẶC ĐỊNH ẨN === */
+        .control-modal {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: var(--control-h);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 220px;
+            height: 120px;
             background: var(--panel-bg);
-            border-top: 1px solid var(--panel-border);
-            padding: 16px 24px;
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
             display: flex;
             flex-direction: row;
             justify-content: space-around;
             align-items: center;
+            padding: 0 20px;
             z-index: 10;
-            /* Ẩn ban đầu + hiệu ứng chuyển */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            
+            /* Ẩn ban đầu + hiệu ứng */
             opacity: 0;
             visibility: hidden;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
         }
 
         /* Khi hiện ra */
-        .control-bar.visible {
+        .control-modal.visible {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
+            transform: translate(-50%, -50%) scale(1);
         }
 
         .btn {
@@ -182,7 +184,7 @@
         /* === Thông báo === */
         .toast {
             position: fixed;
-            bottom: calc(var(--control-h) + 20px);
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%) translateY(10px);
             background: var(--panel-bg);
@@ -203,35 +205,12 @@
 
         /* === Màn hình NGANG === */
         @media (orientation: landscape) {
-            .video-wrap {
-                width: calc(100vw - var(--control-w-landscape));
-                height: 100vh;
-            }
-
-            .control-bar {
-                width: var(--control-w-landscape);
-                height: 100vh;
-                left: auto;
-                right: 0;
-                bottom: 0;
+            .control-modal {
+                width: 120px;
+                height: 220px;
                 flex-direction: column;
-                justify-content: center;
-                gap: 40px;
-                padding: 20px;
-                transform: translateX(20px);
+                padding: 20px 0;
             }
-
-            .control-bar.visible {
-                transform: translateX(0);
-            }
-
-            .toast {
-                bottom: 20px;
-                right: calc(var(--control-w-landscape) + 20px);
-                left: auto;
-                transform: translateY(10px);
-            }
-            .toast.show { transform: translateY(0); }
         }
     </style>
 </head>
@@ -253,8 +232,8 @@
         </div>
     </div>
 
-    <!-- Thanh Điều Khiển - Ẩn mặc định -->
-    <div class="control-bar" id="controlBar">
+    <!-- MODAL NÚT Ở GIỮA MÀN HÌNH -->
+    <div class="control-modal" id="controlModal">
         <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
         <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
     </div>
@@ -273,28 +252,27 @@ function showToast(msg, dur = 2000) {
     toastTimer = setTimeout(() => t.classList.remove('show'), dur);
 }
 
-// === Hiện/Ẩn Modal Nút Điều Khiển ===
-const controlBar = document.getElementById('controlBar');
+// === Hiện/Ẩn Modal Ở GIỮA ===
+const controlModal = document.getElementById('controlModal');
 const appScreen = document.getElementById('appScreen');
 let hideTimer = null;
-const SHOW_DURATION = 4000; // Hiện trong 4 giây rồi ẩn
+const SHOW_DURATION = 4000; // Hiện 4 giây rồi ẩn
 
 function showControls() {
-    controlBar.classList.add('visible');
-    // Reset đếm ngược
+    controlModal.classList.add('visible');
     clearTimeout(hideTimer);
     hideTimer = setTimeout(hideControls, SHOW_DURATION);
 }
 
 function hideControls() {
-    controlBar.classList.remove('visible');
+    controlModal.classList.remove('visible');
     clearTimeout(hideTimer);
 }
 
-// Chạm vào màn hình → hiện nút, chạm lại thì reset đếm ngược
+// Chạm màn hình → hiện modal, chạm lại reset đếm ngược
 appScreen.addEventListener('click', showControls);
 appScreen.addEventListener('touchstart', function(e) {
-    if (e.target.closest('.btn')) return; // Không tính khi bấm nút
+    if (e.target.closest('.btn')) return; // Bấm nút thì không reset
     showControls();
 }, { passive: true });
 
@@ -468,7 +446,7 @@ const cam = new CameraView();
 function attachClick(el, handler) {
     el.addEventListener('click', handler);
     el.addEventListener('touchstart', e => {
-        e.stopPropagation(); // Ngăn chặn sự kiện lan ra màn hình
+        e.stopPropagation();
         handler();
     }, { passive: true });
 }
@@ -476,7 +454,6 @@ function attachClick(el, handler) {
 attachClick(document.getElementById('btnMirror'), () => cam.toggleMirror());
 attachClick(document.getElementById('btnCam'), () => cam.switchCam());
 
-// Khởi động
 cam.initCam('user');
 
 window.addEventListener('beforeunload', () => cam.gps.stop());
