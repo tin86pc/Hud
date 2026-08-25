@@ -55,7 +55,6 @@
             border: 1px solid rgba(255, 255, 255, 0.03);
         }
 
-        /* ===== VIDEO - HIỂN THỊ ĐẦY ĐỦ ===== */
         .video-wrapper {
             position: relative;
             width: 100%;
@@ -64,7 +63,6 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.03);
             aspect-ratio: 16 / 9;
-            /* Giữ tỉ lệ ngang cho video */
         }
 
         #videoPreview {
@@ -81,7 +79,6 @@
             object-fit: cover;
         }
 
-        /* ===== GPS STATUS NHỎ ===== */
         .gps-status-mini {
             position: absolute;
             bottom: 12px;
@@ -118,7 +115,6 @@
             background: #f44336;
         }
 
-        /* ===== CONTROLS ===== */
         .controls-row {
             display: flex;
             gap: 8px;
@@ -759,7 +755,7 @@
                 this.renderLoopId = null;
 
                 this.currentFacingMode = 'user';
-                this.isMirrored = true;
+                this.isMirrored = false; // Mặc định KHÔNG lật
 
                 this.onUpdate = null;
                 this.isRamFull = false;
@@ -878,10 +874,19 @@
                     const w = this.canvas.width;
                     const h = this.canvas.height;
 
-                    // Vẽ video full canvas (không bị cắt)
-                    this.ctx.drawImage(this.video, 0, 0, w, h);
+                    // === QUAN TRỌNG: LẬT ẢNH TRÊN CANVAS ===
+                    // Nếu bật gương, vẽ lật ngang để preview và video giống nhau
+                    if (this.isMirrored) {
+                        // Lật ngang canvas trước khi vẽ
+                        this.ctx.save();
+                        this.ctx.scale(-1, 1);
+                        this.ctx.drawImage(this.video, -w, 0, w, h);
+                        this.ctx.restore();
+                    } else {
+                        this.ctx.drawImage(this.video, 0, 0, w, h);
+                    }
 
-                    // === OVERLAY ===
+                    // === OVERLAY (không bị lật) ===
                     const now = new Date();
                     const timeStr = now.toLocaleTimeString('vi-VN', {
                         hour12: false,
@@ -898,16 +903,14 @@
                     const speed = this.gps.getSpeed();
                     const speedText = speed > 0 ? `${speed.toFixed(1)} km/h` : '0 km/h';
 
-                    // === KÍCH THƯỚC FONT ===
                     const padding = 14;
                     const timeFontSize = Math.max(18, Math.min(26, w / 35));
-                    const speedFontSize = timeFontSize * 1.4; // Tốc độ TO hơn
+                    const speedFontSize = timeFontSize * 1.4;
                     const lineHeight = timeFontSize + 8;
 
                     this.ctx.textAlign = 'left';
                     this.ctx.textBaseline = 'top';
 
-                    // Đo kích thước
                     this.ctx.font = `bold ${timeFontSize}px 'Courier New', monospace`;
                     const timeMetrics = this.ctx.measureText(`${dateStr} - ${timeStr}`);
                     this.ctx.font = `bold ${speedFontSize}px 'Courier New', monospace`;
@@ -919,7 +922,6 @@
                     const x = 14;
                     const y = 14;
 
-                    // === BACKGROUND ===
                     const radius = 12;
                     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
                     this.ctx.shadowBlur = 24;
@@ -946,13 +948,10 @@
                     this.ctx.lineWidth = 1;
                     this.ctx.stroke();
 
-                    // === TEXT ===
-                    // Dòng 1: Thời gian
                     this.ctx.fillStyle = '#ffffff';
                     this.ctx.font = `bold ${timeFontSize}px 'Courier New', monospace`;
                     this.ctx.fillText(`${dateStr} - ${timeStr}`, x + padding, y + 4);
 
-                    // Dòng 2: Tốc độ - TO HƠN
                     const speedColor = speed > 50 ? '#f44336' : speed > 30 ? '#ff9800' : '#4caf50';
                     this.ctx.fillStyle = speedColor;
                     this.ctx.font = `bold ${speedFontSize}px 'Courier New', monospace`;
@@ -989,7 +988,9 @@
                     await this.video.play();
 
                     this.setupCanvas();
-                    this.applyMirror();
+
+                    // KHÔNG dùng transform CSS nữa, dùng canvas để lật
+                    // this.video.style.transform = 'scaleX(-1)'; // XÓA DÒNG NÀY
 
                     this.buffer = [];
                     this.totalSize = 0;
@@ -1171,17 +1172,9 @@
                 }
             }
 
-            applyMirror() {
-                if (this.isMirrored && this.currentFacingMode === 'user') {
-                    this.video.style.transform = 'scaleX(-1)';
-                } else {
-                    this.video.style.transform = 'scaleX(1)';
-                }
-            }
-
+            // ===== LẬT GƯƠNG =====
             toggleMirror() {
                 this.isMirrored = !this.isMirrored;
-                this.applyMirror();
                 showToast(this.isMirrored ? '🔄 Đã bật gương' : '🔄 Đã tắt gương', 1500);
                 if (this.onUpdate) this.onUpdate();
             }
@@ -1343,6 +1336,7 @@
             updateUI();
         });
 
+        // ===== NÚT LẬT GƯƠNG =====
         btnFlipMirror.addEventListener('click', () => {
             recorder.toggleMirror();
             updateUI();
@@ -1354,8 +1348,8 @@
             recorder.stop();
         });
 
-        console.log('📹 Camera Hành Trình - Hiển thị đầy đủ!');
-        console.log('✅ Tỉ lệ 16:9, không bị cắt');
+        console.log('📹 Camera Hành Trình - Preview = Video lưu!');
+        console.log('✅ Lật gương bằng canvas, video lưu giống preview');
     </script>
 </body>
 </html>
