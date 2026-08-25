@@ -26,11 +26,10 @@
             --accent-orange: #ff6b35;
             --radius-lg: 20px;
             --radius-md: 14px;
-            --radius-sm: 10px;
             --shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.6);
-            /* Định nghĩa vùng an toàn */
-            --safe-bottom-portrait: 140px;
-            --safe-right-landscape: 140px;
+            /* Khoảng trống an toàn - đủ lớn để không bị che */
+            --safe-area-bottom: 180px;
+            --safe-area-right: 180px;
         }
 
         body {
@@ -71,16 +70,16 @@
             object-fit: cover;
         }
 
-        /* ===== Giao diện điều khiển - luôn trên, không bị che ===== */
+        /* ===== Giao diện điều khiển - LUÔN TRÊN CÙNG ===== */
         .overlay {
             position: absolute;
             inset: 0;
-            z-index: 10;
+            z-index: 99; /* Rất cao để chắc chắn trên cùng */
             pointer-events: none;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+            padding: max(12px, env(safe-area-inset-top)) 12px max(20px, env(safe-area-inset-bottom)) 12px;
         }
 
         .overlay > * { pointer-events: auto; }
@@ -215,18 +214,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            margin-bottom: 10px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--panel-border);
             border-radius: var(--radius-md);
-            font-size: 11px;
+            font-size: 12px;
         }
         .info-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             color: var(--text-muted);
         }
         .info-item span {
@@ -237,13 +236,13 @@
 
         /* ==== THANH RAM ==== */
         .ram-bar-wrapper {
-            padding: 0 12px 10px;
+            padding: 0 16px 12px;
         }
         .ram-panel {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 7px 12px;
+            gap: 10px;
+            padding: 10px 16px;
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--panel-border);
@@ -251,7 +250,7 @@
             flex-wrap: wrap;
         }
         .ram-label {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -260,11 +259,11 @@
         }
         .ram-track {
             flex: 1;
-            height: 5px;
+            height: 6px;
             background: rgba(255,255,255,0.08);
             border-radius: 10px;
             overflow: hidden;
-            min-width: 50px;
+            min-width: 60px;
         }
         .ram-fill {
             height: 100%;
@@ -279,8 +278,8 @@
         .ram-values {
             display: flex;
             align-items: center;
-            gap: 3px;
-            font-size: 10px;
+            gap: 4px;
+            font-size: 11px;
             color: var(--text-muted);
             white-space: nowrap;
         }
@@ -291,132 +290,128 @@
         .ram-selector {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             white-space: nowrap;
         }
         .ram-selector label {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
         }
         .ram-selector select {
-            padding: 2px 6px;
-            border-radius: 6px;
+            padding: 4px 8px;
+            border-radius: 8px;
             border: 1px solid var(--panel-border);
             background: rgba(0,0,0,0.3);
             color: var(--text-secondary);
-            font-size: 11px;
+            font-size: 12px;
             outline: none;
             cursor: pointer;
         }
         .ram-selector select:focus { border-color: var(--accent-blue); }
 
-        /* ==== NÚT ĐIỀU KHIỂN ==== */
+        /* ==== NÚT ĐIỀU KHIỂN - RÕ RÀNG, DỄ BẤM ==== */
         .controls-bar {
             display: flex;
             align-items: center;
             justify-content: space-around;
-            padding: 8px 4px 16px;
-            min-height: 90px; /* Đảm bảo đủ chỗ cho nút */
+            padding: 12px 8px 20px;
+            min-height: 120px; /* Đủ chỗ cho nút */
+            background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
+            border-radius: 24px 24px 0 0;
         }
 
         .ctrl-group {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
         .ctrl-btn {
-            width: 52px;
-            height: 52px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             border: none;
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             color: var(--text-secondary);
-            font-size: 18px;
+            font-size: 22px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
             border: 1px solid var(--panel-border);
-            z-index: 20; /* Luôn trên cùng */
             position: relative;
+            z-index: 100; /* Cao nhất */
+            flex-shrink: 0;
         }
         .ctrl-btn:active { transform: scale(0.92); }
         .ctrl-btn:disabled { opacity: 0.25; cursor: not-allowed; transform: none; }
         .ctrl-btn:hover:not(:disabled) {
-            background: rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.12);
             color: var(--text-primary);
         }
 
         .ctrl-btn.secondary {
-            width: 48px;
-            height: 48px;
-            font-size: 20px;
-            border-radius: 50%;
+            width: 52px;
+            height: 52px;
+            font-size: 22px;
         }
 
         .ctrl-btn.save-btn {
-            background: rgba(255, 107, 53, 0.12);
+            background: rgba(255, 107, 53, 0.15);
             color: var(--accent-orange);
-            border-color: rgba(255, 107, 53, 0.2);
+            border-color: rgba(255, 107, 53, 0.25);
         }
         .ctrl-btn.save-btn:hover:not(:disabled) {
-            background: rgba(255, 107, 53, 0.2);
+            background: rgba(255, 107, 53, 0.25);
         }
 
         /* Nút chuyển camera - gộp thành 1 nút */
-        .cam-switch-btn {
-            color: var(--text-secondary);
-        }
-        .cam-switch-btn.front {
-            color: var(--accent-blue);
-        }
-        .cam-switch-btn.back {
-            color: var(--accent-green);
-        }
+        .cam-switch-btn.front { color: var(--accent-blue); }
+        .cam-switch-btn.back { color: var(--accent-green); }
 
         /* Nút quay lớn */
         .record-btn-wrap {
             position: relative;
-            z-index: 20;
+            z-index: 100;
         }
         .btn-record {
-            width: 72px;
-            height: 72px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
-            border: 3px solid rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.05);
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
             color: #fff;
-            font-size: 28px;
+            font-size: 32px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.25s ease;
             position: relative;
-            z-index: 20;
+            z-index: 100;
+            flex-shrink: 0;
         }
         .btn-record:active { transform: scale(0.93); }
         .btn-record.idle {
-            border-color: rgba(52, 199, 89, 0.35);
-            background: rgba(52, 199, 89, 0.08);
+            border-color: rgba(52, 199, 89, 0.4);
+            background: rgba(52, 199, 89, 0.1);
         }
         .btn-record.idle:hover {
-            background: rgba(52, 199, 89, 0.15);
-            border-color: rgba(52, 199, 89, 0.5);
+            background: rgba(52, 199, 89, 0.2);
+            border-color: rgba(52, 199, 89, 0.6);
         }
         .btn-record.recording {
-            border-color: rgba(255, 59, 48, 0.45);
-            background: rgba(255, 59, 48, 0.12);
+            border-color: rgba(255, 59, 48, 0.5);
+            background: rgba(255, 59, 48, 0.15);
         }
         .btn-record.recording::after {
             content: '';
             position: absolute;
-            inset: -8px;
+            inset: -10px;
             border-radius: 50%;
             border: 2px solid transparent;
             animation: recordRing 1.5s infinite;
@@ -429,14 +424,14 @@
         /* ==== THÔNG BÁO TOAST ==== */
         .toast {
             position: fixed;
-            bottom: 160px;
+            bottom: 200px;
             left: 50%;
             transform: translateX(-50%) translateY(80px);
             background: var(--panel-bg);
             color: var(--text-primary);
-            padding: 12px 24px;
+            padding: 14px 28px;
             border-radius: var(--radius-lg);
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 500;
             backdrop-filter: blur(16px);
             border: 1px solid var(--panel-border);
@@ -444,7 +439,7 @@
             opacity: 0;
             transition: all 0.35s ease;
             pointer-events: none;
-            z-index: 999;
+            z-index: 200;
             max-width: 85%;
             text-align: center;
         }
@@ -459,15 +454,15 @@
         /* ==== Responsive ==== */
         @media (max-width: 400px) {
             .speed-value { font-size: 24px; }
-            .btn-record { width: 64px; height: 64px; font-size: 24px; }
-            .ctrl-btn { width: 48px; height: 48px; font-size: 16px; }
-            .ctrl-btn.secondary { width: 44px; height: 44px; font-size: 18px; }
+            .btn-record { width: 72px; height: 72px; font-size: 28px; }
+            .ctrl-btn { width: 54px; height: 54px; font-size: 20px; }
+            .ctrl-btn.secondary { width: 48px; height: 48px; font-size: 20px; }
         }
 
-        /* ==== Giao diện NGANG - ĐÃ SỬA KHÔNG CHE NÚT ==== */
+        /* ==== Giao diện NGANG ==== */
         @media (orientation: landscape) {
             .overlay {
-                padding: 10px max(10px, env(safe-area-inset-left));
+                padding: 12px max(12px, env(safe-area-inset-left));
                 flex-direction: row;
                 justify-content: space-between;
             }
@@ -477,7 +472,7 @@
                 justify-content: flex-start;
                 align-items: flex-start;
                 height: 100%;
-                width: 200px;
+                width: 220px;
                 flex-shrink: 0;
             }
 
@@ -489,31 +484,32 @@
             .bottom-stack {
                 display: flex;
                 flex-direction: column;
-                justify-content: space-between;
+                justify-content: center;
                 align-items: center;
                 height: 100%;
-                width: 150px;
+                width: 200px;
                 flex-shrink: 0;
-                margin-left: 10px;
+                margin-left: 15px;
             }
 
             .info-bar {
                 flex-direction: column;
-                gap: 6px;
+                gap: 8px;
                 align-items: center;
                 text-align: center;
                 width: 100%;
+                margin-bottom: 15px;
             }
 
             .ram-bar-wrapper {
-                padding: 10px 0;
+                padding: 0 0 15px;
                 width: 100%;
             }
 
             .ram-panel {
                 flex-direction: column;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
             }
 
             .ram-track {
@@ -523,9 +519,10 @@
             .controls-bar {
                 flex-direction: column;
                 justify-content: center;
-                gap: 16px;
+                gap: 20px;
                 padding: 0;
                 min-height: auto;
+                background: none;
             }
         }
     </style>
@@ -539,7 +536,7 @@
         <canvas id="renderCanvas"></canvas>
     </div>
 
-    <!-- Giao diện điều khiển - luôn trên cùng -->
+    <!-- Giao diện điều khiển - LUÔN TRÊN CÙNG -->
     <div class="overlay">
         <div class="top-bar">
             <div class="top-left">
@@ -569,15 +566,9 @@
 
         <div class="bottom-stack">
             <div class="info-bar">
-                <div class="info-item">
-                    📦 Đoạn: <span id="segmentCount">0</span>
-                </div>
-                <div class="info-item">
-                    ⏱️ <span id="totalDuration">0s</span>
-                </div>
-                <div class="info-item">
-                    💾 <span id="totalSize">0 KB</span>
-                </div>
+                <div class="info-item">📦 Đoạn: <span id="segmentCount">0</span></div>
+                <div class="info-item">⏱️ <span id="totalDuration">0s</span></div>
+                <div class="info-item">💾 <span id="totalSize">0 KB</span></div>
             </div>
 
             <div class="ram-bar-wrapper">
@@ -730,7 +721,7 @@ class GPSTracker {
 }
 
 // ============================================================
-// VIDEO RECORDER - VẼ THÔNG TIN VÀO CANVAS
+// VIDEO RECORDER - VẼ THÔNG TIN CHỈ Ở GÓC TRÊN TRÁI
 // ============================================================
 class DashCamRecorder {
     constructor(maxRamMB = 200) {
@@ -886,7 +877,7 @@ class DashCamRecorder {
             }
 
             // =================================================
-            // ✅ VẼ THÔNG TIN TRONG VÙNG AN TOÀN - KHÔNG CHE NÚT
+            // ✅ VẼ CHỈ Ở GÓC TRÊN TRÁI - KHÔNG ĐỤNG ĐẾN NÚT
             // =================================================
             const now = new Date();
             const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -894,31 +885,19 @@ class DashCamRecorder {
             const speed = this.gps.getSpeed();
             const speedStr = speed.toFixed(1);
 
-            // Xác định vùng an toàn tùy dọc/ngang
-            const isLandscape = cw > ch;
-            const margin = Math.max(16, cw * 0.025);
-
-            // Giới hạn vùng vẽ để không bao phủ nút bấm
-            let maxDrawX, maxDrawY;
-            if (isLandscape) {
-                maxDrawX = cw - 160; // chừa vùng nút bên phải
-                maxDrawY = ch - margin;
-            } else {
-                maxDrawX = cw - margin;
-                maxDrawY = ch - 160; // chừa vùng nút bên dưới
-            }
-
-            const boxW = Math.min(Math.max(220, cw * 0.25), maxDrawX - margin);
-            const boxH = Math.min(Math.max(95, ch * 0.14), maxDrawY - margin);
+            // Luôn vẽ ở góc trên bên trái, kích thước cố định hợp lý
+            const margin = Math.max(20, cw * 0.03);
+            const boxW = Math.min(260, cw * 0.28);
+            const boxH = Math.min(110, ch * 0.15);
             const boxX = margin;
             const boxY = margin;
-            const radius = 12;
+            const radius = 14;
 
             // Nền bán trong suốt
             this.ctx.save();
             this.ctx.shadowColor = 'rgba(0,0,0,0.4)';
             this.ctx.shadowBlur = 12;
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
             this.ctx.beginPath();
             this.ctx.moveTo(boxX + radius, boxY);
             this.ctx.lineTo(boxX + boxW - radius, boxY);
@@ -932,24 +911,24 @@ class DashCamRecorder {
             this.ctx.closePath();
             this.ctx.fill();
             this.ctx.shadowBlur = 0;
-            this.ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
             this.ctx.lineWidth = 1;
             this.ctx.stroke();
 
             // Ngày giờ
-            this.ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            this.ctx.fillStyle = 'rgba(255,255,255,0.95)';
             this.ctx.font = `bold ${Math.max(16, cw / 55)}px -apple-system, sans-serif`;
             this.ctx.textAlign = 'left';
-            this.ctx.fillText(`${dateStr}`, boxX + margin, boxY + margin + 5);
+            this.ctx.fillText(dateStr, boxX + margin, boxY + margin + 8);
 
             this.ctx.font = `bold ${Math.max(22, cw / 42)}px -apple-system, sans-serif`;
-            this.ctx.fillText(`${timeStr}`, boxX + margin, boxY + margin + 32);
+            this.ctx.fillText(timeStr, boxX + margin, boxY + margin + 38);
 
             // Tốc độ - đổi màu theo mức
             const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
             this.ctx.fillStyle = speedColor;
             this.ctx.font = `bold ${Math.max(28, cw / 32)}px -apple-system, sans-serif`;
-            this.ctx.fillText(`🚀 ${speedStr} km/h`, boxX + margin, boxY + margin + 65);
+            this.ctx.fillText(`🚀 ${speedStr} km/h`, boxX + margin, boxY + margin + 75);
 
             this.ctx.restore();
 
