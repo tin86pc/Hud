@@ -317,7 +317,7 @@ class VideoRecorder {
         this.gps = new GPSTracker();
         this.facing = 'user';
         this.mirror = false;
-        this.rotateHUD = 0; // góc xoay chữ/HUD: 0 hoặc 90 độ
+        this.rotateHUD = 0;
         this.rendering = false;
         this.stream = null;
         this.canvasStream = null;
@@ -325,6 +325,7 @@ class VideoRecorder {
         this.recording = false;
         this.segTime = 1000;
         this.cameraReady = false;
+        this.switching = false;
     }
 
     setMaxMB(mb) {
@@ -365,12 +366,36 @@ class VideoRecorder {
     }
 
     async switchCam() {
+        if (this.switching) return;
+        this.switching = true;
+
         const newFacing = this.facing === 'user' ? 'environment' : 'user';
+
         this.stopRecording();
-        this.stream?.getTracks().forEach(t => t.stop());
-        this.chunks = []; this.totalSize = 0; this.firstChunk = null; this.hasHeader = false;
-        await this.initCam(newFacing);
-        showToast(`Đã chuyển camera: ${newFacing === 'user' ? 'Trước' : 'Sau'}`, 2000);
+
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => {
+                track.stop();
+            });
+            this.stream = null;
+        }
+
+        this.chunks = [];
+        this.totalSize = 0;
+        this.firstChunk = null;
+        this.hasHeader = false;
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const ok = await this.initCam(newFacing);
+        if (ok) {
+            showToast(`✅ Đã chuyển camera: ${newFacing === 'user' ? 'Trước' : 'Sau'}`, 2000, 'success');
+        } else {
+            showToast('❌ Không thể chuyển camera, thử lại', 3000, 'danger');
+            await this.initCam(this.facing);
+        }
+
+        this.switching = false;
     }
 
     toggleMirror() {
@@ -492,12 +517,11 @@ class VideoRecorder {
         const lineGap = baseFontSize * 0.65;
         const dotR = baseFontSize * 0.35;
 
-        // Lưu trạng thái và xoay hệ tọa độ cho chữ
         this.ctx.save();
         if (this.rotateHUD === 90) {
             this.ctx.translate(cw / 2, ch / 2);
             this.ctx.rotate(Math.PI / 2);
-            this.ctx.translate(-ch / 2, -cw / 2); // đảo lại kích thước khi xoay
+            this.ctx.translate(-ch / 2, -cw / 2);
         }
 
         this.ctx.font = `bold ${baseFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -573,7 +597,6 @@ class VideoRecorder {
 
             this.ctx.clearRect(0, 0, cw, ch);
 
-            // === VIDEO KHÔNG BAO GIỜ XOAY ===
             const videoRatio = vw / vh;
             const containerRatio = cw / ch;
 
@@ -599,7 +622,6 @@ class VideoRecorder {
             }
             this.ctx.restore();
 
-            // === CHỈ HUD/CHỮ ĐƯỢC XOAY ===
             this.drawHUD();
 
             requestAnimationFrame(draw);
