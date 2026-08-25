@@ -372,7 +372,6 @@ class VideoRecorder {
         this.mirror = false;
         this.rotate = 0; // 0, 90, 180, 270
         this.rendering = false;
-        this.videoRect = { x: 0, y: 0, w: 0, h: 0 };
 
         this.stream = null;
         this.canvasStream = null;
@@ -398,7 +397,6 @@ class VideoRecorder {
             this.video.srcObject = this.stream;
             await this.video.play();
 
-            // Đặt canvas ban đầu, sau sẽ tự điều chỉnh theo video
             this.canvas.width = 1280;
             this.canvas.height = 720;
 
@@ -519,10 +517,7 @@ class VideoRecorder {
         ctx.closePath();
     }
 
-    drawHUD() {
-        const { x, y, w: vw, h: vh } = this.videoRect;
-        if (vw <= 0 || vh <= 0) return;
-
+    drawHUD(baseW, baseH) {
         const ctx = this.ctx;
         const now = new Date();
         const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -531,7 +526,8 @@ class VideoRecorder {
         const speedStr = speed.toFixed(1) + ' km/h';
         const gpsColor = this.gps.getStatusColor();
 
-        const vmin = Math.min(vw, vh) / 100;
+        // Tính kích thước theo khung gốc (chưa xoay)
+        const vmin = Math.min(baseW, baseH) / 100;
         const baseSize = 3.5 * vmin;
         const timeSize = 5 * vmin;
         const speedSize = 6 * vmin;
@@ -551,8 +547,8 @@ class VideoRecorder {
 
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
-        const bx = x + margin;
-        const by = y + margin;
+        const bx = margin;
+        const by = margin;
 
         ctx.save();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
@@ -597,10 +593,8 @@ class VideoRecorder {
                 return;
             }
 
-            // === Xác định kích thước sau khi xoay ===
-            let srcW = vw, srcH = vh;
+            // === Xác định kích thước canvas sau khi xoay ===
             let outW, outH;
-
             if (this.rotate === 90 || this.rotate === 270) {
                 outW = vh;
                 outH = vw;
@@ -618,23 +612,20 @@ class VideoRecorder {
             const cw = outW, ch = outH;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            // === Tính tỉ lệ vẽ video vừa khít canvas (không viền đen) ===
-            const scale = Math.min(cw / srcW, ch / srcH);
-            const dw = srcW * scale;
-            const dh = srcH * scale;
-            const x = (cw - dw) / 2;
-            const y = (ch - dh) / 2;
+            // === Tính tỉ lệ vẽ video vừa khít khung gốc ===
+            const scale = Math.min(cw / vw, ch / vh);
+            const dw = vw * scale;
+            const dh = vh * scale;
 
-            // Lưu vị trí thực tế video sau xoay
-            this.videoRect = { x: 0, y: 0, w: cw, h: ch };
-
-            // === Vẽ video với xoay + gương ===
+            // === Quan trọng: XOAY TOÀN BỘ (video + HUD) ===
             this.ctx.save();
 
-            // Di chuyển gốc tọa độ để xoay đúng tâm
+            // Di chuyển gốc tọa độ về tâm canvas
             const cx = cw / 2;
             const cy = ch / 2;
             this.ctx.translate(cx, cy);
+
+            // Xoay theo góc đã chọn
             this.ctx.rotate((this.rotate * Math.PI) / 180);
 
             // Lật ngang nếu cần
@@ -642,12 +633,16 @@ class VideoRecorder {
                 this.ctx.scale(-1, 1);
             }
 
-            // Vẽ video căn giữa
+            // Vẽ video căn giữa — tọa độ tương đối với tâm
             this.ctx.drawImage(this.video, -dw / 2, -dh / 2, dw, dh);
-            this.ctx.restore();
 
-            // === Vẽ HUD ===
-            this.drawHUD();
+            // === Vẽ HUD TRONG KHU VỰC ĐÃ XOAY ===
+            // Tính tọa độ HUD trong hệ tọa độ chưa xoay
+            const margin = 4 * Math.min(dw, dh) / 100;
+            this.drawHUD(dw, dh);
+
+            // Kết thúc khối xoay
+            this.ctx.restore();
 
             requestAnimationFrame(draw);
         };
