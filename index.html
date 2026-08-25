@@ -24,8 +24,9 @@
             --accent-yellow: #ff9500;
             --accent-blue: #007aff;
             --accent-orange: #ff6b35;
-            --radius-md: 3vmin;
-            --radius-lg: 4vmin;
+
+            /* === TỶ LỀ CO TOÀN BỘ GIAO DIỆN: 90% === */
+            --scale: 0.9;
             
             /* Tỷ lệ chia màn hình */
             --video-area-h: 80vh;
@@ -75,7 +76,7 @@
         }
 
         /* ======================================
-           GIAO DIỆN ĐIỀU KHIỂN
+           GIAO DIỆN ĐIỀU KHIỂN — CO 90%
            ====================================== */
         .overlay {
             position: absolute;
@@ -85,7 +86,8 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 3vh 3vw;
+            padding: calc(3vh * var(--scale)) calc(3vw * var(--scale));
+            transform-origin: top left;
         }
         .overlay > * { pointer-events: auto; }
 
@@ -96,28 +98,27 @@
             align-items: flex-start;
         }
 
-        .top-left { display: flex; flex-direction: column; gap: 1vh; }
-
-        /* === BỎ CHỮ "CAM HÀNH TRÌNH" === */
+        .top-left { display: flex; flex-direction: column; gap: calc(1vh * var(--scale)); }
 
         .rec-indicator {
             display: inline-flex;
             align-items: center;
-            gap: 1.5vmin;
-            padding: 0.8vmin 3vmin;
+            gap: calc(1.5vmin * var(--scale));
+            padding: calc(0.8vmin * var(--scale)) calc(3vmin * var(--scale));
             background: rgba(255, 59, 48, 0.15);
             border: 1px solid rgba(255, 59, 48, 0.3);
-            border-radius: 10vmin;
-            font-size: 2.8vmin;
+            border-radius: calc(10vmin * var(--scale));
+            font-size: calc(2.8vmin * var(--scale));
             color: var(--accent-red);
             font-weight: 700;
             opacity: 0;
-            transform: translateY(-1vmin);
+            transform: translateY(calc(-1vmin * var(--scale)));
             transition: all 0.3s ease;
         }
         .rec-indicator.show { opacity: 1; transform: translateY(0); }
         .rec-dot {
-            width: 2vmin; height: 2vmin; border-radius: 50%; background: var(--accent-red);
+            width: calc(2vmin * var(--scale)); height: calc(2vmin * var(--scale));
+            border-radius: 50%; background: var(--accent-red);
             animation: recPulse 1s infinite;
         }
         @keyframes recPulse {
@@ -125,22 +126,23 @@
             50% { opacity: 0.3; transform: scale(0.8); }
         }
 
-        .top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1.5vmin; }
+        .top-right { display: flex; flex-direction: column; align-items: flex-end; gap: calc(1.5vmin * var(--scale)); }
 
         .gps-panel {
             display: inline-flex;
             align-items: center;
-            gap: 1.5vmin;
-            padding: 1.2vmin 2.5vmin;
+            gap: calc(1.5vmin * var(--scale));
+            padding: calc(1.2vmin * var(--scale)) calc(2.5vmin * var(--scale));
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--panel-border);
-            border-radius: var(--radius-md);
-            font-size: 2.8vmin;
+            border-radius: calc(3vmin * var(--scale));
+            font-size: calc(2.8vmin * var(--scale));
             color: var(--text-secondary);
         }
         .gps-dot {
-            width: 2vmin; height: 2vmin; border-radius: 50%; flex-shrink: 0;
+            width: calc(2vmin * var(--scale)); height: calc(2vmin * var(--scale));
+            border-radius: 50%; flex-shrink: 0;
         }
         .gps-dot.green { background: var(--accent-green); animation: gpsPulse 1.5s infinite; }
         .gps-dot.yellow { background: var(--accent-yellow); animation: gpsPulse 1.5s infinite; }
@@ -159,11 +161,11 @@
             left: 0;
             width: 100%;
             min-height: var(--ctrl-area-h);
-            padding: 2vh 3vw 3vh;
+            padding: calc(2vh * var(--scale)) calc(3vw * var(--scale)) calc(3vh * var(--scale));
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 1.5vh;
+            gap: calc(1.5vh * var(--scale));
             background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4), transparent);
             z-index: 999;
         }
@@ -172,17 +174,17 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding: 1.5vmin 3vmin;
+            padding: calc(1.5vmin * var(--scale)) calc(3vmin * var(--scale));
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--panel-border);
-            border-radius: var(--radius-md);
-            font-size: 3vmin;
+            border-radius: calc(3vmin * var(--scale));
+            font-size: calc(3vmin * var(--scale));
         }
         .info-item {
             display: flex;
             align-items: center;
-            gap: 1vmin;
+            gap: calc(1vmin * var(--scale));
             color: var(--text-muted);
         }
         .info-item span {
@@ -195,56 +197,60 @@
         .ram-panel {
             display: flex;
             align-items: center;
-            gap: 2vmin;
-            padding: 1.5vmin 3vmin;
+            gap: calc(2vmin * var(--scale));
+            padding: calc(1.5vmin * var(--scale)) calc(3vmin * var(--scale));
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--panel-border);
-            border-radius: var(--radius-md);
+            border-radius: calc(3vmin * var(--scale));
             flex-wrap: wrap;
         }
         .ram-label {
-            font-size: 2.5vmin; font-weight: 600; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.1vmin;
+            font-size: calc(2.5vmin * var(--scale)); font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: calc(0.1vmin * var(--scale));
         }
         .ram-track {
-            flex: 1; height: 1.2vmin; min-width: 15vw;
-            background: rgba(255,255,255,0.08); border-radius: 10vmin; overflow: hidden;
+            flex: 1; height: calc(1.2vmin * var(--scale)); min-width: 15vw;
+            background: rgba(255,255,255,0.08); border-radius: calc(10vmin * var(--scale)); overflow: hidden;
         }
         .ram-fill {
-            height: 100%; border-radius: 10vmin; transition: width 0.4s ease, background 0.4s ease; width: 0%;
+            height: 100%; border-radius: calc(10vmin * var(--scale));
+            transition: width 0.4s ease, background 0.4s ease; width: 0%;
         }
         .ram-fill.green { background: linear-gradient(90deg, var(--accent-green), #8edb56); }
         .ram-fill.yellow { background: linear-gradient(90deg, var(--accent-yellow), #ffcc00); }
         .ram-fill.red { background: linear-gradient(90deg, var(--accent-red), #ff6b6b); animation: blink 0.8s infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
-        .ram-values { font-size: 2.5vmin; color: var(--text-muted); white-space: nowrap; }
+        .ram-values { font-size: calc(2.5vmin * var(--scale)); color: var(--text-muted); white-space: nowrap; }
         .ram-values span { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-        .ram-selector { display: flex; align-items: center; gap: 1.5vmin; white-space: nowrap; }
-        .ram-selector label { font-size: 2.5vmin; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+        .ram-selector { display: flex; align-items: center; gap: calc(1.5vmin * var(--scale)); white-space: nowrap; }
+        .ram-selector label { font-size: calc(2.5vmin * var(--scale)); font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
         .ram-selector select {
-            padding: 0.5vmin 2vmin; border-radius: 1.5vmin; border: 1px solid var(--panel-border);
-            background: rgba(0,0,0,0.3); color: var(--text-secondary); font-size: 2.8vmin; outline: none;
+            padding: calc(0.5vmin * var(--scale)) calc(2vmin * var(--scale));
+            border-radius: calc(1.5vmin * var(--scale)); border: 1px solid var(--panel-border);
+            background: rgba(0,0,0,0.3); color: var(--text-secondary);
+            font-size: calc(2.8vmin * var(--scale)); outline: none;
         }
         .ram-selector select:focus { border-color: var(--accent-blue); }
 
-        /* === NÚT BẤM === */
+        /* === NÚT BẤM — KÍCH THƯỚC ĐÃ CO 90% === */
         .controls-bar {
             display: flex;
             align-items: center;
             justify-content: space-around;
-            padding: 1vh 2vw;
+            padding: calc(1vh * var(--scale)) calc(2vw * var(--scale));
             width: 100%;
         }
 
-        .ctrl-group { display: flex; align-items: center; gap: 2vmin; }
+        .ctrl-group { display: flex; align-items: center; gap: calc(2vmin * var(--scale)); }
 
         .ctrl-btn {
-            width: 13vmin; height: 13vmin; min-width: 48px; min-height: 48px;
-            max-width: 72px; max-height: 72px;
+            width: calc(13vmin * var(--scale)); height: calc(13vmin * var(--scale));
+            min-width: calc(48px * var(--scale)); min-height: calc(48px * var(--scale));
+            max-width: calc(72px * var(--scale)); max-height: calc(72px * var(--scale));
             border-radius: 50%; border: none;
             background: var(--panel-bg); backdrop-filter: blur(12px);
-            color: var(--text-secondary); font-size: 5.5vmin;
+            color: var(--text-secondary); font-size: calc(5.5vmin * var(--scale));
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             transition: all 0.2s ease; border: 1px solid var(--panel-border);
             position: relative; z-index: 1001;
@@ -256,9 +262,10 @@
         }
 
         .ctrl-btn.secondary {
-            width: 11vmin; height: 11vmin; min-width: 40px; min-height: 40px;
-            max-width: 60px; max-height: 60px;
-            font-size: 4.8vmin;
+            width: calc(11vmin * var(--scale)); height: calc(11vmin * var(--scale));
+            min-width: calc(40px * var(--scale)); min-height: calc(40px * var(--scale));
+            max-width: calc(60px * var(--scale)); max-height: calc(60px * var(--scale));
+            font-size: calc(4.8vmin * var(--scale));
         }
         .ctrl-btn.save-btn {
             background: rgba(255, 107, 53, 0.15); color: var(--accent-orange);
@@ -269,12 +276,13 @@
 
         .record-btn-wrap { position: relative; z-index: 1002; }
         .btn-record {
-            width: 20vmin; height: 20vmin; min-width: 72px; min-height: 72px;
-            max-width: 100px; max-height: 100px;
+            width: calc(20vmin * var(--scale)); height: calc(20vmin * var(--scale));
+            min-width: calc(72px * var(--scale)); min-height: calc(72px * var(--scale));
+            max-width: calc(100px * var(--scale)); max-height: calc(100px * var(--scale));
             border-radius: 50%;
-            border: 4px solid rgba(255, 255, 255, 0.2);
+            border: calc(4px * var(--scale)) solid rgba(255, 255, 255, 0.2);
             background: rgba(255, 255, 255, 0.08);
-            color: #fff; font-size: 8vmin;
+            color: #fff; font-size: calc(8vmin * var(--scale));
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             position: relative; z-index: 1002; transition: all 0.25s ease;
         }
@@ -286,8 +294,9 @@
             border-color: rgba(255, 59, 48, 0.5); background: rgba(255, 59, 48, 0.15);
         }
         .btn-record.recording::after {
-            content: ''; position: absolute; inset: -2.5vmin; border-radius: 50%;
-            border: 2px solid transparent; animation: recordRing 1.5s infinite;
+            content: ''; position: absolute; inset: calc(-2.5vmin * var(--scale));
+            border-radius: 50%; border: calc(2px * var(--scale)) solid transparent;
+            animation: recordRing 1.5s infinite;
         }
         @keyframes recordRing {
             0% { transform: scale(1); opacity: 1; }
@@ -299,7 +308,8 @@
             position: fixed; bottom: calc(var(--ctrl-area-h) + 2vh); left: 50%;
             transform: translateX(-50%) translateY(20vh);
             background: var(--panel-bg); color: var(--text-primary);
-            padding: 2.5vmin 5vmin; border-radius: var(--radius-lg); font-size: 3.5vmin;
+            padding: calc(2.5vmin * var(--scale)) calc(5vmin * var(--scale));
+            border-radius: calc(4vmin * var(--scale)); font-size: calc(3.5vmin * var(--scale));
             backdrop-filter: blur(16px); border: 1px solid var(--panel-border);
             opacity: 0; transition: all 0.35s ease; pointer-events: none; z-index: 2000;
             max-width: 85vw; text-align: center;
@@ -318,13 +328,13 @@
             .video-wrapper { width: calc(100vw - 22vw); height: 100vh; }
             .bottom-stack {
                 width: 22vw; height: 100vh; left: auto; right: 0;
-                justify-content: center; padding: 2vh 2vw;
+                justify-content: center; padding: calc(2vh * var(--scale)) calc(2vw * var(--scale));
                 background: linear-gradient(to left, rgba(0,0,0,0.85), rgba(0,0,0,0.4), transparent);
             }
-            .info-bar { flex-direction: column; gap: 1.5vmin; }
+            .info-bar { flex-direction: column; gap: calc(1.5vmin * var(--scale)); }
             .ram-panel { flex-direction: column; align-items: stretch; }
             .ram-track { width: 100%; }
-            .controls-bar { flex-direction: column; gap: 3vh; }
+            .controls-bar { flex-direction: column; gap: calc(3vh * var(--scale)); }
             .toast { bottom: 3vh; }
         }
     </style>
@@ -340,7 +350,6 @@
     <div class="overlay">
         <div class="top-bar">
             <div class="top-left">
-                <!-- BỎ CHỮ "Cam Hành Trình" ĐI RỒI -->
                 <span class="rec-indicator" id="recIndicator">
                     <span class="rec-dot"></span> Đang quay
                 </span>
@@ -497,7 +506,7 @@ class GPSTracker {
 }
 
 // ============================================================
-// VIDEO RECORDER — VẼ NỀN CHỈ BAO QUANH CHỮ
+// VIDEO RECORDER — VẼ NỀN CHỈ BAO QUANH CHỮ + CO 90%
 // ============================================================
 class DashCamRecorder {
     constructor(maxRamMB = 200) {
@@ -521,6 +530,7 @@ class DashCamRecorder {
         this.gps = new GPSTracker();
         this.videoW = 1280; this.videoH = 720;
         this.onStateChange = null;
+        this.scale = 0.9; // <-- CO 90% CẢ PHẦN VẼ TRÊN VIDEO
     }
 
     setMaxRamMB(mb) {
@@ -639,7 +649,7 @@ class DashCamRecorder {
             }
 
             // ==============================================
-            // VẼ THÔNG TIN — NỀN CHỈ BAO QUANH ĐÚNG NỘI DUNG
+            // VẼ THÔNG TIN — CO 90% KÍCH THƯỚC
             // ==============================================
             const now = new Date();
             const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -647,15 +657,15 @@ class DashCamRecorder {
             const speed = this.gps.getSpeed();
             const speedStr = speed.toFixed(1) + ' km/h';
 
-            // Tính toán font chữ theo kích thước canvas
-            const fontSizeDate = Math.max(cw * 0.028, 14);
-            const fontSizeTime = Math.max(cw * 0.04, 20);
-            const fontSizeSpeed = Math.max(cw * 0.045, 24);
+            // Tính toán font chữ đã co tỷ lệ
+            const fontSizeDate = Math.max(cw * 0.028 * this.scale, 14 * this.scale);
+            const fontSizeTime = Math.max(cw * 0.04 * this.scale, 20 * this.scale);
+            const fontSizeSpeed = Math.max(cw * 0.045 * this.scale, 24 * this.scale);
             const lineSpacing = fontSizeTime * 0.35;
-            const paddingX = Math.max(cw * 0.03, 12);
-            const paddingY = Math.max(ch * 0.025, 8);
-            const margin = Math.max(cw * 0.025, 12);
-            const radius = Math.max(cw * 0.012, 8);
+            const paddingX = Math.max(cw * 0.03 * this.scale, 12 * this.scale);
+            const paddingY = Math.max(ch * 0.025 * this.scale, 8 * this.scale);
+            const margin = Math.max(cw * 0.025 * this.scale, 12 * this.scale);
+            const radius = Math.max(cw * 0.012 * this.scale, 8 * this.scale);
 
             // Đặt font trước để đo chiều rộng chữ
             this.ctx.font = `bold ${fontSizeDate}px -apple-system, sans-serif`;
@@ -674,11 +684,11 @@ class DashCamRecorder {
             const boxX = margin;
             const boxY = margin;
 
-            // Vẽ nền trong suốt nhẹ, chỉ bao quanh đúng nội dung
+            // Vẽ nền trong suốt nhẹ
             this.ctx.save();
             this.ctx.shadowColor = 'rgba(0,0,0,0.25)';
-            this.ctx.shadowBlur = cw * 0.01;
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; // trong suốt hơn
+            this.ctx.shadowBlur = cw * 0.01 * this.scale;
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
             this.ctx.beginPath();
             this.ctx.moveTo(boxX + radius, boxY);
             this.ctx.lineTo(boxX + boxW - radius, boxY);
