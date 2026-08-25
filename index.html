@@ -517,7 +517,7 @@ class VideoRecorder {
         ctx.closePath();
     }
 
-    drawHUD(baseW, baseH) {
+    drawHUDForAngle(angle, cw, ch) {
         const ctx = this.ctx;
         const now = new Date();
         const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -526,8 +526,8 @@ class VideoRecorder {
         const speedStr = speed.toFixed(1) + ' km/h';
         const gpsColor = this.gps.getStatusColor();
 
-        // Tính kích thước theo khung gốc (chưa xoay)
-        const vmin = Math.min(baseW, baseH) / 100;
+        // Tính kích thước chữ theo khung
+        const vmin = Math.min(cw, ch) / 100;
         const baseSize = 3.5 * vmin;
         const timeSize = 5 * vmin;
         const speedSize = 6 * vmin;
@@ -538,6 +538,7 @@ class VideoRecorder {
         const lineGap = 2 * vmin;
         const dotR = 1.1 * vmin;
 
+        // Tính kích thước khối HUD
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const dateW = ctx.measureText(date).width;
         ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -547,17 +548,51 @@ class VideoRecorder {
 
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
-        const bx = margin;
-        const by = margin;
 
+        let bx, by, tx, ty;
+
+        // === Tính vị trí theo từng góc ===
         ctx.save();
+        switch (angle) {
+            case 0:
+                bx = margin;
+                by = margin;
+                tx = bx + padX;
+                ty = by + padY + baseSize * 0.8;
+                break;
+            case 90:
+                // Xoay 90°: HUD ở góc trên-bên trái theo hướng nhìn → góc trên-bên phải tọa độ gốc
+                ctx.translate(cw, 0);
+                ctx.rotate(Math.PI / 2);
+                bx = margin;
+                by = margin;
+                tx = bx + padX;
+                ty = by + padY + baseSize * 0.8;
+                break;
+            case 180:
+                ctx.translate(cw, ch);
+                ctx.rotate(Math.PI);
+                bx = margin;
+                by = margin;
+                tx = bx + padX;
+                ty = by + padY + baseSize * 0.8;
+                break;
+            case 270:
+                ctx.translate(0, ch);
+                ctx.rotate(-Math.PI / 2);
+                bx = margin;
+                by = margin;
+                tx = bx + padX;
+                ty = by + padY + baseSize * 0.8;
+                break;
+        }
+
+        // Vẽ khối nền
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         this.roundRect(ctx, bx, by, boxW, boxH, radius);
         ctx.fill();
-        ctx.restore();
 
-        let tx = bx + padX, ty = by + padY + baseSize * 0.8;
-
+        // Vẽ chữ
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(date, tx, ty);
@@ -572,12 +607,15 @@ class VideoRecorder {
         ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(speedStr, tx, ty);
 
+        // Vẽ chấm GPS
         const dotX = bx + padX - dotR;
         const dotY = by + padY + baseSize * 0.5;
         ctx.beginPath();
         ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
         ctx.fillStyle = gpsColor === 'green' ? '#34c759' : gpsColor === 'yellow' ? '#ff9500' : '#ff3b30';
         ctx.fill();
+
+        ctx.restore();
     }
 
     startDraw() {
@@ -612,37 +650,25 @@ class VideoRecorder {
             const cw = outW, ch = outH;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            // === Tính tỉ lệ vẽ video vừa khít khung gốc ===
+            // === Tính tỉ lệ vẽ video vừa khít khung ===
             const scale = Math.min(cw / vw, ch / vh);
             const dw = vw * scale;
             const dh = vh * scale;
+            const dx = (cw - dw) / 2;
+            const dy = (ch - dh) / 2;
 
-            // === Quan trọng: XOAY TOÀN BỘ (video + HUD) ===
+            // === Vẽ video ===
             this.ctx.save();
-
-            // Di chuyển gốc tọa độ về tâm canvas
-            const cx = cw / 2;
-            const cy = ch / 2;
-            this.ctx.translate(cx, cy);
-
-            // Xoay theo góc đã chọn
-            this.ctx.rotate((this.rotate * Math.PI) / 180);
-
-            // Lật ngang nếu cần
             if (this.mirror) {
                 this.ctx.scale(-1, 1);
+                this.ctx.drawImage(this.video, -dx - dw, dy, dw, dh);
+            } else {
+                this.ctx.drawImage(this.video, dx, dy, dw, dh);
             }
-
-            // Vẽ video căn giữa — tọa độ tương đối với tâm
-            this.ctx.drawImage(this.video, -dw / 2, -dh / 2, dw, dh);
-
-            // === Vẽ HUD TRONG KHU VỰC ĐÃ XOAY ===
-            // Tính tọa độ HUD trong hệ tọa độ chưa xoay
-            const margin = 4 * Math.min(dw, dh) / 100;
-            this.drawHUD(dw, dh);
-
-            // Kết thúc khối xoay
             this.ctx.restore();
+
+            // === Vẽ HUD: tính vị trí đúng theo từng góc xoay ===
+            this.drawHUDForAngle(this.rotate, cw, ch);
 
             requestAnimationFrame(draw);
         };
