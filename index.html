@@ -36,9 +36,6 @@
             --font-small: 3vmin;
             --bar-h: 1.8vmin;
             --dot-size: 2.2vmin;
-
-            --preview-scale: 0.9;
-            --ar: 16/9;
         }
 
         html, body {
@@ -61,9 +58,8 @@
 
         .canvas-container {
             position: relative;
-            width: calc(100vw * var(--preview-scale));
-            max-height: calc(100vh * var(--preview-scale));
-            aspect-ratio: var(--ar);
+            width: calc(100vw * 0.9);
+            max-height: calc(100vh * 0.9);
             background: #000;
             border-radius: 3vmin;
             overflow: hidden;
@@ -145,6 +141,7 @@
 
         .btn-mirror { color: var(--text-secondary); }
         .btn-cam { color: var(--accent-blue); }
+        .btn-rotate { color: #9c27b0; }
         .btn-save { color: var(--accent-orange); border-color: rgba(255, 149, 0, 0.3); }
 
         .ram-row {
@@ -230,6 +227,7 @@
     <div class="control-modal" id="controlModal">
         <div class="btn-row">
             <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
+            <button class="btn btn-rotate" id="btnRotate" title="Xoay 90°">🔄</button>
             <button class="btn btn-save" id="btnSave" disabled title="Lưu video">💾</button>
             <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
         </div>
@@ -372,14 +370,9 @@ class VideoRecorder {
         this.gps = new GPSTracker();
         this.facing = 'user';
         this.mirror = false;
+        this.rotate = 0; // 0, 90, 180, 270
         this.rendering = false;
-
-        // Kích thước canvas cố định
-        this.w = 1280;  // Độ phân giải gốc
-        this.h = 720;
-
-        // Lưu vị trí khung video sau khi co giãn
-        this.videoRect = { x: 0, y: 0, w: this.w, h: this.h };
+        this.videoRect = { x: 0, y: 0, w: 0, h: 0 };
 
         this.stream = null;
         this.canvasStream = null;
@@ -405,8 +398,9 @@ class VideoRecorder {
             this.video.srcObject = this.stream;
             await this.video.play();
 
-            this.canvas.width = this.w;
-            this.canvas.height = this.h;
+            // Đặt canvas ban đầu, sau sẽ tự điều chỉnh theo video
+            this.canvas.width = 1280;
+            this.canvas.height = 720;
 
             this.startDraw();
             this.gps.start();
@@ -431,6 +425,12 @@ class VideoRecorder {
     toggleMirror() {
         this.mirror = !this.mirror;
         showToast(this.mirror ? '🔄 Bật gương hình' : '🔄 Tắt gương hình', 2000);
+    }
+
+    toggleRotate() {
+        this.rotate = (this.rotate + 90) % 360;
+        const labels = { 0: '0°', 90: '90°', 180: '180°', 270: '270°' };
+        showToast(`🔄 Xoay: ${labels[this.rotate]}`, 2000);
     }
 
     startRecording() {
@@ -521,8 +521,9 @@ class VideoRecorder {
 
     drawHUD() {
         const { x, y, w: vw, h: vh } = this.videoRect;
-        const ctx = this.ctx;
+        if (vw <= 0 || vh <= 0) return;
 
+        const ctx = this.ctx;
         const now = new Date();
         const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -530,7 +531,6 @@ class VideoRecorder {
         const speedStr = speed.toFixed(1) + ' km/h';
         const gpsColor = this.gps.getStatusColor();
 
-        // Tính kích thước chữ theo tỉ lệ KHUNG VIDEO, không phải cả canvas
         const vmin = Math.min(vw, vh) / 100;
         const baseSize = 3.5 * vmin;
         const timeSize = 5 * vmin;
@@ -542,7 +542,6 @@ class VideoRecorder {
         const lineGap = 2 * vmin;
         const dotR = 1.1 * vmin;
 
-        // Vẽ HUD vào GÓC KHUNG VIDEO, không phải góc canvas
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const dateW = ctx.measureText(date).width;
         ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -552,7 +551,7 @@ class VideoRecorder {
 
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
-        const bx = x + margin;  // <<<< Bắt đầu từ vị trí thực tế của video
+        const bx = x + margin;
         const by = y + margin;
 
         ctx.save();
@@ -590,44 +589,64 @@ class VideoRecorder {
         this.rendering = true;
         const draw = () => {
             if (!this.rendering) return;
-            const cw = this.canvas.width, ch = this.canvas.height;
-            this.ctx.clearRect(0, 0, cw, ch);
 
-            const vw = this.video.videoWidth || cw;
-            const vh = this.video.videoHeight || ch;
-
-            // === Tính co giãn cho video vừa khít toàn bộ canvas ===
-            // Dùng cover: cho đầy khung, có thể cắt 2 cạnh
-            // Hoặc dùng contain: hiện hết, có thể có viền đen
-            const useCover = false; // Đặt true để cho đầy khung, cắt viền
-
-            let scale;
-            if (useCover) {
-                scale = Math.max(cw / vw, ch / vh); // Cho đầy khung, cắt thừa
-            } else {
-                scale = Math.min(cw / vw, ch / vh); // Hiện hết, có viền đen
+            const vw = this.video.videoWidth;
+            const vh = this.video.videoHeight;
+            if (!vw || !vh) {
+                requestAnimationFrame(draw);
+                return;
             }
 
-            const dw = vw * scale;
-            const dh = vh * scale;
+            // === Xác định kích thước sau khi xoay ===
+            let srcW = vw, srcH = vh;
+            let outW, outH;
+
+            if (this.rotate === 90 || this.rotate === 270) {
+                outW = vh;
+                outH = vw;
+            } else {
+                outW = vw;
+                outH = vh;
+            }
+
+            // Cập nhật canvas nếu kích thước thay đổi
+            if (this.canvas.width !== outW || this.canvas.height !== outH) {
+                this.canvas.width = outW;
+                this.canvas.height = outH;
+            }
+
+            const cw = outW, ch = outH;
+            this.ctx.clearRect(0, 0, cw, ch);
+
+            // === Tính tỉ lệ vẽ video vừa khít canvas (không viền đen) ===
+            const scale = Math.min(cw / srcW, ch / srcH);
+            const dw = srcW * scale;
+            const dh = srcH * scale;
             const x = (cw - dw) / 2;
             const y = (ch - dh) / 2;
 
-            // Lưu lại vị trí thực tế của khung video để vẽ HUD đúng vị trí
-            this.videoRect = { x, y, w: dw, h: dh };
+            // Lưu vị trí thực tế video sau xoay
+            this.videoRect = { x: 0, y: 0, w: cw, h: ch };
 
-            // === Vẽ video ===
+            // === Vẽ video với xoay + gương ===
+            this.ctx.save();
+
+            // Di chuyển gốc tọa độ để xoay đúng tâm
+            const cx = cw / 2;
+            const cy = ch / 2;
+            this.ctx.translate(cx, cy);
+            this.ctx.rotate((this.rotate * Math.PI) / 180);
+
+            // Lật ngang nếu cần
             if (this.mirror) {
-                this.ctx.save();
-                this.ctx.translate(cw, 0);
                 this.ctx.scale(-1, 1);
-                this.ctx.drawImage(this.video, cw - x - dw, y, dw, dh);
-                this.ctx.restore();
-            } else {
-                this.ctx.drawImage(this.video, x, y, dw, dh);
             }
 
-            // === Vẽ HUD vào đúng vị trí khung video ===
+            // Vẽ video căn giữa
+            this.ctx.drawImage(this.video, -dw / 2, -dh / 2, dw, dh);
+            this.ctx.restore();
+
+            // === Vẽ HUD ===
             this.drawHUD();
 
             requestAnimationFrame(draw);
@@ -647,6 +666,7 @@ function attachClick(el, handler) {
 }
 
 attachClick(document.getElementById('btnMirror'), () => cam.toggleMirror());
+attachClick(document.getElementById('btnRotate'), () => cam.toggleRotate());
 attachClick(document.getElementById('btnCam'), () => cam.switchCam());
 attachClick(document.getElementById('btnSave'), () => cam.saveVideo());
 
