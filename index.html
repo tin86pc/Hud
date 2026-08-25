@@ -23,6 +23,22 @@
             --accent-blue: #007aff;
             --accent-orange: #ff9500;
             --accent-red: #ff3b30;
+
+            /* === Tất cả kích thước theo vmin === */
+            --unit: 1vmin;
+            --btn-size: 14vmin;
+            --btn-border: 0.5vmin;
+            --modal-w: 65vmin;
+            --modal-h: 30vmin;
+            --modal-radius: 4vmin;
+            --gap: 3vmin;
+            --pad: 4vmin;
+            --font-base: 3.5vmin;
+            --font-time: 5vmin;
+            --font-speed: 6vmin;
+            --font-small: 3vmin;
+            --bar-h: 1.8vmin;
+            --dot-size: 2.2vmin;
         }
 
         html, body {
@@ -32,6 +48,7 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
+            font-size: var(--font-base);
         }
 
         .app {
@@ -62,7 +79,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            opacity: 0; /* Ẩn video gốc, chỉ dùng làm nguồn, canvas hiển thị */
+            opacity: 0;
             pointer-events: none;
         }
 
@@ -78,35 +95,35 @@
             pointer-events: none;
         }
 
-        /* === HUD trên màn hình (giữ tham chiếu trạng thái) === */
+        /* === HUD tham chiếu === */
         .hud {
             position: absolute;
-            top: 16px;
-            left: 16px;
+            top: 4vmin;
+            left: 4vmin;
             z-index: 3;
             pointer-events: none;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            opacity: 0; /* Ẩn HUD HTML, vẽ trực tiếp lên canvas */
+            gap: 2vmin;
+            opacity: 0;
         }
 
         .gps-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
+            gap: 2vmin;
+            padding: 2vmin 4vmin;
             background: rgba(0, 0, 0, 0.4);
-            border-radius: 24px;
-            font-size: 15px;
+            border-radius: 10vmin;
+            font-size: var(--font-small);
             color: var(--text-secondary);
             backdrop-filter: blur(10px);
             white-space: nowrap;
         }
 
         .gps-dot {
-            width: 10px;
-            height: 10px;
+            width: var(--dot-size);
+            height: var(--dot-size);
             border-radius: 50%;
             flex-shrink: 0;
         }
@@ -115,44 +132,42 @@
         .gps-dot.red { background: var(--accent-red); }
 
         .speed-badge {
-            font-size: 28px;
+            font-size: var(--font-speed);
             font-weight: 700;
             color: var(--accent-green);
             background: rgba(0, 0, 0, 0.4);
-            padding: 6px 16px;
-            border-radius: 16px;
+            padding: 1.5vmin 4vmin;
+            border-radius: 4vmin;
             display: inline-block;
             backdrop-filter: blur(10px);
         }
 
-        /* === MODAL Ở GIỮA - MẶC ĐỊNH ẨN === */
+        /* === MODAL Ở GIỮA === */
         .control-modal {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0.8);
-            width: 320px;
-            min-height: 140px;
+            width: var(--modal-w);
+            min-height: var(--modal-h);
             background: var(--panel-bg);
             border: 1px solid var(--panel-border);
-            border-radius: 20px;
+            border-radius: var(--modal-radius);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 14px;
-            padding: 18px 22px;
+            gap: var(--gap);
+            padding: var(--pad);
             z-index: 10;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 2vmin 8vmin rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(20px);
             
-            /* Ẩn ban đầu + hiệu ứng */
             opacity: 0;
             visibility: hidden;
             transition: all 0.25s ease;
         }
 
-        /* Khi hiện ra */
         .control-modal.visible {
             opacity: 1;
             visibility: visible;
@@ -168,21 +183,19 @@
         }
 
         .btn {
-            width: 64px;
-            height: 64px;
+            width: var(--btn-size);
+            height: var(--btn-size);
             border-radius: 50%;
-            border: 2px solid var(--panel-border);
+            border: var(--btn-border) solid var(--panel-border);
             background: rgba(255, 255, 255, 0.08);
             color: var(--text-secondary);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 6vmin;
             transition: all 0.15s ease;
             touch-action: manipulation;
-            min-width: 64px;
-            min-height: 64px;
             -webkit-user-select: none;
             user-select: none;
         }
@@ -202,24 +215,24 @@
         .ram-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 2.5vmin;
             width: 100%;
-            font-size: 13px;
+            font-size: var(--font-small);
             color: var(--text-muted);
         }
 
         .ram-bar-bg {
             flex: 1;
-            height: 8px;
+            height: var(--bar-h);
             background: rgba(255,255,255,0.1);
-            border-radius: 4px;
+            border-radius: 1vmin;
             overflow: hidden;
         }
 
         .ram-bar-fill {
             height: 100%;
             width: 0%;
-            border-radius: 4px;
+            border-radius: 1vmin;
             transition: width 0.3s, background 0.3s;
         }
         .ram-bar-fill.green { background: var(--accent-green); }
@@ -228,12 +241,12 @@
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
         .ram-row select {
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 1vmin 2vmin;
+            border-radius: 1.5vmin;
             border: 1px solid var(--panel-border);
             background: rgba(0,0,0,0.3);
             color: var(--text-secondary);
-            font-size: 13px;
+            font-size: var(--font-small);
             outline: none;
             cursor: pointer;
         }
@@ -246,14 +259,14 @@
         /* === Thông báo === */
         .toast {
             position: fixed;
-            bottom: 40px;
+            bottom: 10vmin;
             left: 50%;
-            transform: translateX(-50%) translateY(10px);
+            transform: translateX(-50%) translateY(2vmin);
             background: var(--panel-bg);
             color: var(--text-primary);
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 15px;
+            padding: 3vmin 6vmin;
+            border-radius: 3vmin;
+            font-size: var(--font-base);
             backdrop-filter: blur(15px);
             border: 1px solid var(--panel-border);
             opacity: 0;
@@ -270,11 +283,11 @@
 
         /* === Màn hình NGANG === */
         @media (orientation: landscape) {
-            .control-modal {
-                width: 160px;
-                min-height: 300px;
+            :root {
+                --modal-w: 30vmin;
+                --modal-h: 70vmin;
             }
-            .btn-row { flex-direction: column; gap: 16px; }
+            .btn-row { flex-direction: column; gap: var(--gap); }
             .ram-row { flex-direction: column; align-items: flex-start; width: 100%; }
             .ram-bar-bg { width: 100%; }
         }
@@ -283,12 +296,9 @@
 <body>
 
 <div class="app" id="appScreen">
-    <!-- Vùng Video -->
     <div class="video-wrap">
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
-
-        <!-- HUD tham chiếu (để lấy trạng thái GPS) -->
         <div class="hud">
             <div class="gps-badge">
                 <span class="gps-dot red" id="gpsDot"></span>
@@ -298,7 +308,6 @@
         </div>
     </div>
 
-    <!-- MODAL NÚT Ở GIỮA MÀN HÌNH -->
     <div class="control-modal" id="controlModal">
         <div class="btn-row">
             <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
@@ -365,7 +374,7 @@ class GPSTracker {
         this.speed = 0;
         this.active = false;
         this.lastPos = null;
-        this.gpsStatus = 'searching'; // searching / ok / lost / denied
+        this.gpsStatus = 'searching';
     }
 
     start() {
@@ -445,7 +454,7 @@ class GPSTracker {
     getStatus() { return this.gpsStatus; }
 }
 
-// === Quản lý Video + Vẽ HUD TRỰC TIẾP LÊN CANVAS ===
+// === Quản lý Video + Vẽ HUD lên canvas ===
 class VideoRecorder {
     constructor(maxMB = 200) {
         this.max = maxMB === 0 ? Infinity : maxMB * 1024 * 1024;
@@ -586,12 +595,11 @@ class VideoRecorder {
         document.getElementById('btnSave').disabled = this.chunks.length === 0;
     }
 
-    // === Vẽ HUD TRỰC TIẾP LÊN CANVAS ===
+    // === Vẽ HUD trên canvas ===
     drawHUD() {
         const cw = this.canvas.width, ch = this.canvas.height;
         const ctx = this.ctx;
 
-        // Lấy dữ liệu
         const now = new Date();
         const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -599,17 +607,18 @@ class VideoRecorder {
         const gpsStatus = this.gps.getStatus();
         const speedStr = speed.toFixed(1) + ' km/h';
 
-        // Tính kích thước font tương đối
-        const baseSize = Math.max(cw * 0.022, 12);
-        const timeSize = Math.max(cw * 0.038, 18);
-        const speedSize = Math.max(cw * 0.045, 22);
-        const padX = Math.max(cw * 0.025, 12);
-        const padY = Math.max(ch * 0.02, 8);
-        const margin = Math.max(cw * 0.025, 12);
-        const radius = Math.max(cw * 0.012, 8);
-        const lineGap = timeSize * 0.4;
+        // Tính tỉ lệ vmin dựa trên chiều ngang canvas
+        const vmin = Math.min(cw, ch) / 100;
+        const baseSize = 3.5 * vmin;
+        const timeSize = 5 * vmin;
+        const speedSize = 6 * vmin;
+        const padX = 4 * vmin;
+        const padY = 3 * vmin;
+        const margin = 4 * vmin;
+        const radius = 4 * vmin;
+        const lineGap = 2 * vmin;
+        const dotR = 1.1 * vmin;
 
-        // Đo kích thước chữ
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const dateW = ctx.measureText(date).width;
         ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -617,7 +626,6 @@ class VideoRecorder {
         ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const speedW = ctx.measureText(speedStr).width;
 
-        // Nền mờ
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
         const bx = margin, by = margin;
@@ -628,30 +636,24 @@ class VideoRecorder {
         ctx.fill();
         ctx.restore();
 
-        // Vẽ chữ
         let tx = bx + padX, ty = by + padY + baseSize * 0.8;
 
-        // Ngày tháng
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(date, tx, ty);
         ty += baseSize + lineGap;
 
-        // Thời gian
         ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(time, tx, ty);
         ty += timeSize + lineGap;
 
-        // Tốc độ + màu theo mức
         const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
         ctx.fillStyle = speedColor;
         ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(speedStr, tx, ty);
 
-        // Vẽ dấu trạng thái GPS
-        const dotX = bx + padX + 4;
+        const dotX = bx + padX - dotR;
         const dotY = by + padY + baseSize * 0.5;
-        const dotR = Math.max(baseSize * 0.35, 4);
         ctx.beginPath();
         ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
         ctx.fillStyle = gpsStatus === 'ok' ? '#34c759' : gpsStatus === 'searching' ? '#ff9500' : '#ff3b30';
@@ -697,16 +699,14 @@ class VideoRecorder {
                 this.ctx.drawImage(this.video, x, y, dw, dh);
             }
 
-            // === Vẽ thông tin lên canvas ===
             this.drawHUD();
-
             requestAnimationFrame(draw);
         };
         draw();
     }
 }
 
-// === Khởi tạo & Gắn sự kiện ===
+// === Khởi tạo ===
 const cam = new VideoRecorder(200);
 
 function attachClick(el, handler) {
