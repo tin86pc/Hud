@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #000;
             min-height: 100vh;
             display: flex;
@@ -30,9 +30,11 @@
             max-height: 860px;
             background: #000;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* ===== VIDEO FULL MÀN HÌNH ===== */
+        /* ===== VIDEO FULL MÀN ===== */
         .video-wrapper {
             position: absolute;
             top: 0;
@@ -57,8 +59,8 @@
             object-fit: cover;
         }
 
-        /* ===== OVERLAY TRÊN VIDEO ===== */
-        .video-overlay {
+        /* ===== OVERLAY - TẤT CẢ NỔI TRÊN VIDEO ===== */
+        .overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -69,51 +71,39 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 14px 16px 18px;
+            padding: 16px 18px 20px;
         }
 
-        /* ===== HEADER TRÊN VIDEO ===== */
-        .header-top {
+        /* ===== TOP BAR ===== */
+        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             pointer-events: none;
         }
 
-        .header-top .title {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 12px;
+        .top-bar .app-title {
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 11px;
             font-weight: 600;
-            letter-spacing: 0.5px;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
         }
 
-        .header-top .badge {
-            color: rgba(255, 255, 255, 0.15);
-            font-size: 9px;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 2px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
-        }
-
-        /* ===== GPS STATUS ===== */
-        .gps-status {
+        .top-bar .gps-status {
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 10px 4px 8px;
+            padding: 3px 10px 3px 8px;
             background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(6px);
-            border-radius: 20px;
+            backdrop-filter: blur(8px);
+            border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.04);
-            font-size: 9px;
-            color: rgba(255, 255, 255, 0.4);
-            pointer-events: none;
+            pointer-events: auto;
         }
 
-        .gps-status .dot {
+        .top-bar .gps-status .dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
@@ -121,19 +111,19 @@
             flex-shrink: 0;
         }
 
-        .gps-status .dot.green {
+        .top-bar .gps-status .dot.green {
             background: #4caf50;
-            animation: pulse 1.5s infinite;
+            animation: pulse-gps 1.5s infinite;
         }
-        .gps-status .dot.yellow {
+        .top-bar .gps-status .dot.yellow {
             background: #ff9800;
-            animation: pulse 1.5s infinite;
+            animation: pulse-gps 1.5s infinite;
         }
-        .gps-status .dot.red {
+        .top-bar .gps-status .dot.red {
             background: #f44336;
         }
 
-        @keyframes pulse {
+        @keyframes pulse-gps {
             0%,
             100% {
                 opacity: 1;
@@ -143,254 +133,294 @@
             }
         }
 
-        /* ===== CONTROLS - NỔI TRÊN VIDEO ===== */
-        .controls-bottom {
+        .top-bar .gps-status .gps-label {
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 500;
+        }
+
+        /* ===== CENTER ===== */
+        .center-area {
+            flex: 1;
             display: flex;
-            flex-direction: column;
-            gap: 10px;
+            align-items: center;
+            justify-content: center;
             pointer-events: none;
         }
 
-        .controls-row {
+        /* ===== RECORDING INDICATOR ===== */
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 18px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .recording-indicator.show {
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+        }
+
+        .recording-indicator .red-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff3b30;
+            animation: pulse-rec 1.2s infinite;
+        }
+
+        @keyframes pulse-rec {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+        }
+
+        .recording-indicator .rec-time {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #fff;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        .recording-indicator .rec-label {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        /* ===== BOTTOM CONTROLS ===== */
+        .bottom-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        /* ===== MAIN BUTTON ROW ===== */
+        .main-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             pointer-events: auto;
         }
 
-        .controls-row .btn {
-            padding: 10px 14px;
+        /* Nút RECORD chính (Bắt đầu/Dừng) */
+        .btn-record {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 22px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            backdrop-filter: blur(8px);
+        }
+
+        .btn-record:active {
+            transform: scale(0.92);
+        }
+
+        .btn-record.idle {
+            border-color: rgba(76, 175, 80, 0.4);
+            background: rgba(76, 175, 80, 0.15);
+        }
+
+        .btn-record.idle:hover {
+            background: rgba(76, 175, 80, 0.25);
+            border-color: rgba(76, 175, 80, 0.6);
+        }
+
+        .btn-record.recording {
+            border-color: rgba(244, 67, 54, 0.5);
+            background: rgba(244, 67, 54, 0.2);
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        .btn-record.recording:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-record:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            animation: none !important;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.3);
+            }
+            100% {
+                box-shadow: 0 0 0 20px rgba(244, 67, 54, 0);
+            }
+        }
+
+        /* Nút phụ */
+        .btn-secondary {
+            padding: 10px 16px;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 5px;
-            flex: 1 1 auto;
-            min-width: 48px;
+            gap: 6px;
+            flex: 1;
             justify-content: center;
             backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        .controls-row .btn:active {
+        .btn-secondary:active {
             transform: scale(0.95);
         }
 
-        .controls-row .btn-start {
-            background: rgba(76, 175, 80, 0.85);
-            color: #fff;
-        }
-
-        .controls-row .btn-start:hover:not(:disabled) {
-            background: rgba(76, 175, 80, 1);
-        }
-
-        .controls-row .btn-start:disabled {
-            background: rgba(76, 175, 80, 0.3);
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .controls-row .btn-stop {
-            background: rgba(244, 67, 54, 0.85);
-            color: #fff;
-        }
-
-        .controls-row .btn-stop:hover:not(:disabled) {
-            background: rgba(244, 67, 54, 1);
-        }
-
-        .controls-row .btn-stop:disabled {
-            background: rgba(244, 67, 54, 0.3);
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .controls-row .btn-save {
-            background: rgba(255, 107, 53, 0.85);
-            color: #fff;
-        }
-
-        .controls-row .btn-save:hover:not(:disabled) {
-            background: rgba(255, 107, 53, 1);
-        }
-
-        .controls-row .btn-save:disabled {
-            background: rgba(255, 107, 53, 0.3);
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .controls-row .btn-flip {
+        .btn-secondary:hover:not(:disabled) {
             background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(8px);
+            color: #fff;
         }
 
-        .controls-row .btn-flip:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .controls-row .btn-flip:disabled {
+        .btn-secondary:disabled {
             opacity: 0.3;
             cursor: not-allowed;
         }
 
-        /* ===== NÚT CAMERA ===== */
-        .btn-cam-group {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            flex: 1 1 auto;
-            min-width: 56px;
-            backdrop-filter: blur(8px);
+        .btn-secondary.save {
+            background: rgba(255, 107, 53, 0.2);
+            color: #ff6b35;
+            border-color: rgba(255, 107, 53, 0.15);
         }
 
-        .btn-cam-group .btn-cam {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 10px;
-            padding: 10px 10px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            flex: 1;
-            justify-content: center;
-            font-weight: 600;
+        .btn-secondary.save:hover:not(:disabled) {
+            background: rgba(255, 107, 53, 0.3);
         }
 
-        .btn-cam-group .btn-cam:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .btn-cam-group .btn-cam.active {
-            background: rgba(100, 181, 246, 0.2);
-            color: #64b5f6;
-        }
-
-        .btn-cam-group .btn-cam:disabled {
+        .btn-secondary.save:disabled {
             opacity: 0.3;
-            cursor: not-allowed;
         }
 
-        .btn-cam-group .divider {
-            width: 1px;
-            background: rgba(255, 255, 255, 0.04);
-            flex-shrink: 0;
-        }
-
-        /* ===== STATUS BAR ===== */
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 12px;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            pointer-events: none;
-        }
-
-        .status-bar .left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: rgba(255, 255, 255, 0.5);
+        .btn-secondary.flip {
             font-size: 11px;
         }
 
-        .status-bar .left .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #333;
-            transition: background 0.3s;
+        .btn-secondary.cam {
+            font-size: 11px;
+            padding: 10px 12px;
+            flex: 0.8;
         }
 
-        .status-bar .left .dot.recording {
-            background: #ff3b30;
-            animation: pulse 1.2s infinite;
+        .btn-secondary.cam.active {
+            background: rgba(100, 181, 246, 0.15);
+            color: #64b5f6;
+            border-color: rgba(100, 181, 246, 0.15);
         }
 
-        .status-bar .left .time {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-            color: #fff;
-            font-size: 14px;
-            min-width: 40px;
+        /* ===== INFO BAR ===== */
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 14px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            pointer-events: none;
         }
 
-        .status-bar .right {
+        .info-bar .left {
             display: flex;
             align-items: center;
             gap: 12px;
-            color: rgba(255, 255, 255, 0.25);
-            font-size: 9px;
-            flex-wrap: wrap;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
         }
 
-        .status-bar .right .value {
+        .info-bar .left .value {
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .info-bar .right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 9px;
+        }
+
+        .info-bar .right .value {
             color: rgba(255, 255, 255, 0.5);
             font-weight: 600;
         }
 
-        /* ===== RAM BAR NHỎ ===== */
-        .ram-bar-wrap {
+        /* ===== RAM BAR ===== */
+        .ram-section {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 0 4px;
+            padding: 0 2px;
             pointer-events: none;
         }
 
-        .ram-bar-wrap .label {
-            color: rgba(255, 255, 255, 0.15);
+        .ram-section .label {
+            color: rgba(255, 255, 255, 0.12);
             font-size: 8px;
             font-weight: 600;
             white-space: nowrap;
         }
 
-        .ram-bar-wrap .bar-track {
+        .ram-section .bar-track {
             flex: 1;
             height: 3px;
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.04);
             border-radius: 10px;
             overflow: hidden;
-            min-width: 30px;
         }
 
-        .ram-bar-wrap .bar-track .fill {
+        .ram-section .bar-track .fill {
             height: 100%;
             border-radius: 10px;
             transition: width 0.4s ease, background 0.4s ease;
             width: 0%;
         }
 
-        .ram-bar-wrap .bar-track .fill.green {
+        .ram-section .bar-track .fill.green {
             background: linear-gradient(90deg, #4caf50, #8bc34a);
         }
 
-        .ram-bar-wrap .bar-track .fill.yellow {
+        .ram-section .bar-track .fill.yellow {
             background: linear-gradient(90deg, #ffeb3b, #ff9800);
         }
 
-        .ram-bar-wrap .bar-track .fill.red {
+        .ram-section .bar-track .fill.red {
             background: linear-gradient(90deg, #ff5722, #f44336);
-            animation: blink 0.8s infinite;
+            animation: blink-ram 0.8s infinite;
         }
 
-        @keyframes blink {
+        @keyframes blink-ram {
             0%,
             100% {
                 opacity: 1;
@@ -400,7 +430,7 @@
             }
         }
 
-        .ram-bar-wrap .info-text {
+        .ram-section .info-text {
             color: rgba(255, 255, 255, 0.12);
             font-size: 8px;
             white-space: nowrap;
@@ -410,26 +440,17 @@
         .ram-settings {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             pointer-events: auto;
             justify-content: flex-end;
         }
 
-        .ram-settings label {
-            color: rgba(255, 255, 255, 0.1);
-            font-size: 8px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
         .ram-settings select {
-            padding: 2px 8px;
-            border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            background: rgba(255, 255, 255, 0.03);
-            color: rgba(255, 255, 255, 0.3);
+            padding: 1px 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.2);
             font-size: 8px;
             font-weight: 500;
             cursor: pointer;
@@ -438,7 +459,7 @@
         }
 
         .ram-settings select:hover {
-            border-color: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.06);
         }
 
         .ram-settings select:focus {
@@ -458,9 +479,9 @@
             transform: translateX(-50%) translateY(80px);
             background: rgba(0, 0, 0, 0.85);
             color: #fff;
-            padding: 10px 20px;
+            padding: 8px 18px;
             border-radius: 30px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.04);
@@ -485,50 +506,113 @@
         }
 
         /* ===== RESPONSIVE ===== */
-        @media (max-width: 500px) {
-            .video-overlay {
-                padding: 10px 12px 14px;
+        @media (max-width: 480px) {
+            .overlay {
+                padding: 12px 14px 16px;
             }
 
-            .controls-row .btn {
-                padding: 8px 10px;
-                font-size: 11px;
-                min-width: 40px;
+            .btn-record {
+                width: 54px;
+                height: 54px;
+                font-size: 18px;
             }
 
-            .btn-cam-group .btn-cam {
+            .btn-secondary {
+                padding: 8px 12px;
+                font-size: 10px;
+            }
+
+            .btn-secondary.cam {
                 padding: 8px 8px;
                 font-size: 9px;
             }
 
-            .status-bar .left .time {
-                font-size: 12px;
+            .info-bar {
+                padding: 4px 10px;
             }
 
-            .status-bar .right {
+            .info-bar .left {
+                font-size: 9px;
+                gap: 8px;
+            }
+
+            .info-bar .right {
                 font-size: 8px;
                 gap: 8px;
             }
 
-            .header-top .title {
-                font-size: 10px;
+            .recording-indicator .rec-time {
+                font-size: 15px;
+            }
+
+            .top-bar .app-title {
+                font-size: 9px;
             }
         }
 
         @media (max-width: 380px) {
-            .controls-row {
+            .btn-record {
+                width: 46px;
+                height: 46px;
+                font-size: 15px;
+            }
+
+            .btn-secondary {
+                padding: 6px 8px;
+                font-size: 9px;
+            }
+
+            .btn-secondary.cam {
+                padding: 6px 5px;
+                font-size: 8px;
+            }
+
+            .main-actions {
+                gap: 6px;
+            }
+
+            .info-bar .left {
+                font-size: 8px;
                 gap: 5px;
             }
 
-            .controls-row .btn {
-                padding: 6px 6px;
-                font-size: 10px;
-                min-width: 34px;
+            .info-bar .right {
+                font-size: 7px;
+                gap: 5px;
+            }
+        }
+
+        @media (max-height: 700px) {
+            .overlay {
+                padding: 10px 12px 12px;
             }
 
-            .btn-cam-group .btn-cam {
-                padding: 6px 5px;
+            .btn-record {
+                width: 48px;
+                height: 48px;
+                font-size: 16px;
+            }
+
+            .btn-secondary {
+                padding: 6px 10px;
+                font-size: 9px;
+            }
+
+            .btn-secondary.cam {
+                padding: 6px 6px;
                 font-size: 8px;
+            }
+
+            .info-bar {
+                padding: 3px 8px;
+            }
+
+            .recording-indicator .rec-time {
+                font-size: 13px;
+            }
+
+            .bottom-controls {
+                gap: 8px;
             }
         }
     </style>
@@ -537,82 +621,93 @@
 
     <div class="container">
 
-        <!-- ===== VIDEO NỀN ===== -->
+        <!-- ===== VIDEO ===== -->
         <div class="video-wrapper">
             <video id="videoPreview" autoplay muted playsinline></video>
             <canvas id="renderCanvas"></canvas>
         </div>
 
-        <!-- ===== OVERLAY TRÊN VIDEO ===== -->
-        <div class="video-overlay">
+        <!-- ===== OVERLAY ===== -->
+        <div class="overlay">
 
-            <!-- HEADER TRÊN CÙNG -->
-            <div class="header-top">
-                <span class="title">📹 Camera Hành Trình</span>
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <div class="gps-status" id="gpsStatusMini">
-                        <span class="dot red" id="gpsDot"></span>
-                        <span id="gpsText" style="font-size:8px;">GPS</span>
-                    </div>
-                    <span class="badge">Time + Speed</span>
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <span class="app-title">📹 Camera Hành Trình</span>
+                <div class="gps-status" id="gpsStatus">
+                    <span class="dot red" id="gpsDot"></span>
+                    <span class="gps-label" id="gpsText">GPS</span>
                 </div>
             </div>
 
-            <!-- CONTROLS + STATUS DƯỚI CÙNG -->
-            <div class="controls-bottom">
+            <!-- CENTER - Recording indicator -->
+            <div class="center-area">
+                <div class="recording-indicator" id="recIndicator">
+                    <span class="red-dot"></span>
+                    <span class="rec-time" id="recTime">00:00</span>
+                    <span class="rec-label">REC</span>
+                </div>
+            </div>
 
-                <!-- NÚT BẤM -->
-                <div class="controls-row">
-                    <button class="btn btn-start" id="btnStart">▶ Bắt đầu</button>
-                    <button class="btn btn-stop" id="btnStop" disabled>⏹ Dừng</button>
-                    <button class="btn btn-save" id="btnSave" disabled>💾 Lưu</button>
-                    <button class="btn btn-flip" id="btnFlipMirror">🔄 Lật</button>
+            <!-- BOTTOM CONTROLS -->
+            <div class="bottom-controls">
 
-                    <div class="btn-cam-group" id="camGroup">
-                        <button class="btn-cam active" id="camFront" data-facing="user">🤳 Trước</button>
-                        <span class="divider"></span>
-                        <button class="btn-cam" id="camBack" data-facing="environment">📷 Sau</button>
-                    </div>
+                <!-- MAIN BUTTONS -->
+                <div class="main-actions">
+
+                    <!-- Nút RECORD (Bắt đầu/Dừng) -->
+                    <button class="btn-record idle" id="btnRecord">
+                        <span id="recordIcon">▶</span>
+                    </button>
+
+                    <button class="btn-secondary save" id="btnSave" disabled>
+                        💾 Lưu
+                    </button>
+
+                    <button class="btn-secondary flip" id="btnFlipMirror">
+                        🔄 Lật
+                    </button>
+
+                    <button class="btn-secondary cam active" id="camFront" data-facing="user">
+                        🤳 Trước
+                    </button>
+
+                    <button class="btn-secondary cam" id="camBack" data-facing="environment">
+                        📷 Sau
+                    </button>
                 </div>
 
-                <!-- STATUS BAR -->
-                <div class="status-bar">
+                <!-- INFO BAR -->
+                <div class="info-bar">
                     <div class="left">
-                        <span class="dot" id="statusDot"></span>
-                        <span id="statusText">Chưa bắt đầu</span>
-                        <span class="time" id="statusTime">00:00</span>
-                    </div>
-                    <div class="right">
                         <span>📦 <span class="value" id="segmentCount">0</span></span>
                         <span>⏱️ <span class="value" id="totalDuration">0s</span></span>
                         <span>📊 <span class="value" id="totalSize">0 KB</span></span>
                     </div>
+                    <div class="right">
+                        <span>🔴 <span class="value" id="statusText">Sẵn sàng</span></span>
+                    </div>
                 </div>
 
-                <!-- RAM BAR + SETTINGS -->
-                <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;pointer-events:none;">
-                    <div class="ram-bar-wrap" style="flex:1;">
-                        <span class="label">💾 RAM</span>
-                        <div class="bar-track">
-                            <div class="fill green" id="ramBar" style="width:0%"></div>
-                        </div>
-                        <span class="info-text">
-                            <span id="usedRamText">0</span>/<span id="maxRamText">200</span>MB
-                            <span id="ramStatus" style="margin-left:4px;color:#4caf50;">✅</span>
-                        </span>
+                <!-- RAM BAR -->
+                <div class="ram-section">
+                    <span class="label">💾 RAM</span>
+                    <div class="bar-track">
+                        <div class="fill green" id="ramBar" style="width:0%"></div>
                     </div>
-                    <div class="ram-settings" style="pointer-events:auto;">
-                        <label>
-                            <select id="ramSelect">
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                                <option value="200" selected>200</option>
-                                <option value="300">300</option>
-                                <option value="500">500</option>
-                                <option value="1000">1GB</option>
-                                <option value="0">∞</option>
-                            </select>
-                        </label>
+                    <span class="info-text">
+                        <span id="usedRamText">0</span>/<span id="maxRamText">200</span>MB
+                        <span id="ramStatus" style="margin-left:4px;color:#4caf50;">✅</span>
+                    </span>
+                    <div class="ram-settings">
+                        <select id="ramSelect">
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="200" selected>200</option>
+                            <option value="300">300</option>
+                            <option value="500">500</option>
+                            <option value="1000">1GB</option>
+                            <option value="0">∞</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -725,7 +820,7 @@
 
                 this.hasFix = true;
                 this.statusDot.className = 'dot green';
-                this.statusText.textContent = '●';
+                this.statusText.textContent = 'GPS';
 
                 if (this.onUpdate) this.onUpdate(this.currentSpeed);
             }
@@ -962,10 +1057,10 @@
                     const speed = this.gps.getSpeed();
                     const speedText = speed > 0 ? `${speed.toFixed(1)} km/h` : '0 km/h';
 
-                    const padding = 14;
-                    const timeFontSize = Math.max(18, Math.min(26, w / 35));
+                    const padding = 12;
+                    const timeFontSize = Math.max(16, Math.min(24, w / 38));
                     const speedFontSize = timeFontSize * 1.4;
-                    const lineHeight = timeFontSize + 8;
+                    const lineHeight = timeFontSize + 6;
 
                     this.ctx.textAlign = 'left';
                     this.ctx.textBaseline = 'top';
@@ -975,15 +1070,15 @@
                     this.ctx.font = `bold ${speedFontSize}px 'Courier New', monospace`;
                     const speedMetrics = this.ctx.measureText(`🚀 ${speedText}`);
 
-                    const textWidth = Math.max(timeMetrics.width, speedMetrics.width) + padding * 2 + 20;
-                    const totalHeight = lineHeight + speedFontSize + padding * 2 + 8;
+                    const textWidth = Math.max(timeMetrics.width, speedMetrics.width) + padding * 2 + 16;
+                    const totalHeight = lineHeight + speedFontSize + padding * 2 + 6;
 
-                    const x = 14;
-                    const y = 14;
+                    const x = 12;
+                    const y = 12;
 
-                    const radius = 12;
+                    const radius = 10;
                     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-                    this.ctx.shadowBlur = 24;
+                    this.ctx.shadowBlur = 20;
                     this.ctx.shadowOffsetX = 0;
                     this.ctx.shadowOffsetY = 0;
 
@@ -1009,15 +1104,15 @@
 
                     this.ctx.fillStyle = '#ffffff';
                     this.ctx.font = `bold ${timeFontSize}px 'Courier New', monospace`;
-                    this.ctx.fillText(`${dateStr} - ${timeStr}`, x + padding, y + 4);
+                    this.ctx.fillText(`${dateStr} - ${timeStr}`, x + padding, y + 3);
 
                     const speedColor = speed > 50 ? '#f44336' : speed > 30 ? '#ff9800' : '#4caf50';
                     this.ctx.fillStyle = speedColor;
                     this.ctx.font = `bold ${speedFontSize}px 'Courier New', monospace`;
-                    this.ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 4);
+                    this.ctx.fillText(`🚀 ${speedText}`, x + padding, y + lineHeight + 3);
 
                     this.ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                    this.ctx.shadowBlur = 8;
+                    this.ctx.shadowBlur = 6;
 
                     this.renderLoopId = requestAnimationFrame(render);
                 };
@@ -1277,23 +1372,26 @@
         const recorder = new VideoRecorderWithOverlay(15 * 60 * 1000, 200);
         const gps = recorder.getGPS();
 
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        const statusTime = document.getElementById('statusTime');
-        const segmentCount = document.getElementById('segmentCount');
-        const totalDuration = document.getElementById('totalDuration');
-        const totalSize = document.getElementById('totalSize');
-        const ramStatus = document.getElementById('ramStatus');
-        const usedRamText = document.getElementById('usedRamText');
-        const maxRamText = document.getElementById('maxRamText');
-        const ramBar = document.getElementById('ramBar');
-        const btnStart = document.getElementById('btnStart');
-        const btnStop = document.getElementById('btnStop');
+        // DOM
+        const btnRecord = document.getElementById('btnRecord');
+        const recordIcon = document.getElementById('recordIcon');
+        const recIndicator = document.getElementById('recIndicator');
+        const recTime = document.getElementById('recTime');
         const btnSave = document.getElementById('btnSave');
         const btnFlipMirror = document.getElementById('btnFlipMirror');
         const camFront = document.getElementById('camFront');
         const camBack = document.getElementById('camBack');
+        const segmentCount = document.getElementById('segmentCount');
+        const totalDuration = document.getElementById('totalDuration');
+        const totalSize = document.getElementById('totalSize');
+        const statusText = document.getElementById('statusText');
+        const usedRamText = document.getElementById('usedRamText');
+        const maxRamText = document.getElementById('maxRamText');
+        const ramBar = document.getElementById('ramBar');
+        const ramStatus = document.getElementById('ramStatus');
         const ramSelect = document.getElementById('ramSelect');
+
+        let recording = false;
 
         function updateUI() {
             const count = recorder.getSegmentCount();
@@ -1322,27 +1420,32 @@
                 ramStatus.textContent = '✅';
             }
 
+            // Nút Record
             if (recorder.isRecording) {
-                statusDot.className = 'dot recording';
-                statusText.textContent = '🔴 Đang quay';
+                btnRecord.className = 'btn-record recording';
+                recordIcon.textContent = '⏹';
+                recIndicator.classList.add('show');
                 const elapsed = recorder.getElapsedSeconds();
                 const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
                 const sec = String(elapsed % 60).padStart(2, '0');
-                statusTime.textContent = `${min}:${sec}`;
+                recTime.textContent = `${min}:${sec}`;
+                statusText.textContent = 'ĐANG QUAY';
+                statusText.style.color = '#ff3b30';
+                btnSave.disabled = true;
             } else {
-                statusDot.className = 'dot';
-                statusText.textContent = '⏸ Đã dừng';
-                if (count > 0) {
-                    statusTime.textContent = recorder.formatTime(recorder.totalDuration);
-                } else {
-                    statusTime.textContent = '00:00';
-                }
+                btnRecord.className = 'btn-record idle';
+                recordIcon.textContent = '▶';
+                recIndicator.classList.remove('show');
+                statusText.textContent = count > 0 ? 'Đã dừng' : 'Sẵn sàng';
+                statusText.style.color = count > 0 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)';
+                btnSave.disabled = count === 0;
             }
 
-            btnStart.disabled = recorder.isRecording;
-            btnStop.disabled = !recorder.isRecording;
-            btnSave.disabled = (count === 0);
+            // Camera buttons
+            camFront.classList.toggle('active', recorder.currentFacingMode === 'user');
+            camBack.classList.toggle('active', recorder.currentFacingMode === 'environment');
 
+            // Disable camera buttons khi đang quay
             camFront.disabled = recorder.isRecording;
             camBack.disabled = recorder.isRecording;
             btnFlipMirror.disabled = recorder.isRecording;
@@ -1352,6 +1455,46 @@
 
         // ===== SỰ KIỆN =====
 
+        // RECORD BUTTON
+        btnRecord.addEventListener('click', async () => {
+            if (recorder.isRecording) {
+                // Đang quay -> Dừng
+                recorder.stop();
+                showToast('⏹ Đã dừng quay', 1500);
+                updateUI();
+            } else {
+                // Đang dừng -> Bắt đầu
+                const ok = await recorder.start(recorder.currentFacingMode);
+                if (ok) {
+                    showToast('🔴 Đã bắt đầu quay!', 1500);
+                    updateUI();
+                }
+            }
+        });
+
+        // SAVE
+        btnSave.addEventListener('click', () => {
+            recorder.save();
+        });
+
+        // FLIP
+        btnFlipMirror.addEventListener('click', () => {
+            recorder.toggleMirror();
+            updateUI();
+        });
+
+        // CAMERA
+        camFront.addEventListener('click', async () => {
+            await recorder.switchCamera('user');
+            updateUI();
+        });
+
+        camBack.addEventListener('click', async () => {
+            await recorder.switchCamera('environment');
+            updateUI();
+        });
+
+        // RAM
         ramSelect.addEventListener('change', function() {
             const value = parseInt(this.value);
             if (value === 0) {
@@ -1363,47 +1506,15 @@
             updateUI();
         });
 
-        btnStart.addEventListener('click', async () => {
-            const ok = await recorder.start(recorder.currentFacingMode);
-            if (ok) {
-                showToast('🎥 Đã bắt đầu quay!', 1500);
-                updateUI();
-            }
-        });
-
-        btnStop.addEventListener('click', () => {
-            recorder.stop();
-            showToast('⏹ Đã dừng quay', 1500);
-            updateUI();
-        });
-
-        btnSave.addEventListener('click', () => {
-            recorder.save();
-        });
-
-        camFront.addEventListener('click', async () => {
-            await recorder.switchCamera('user');
-            updateUI();
-        });
-
-        camBack.addEventListener('click', async () => {
-            await recorder.switchCamera('environment');
-            updateUI();
-        });
-
-        btnFlipMirror.addEventListener('click', () => {
-            recorder.toggleMirror();
-            updateUI();
-        });
-
         updateUI();
 
         window.addEventListener('beforeunload', () => {
             recorder.stop();
         });
 
-        console.log('📹 Camera Hành Trình - Giao diện tối ưu!');
-        console.log('✅ Video full màn hình, controls nổi trên video');
+        console.log('📹 Camera Hành Trình - Thiết kế mới!');
+        console.log('✅ Nút Bắt đầu/Dừng gộp thành 1');
+        console.log('✅ Giao diện tối giản, chuyên nghiệp');
     </script>
 </body>
 </html>
