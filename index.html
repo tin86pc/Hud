@@ -24,11 +24,9 @@
             --accent-yellow: #ff9500;
             --accent-blue: #007aff;
             --accent-orange: #ff6b35;
-            --scale: 0.9;
 
-            /* Chiều cao thanh điều khiển - đủ để hiển thị đầy đủ */
-            --control-h: 140px;
-            --control-w-landscape: 230px;
+            --control-h: 100px;
+            --control-w-landscape: 140px;
         }
 
         html, body {
@@ -80,38 +78,6 @@
             left: 12px;
             z-index: 10;
             pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .rec-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            background: rgba(255, 59, 48, 0.15);
-            border: 1px solid rgba(255, 59, 48, 0.3);
-            border-radius: 20px;
-            font-size: 13px;
-            color: var(--accent-red);
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity 0.3s;
-            backdrop-filter: blur(10px);
-        }
-        .rec-badge.show { opacity: 1; }
-
-        .rec-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--accent-red);
-            animation: recPulse 1s infinite;
-        }
-        @keyframes recPulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.7); }
         }
 
         .gps-badge {
@@ -136,7 +102,7 @@
         .gps-dot.yellow { background: var(--accent-yellow); }
         .gps-dot.red { background: var(--accent-red); }
 
-        /* === Thanh Điều Khiển Dưới === */
+        /* === Thanh Điều Khiển === */
         .control-bar {
             position: absolute;
             bottom: 0;
@@ -145,82 +111,22 @@
             height: var(--control-h);
             background: var(--panel-bg);
             border-top: 1px solid var(--panel-border);
-            padding: 10px 16px 14px;
+            padding: 12px 16px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center;
             z-index: 5;
         }
 
-        /* Hàng thông tin - không bị gãy dòng, đều khoảng cách */
-        .info-row {
-            display: flex;
-            flex-wrap: nowrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .info-item {
-            display: flex;
-            align-items: baseline;
-            gap: 3px;
-            white-space: nowrap;
-        }
-
-        .info-val {
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .ram-wrap {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-        }
-
-        .ram-bar-bg {
-            width: 70px;
-            height: 6px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .ram-bar-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 3px;
-            transition: width 0.4s, background 0.4s;
-        }
-        .ram-bar-fill.green { background: var(--accent-green); }
-        .ram-bar-fill.yellow { background: var(--accent-yellow); }
-        .ram-bar-fill.red { background: var(--accent-red); animation: blink 0.8s infinite; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-        .ram-wrap select {
-            padding: 2px 6px;
-            border-radius: 5px;
-            border: 1px solid var(--panel-border);
-            background: rgba(0,0,0,0.3);
-            color: var(--text-secondary);
-            font-size: 12px;
-            outline: none;
-        }
-
-        /* Hàng nút bấm - hiển thị đầy đủ, dễ chạm */
         .btn-row {
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding: 4px 0;
         }
 
         .btn {
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             border: none;
             background: rgba(255,255,255,0.08);
@@ -229,45 +135,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 24px;
             transition: all 0.2s;
             border: 1px solid var(--panel-border);
-            flex-shrink: 0;
         }
         .btn:active { transform: scale(0.92); background: rgba(255,255,255,0.15); }
-        .btn:disabled { opacity: 0.3; pointer-events: none; }
-
-        .btn-sm {
-            width: 48px;
-            height: 48px;
-            font-size: 20px;
-        }
-
-        .btn-record {
-            width: 72px;
-            height: 72px;
-            border-width: 4px;
-            border-style: solid;
-            border-color: rgba(255,255,255,0.25);
-            background: rgba(255,255,255,0.08);
-            color: #fff;
-            font-size: 28px;
-        }
-        .btn-record.idle { border-color: rgba(52, 199, 89, 0.5); background: rgba(52, 199, 89, 0.12); }
-        .btn-record.recording { border-color: rgba(255, 59, 48, 0.6); background: rgba(255, 59, 48, 0.15); }
-        .btn-record.recording::after {
-            content: '';
-            position: absolute;
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            border-top-color: var(--accent-red);
-            animation: spin 1.5s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
         .btn-mirror { color: var(--text-secondary); }
-        .btn-save { color: var(--accent-orange); border-color: rgba(255, 107, 53, 0.3); }
         .btn-cam { color: var(--accent-blue); }
 
         /* === Thông báo === */
@@ -291,9 +165,6 @@
             text-align: center;
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        .toast.warning { border-color: rgba(255, 149, 0, 0.4); }
-        .toast.danger { border-color: rgba(255, 59, 48, 0.4); }
-        .toast.success { border-color: rgba(52, 199, 89, 0.4); }
 
         /* === Màn hình NGANG === */
         @media (orientation: landscape) {
@@ -309,24 +180,14 @@
                 right: 0;
                 bottom: 0;
                 flex-direction: column;
-                justify-content: space-between;
-                padding: 20px 14px;
+                justify-content: center;
+                gap: 32px;
+                padding: 20px 16px;
             }
-
-            .info-row {
-                flex-direction: column;
-                gap: 12px;
-                align-items: flex-start;
-                width: 100%;
-            }
-
-            .ram-wrap { width: 100%; }
-            .ram-bar-bg { flex: 1; width: auto; }
 
             .btn-row {
                 flex-direction: column;
                 gap: 24px;
-                padding: 10px 0;
             }
 
             .toast {
@@ -347,11 +208,8 @@
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
 
-        <!-- Thông tin trên video -->
+        <!-- Thông tin GPS trên video -->
         <div class="hud">
-            <div class="rec-badge" id="recBadge">
-                <span class="rec-dot"></span> Đang quay
-            </div>
             <div class="gps-badge">
                 <span class="gps-dot red" id="gpsDot"></span>
                 <span id="gpsLabel">Tìm tín hiệu</span>
@@ -361,42 +219,9 @@
 
     <!-- Thanh Điều Khiển -->
     <div class="control-bar">
-        <!-- Hàng thông tin - không bị gãy dòng -->
-        <div class="info-row">
-            <div class="info-item">
-                <span>Đoạn:</span>
-                <span class="info-val" id="segCount">0</span>
-            </div>
-            <div class="info-item">
-                <span>Thời gian:</span>
-                <span class="info-val" id="durTime">0.0s</span>
-            </div>
-            <div class="info-item">
-                <span>Kích thước:</span>
-                <span class="info-val" id="sizeVal">0B</span>
-            </div>
-            <div class="ram-wrap">
-                <span>RAM:</span>
-                <div class="ram-bar-bg"><div class="ram-bar-fill green" id="ramBar"></div></div>
-                <span class="info-val" id="ramText">0/200MB</span>
-                <select id="ramLimit">
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="200" selected>200</option>
-                    <option value="300">300</option>
-                    <option value="500">500</option>
-                    <option value="1000">1GB</option>
-                    <option value="0">∞</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Hàng nút bấm - hiển thị đầy đủ -->
         <div class="btn-row">
-            <button class="btn btn-sm btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
-            <button class="btn btn-record idle" id="btnRecord" title="Bắt đầu/Kết thúc quay">▶</button>
-            <button class="btn btn-sm btn-save" id="btnSave" disabled title="Lưu video">💾</button>
-            <button class="btn btn-sm btn-cam" id="btnCam" title="Chuyển camera">📷</button>
+            <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
+            <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
         </div>
     </div>
 </div>
@@ -405,87 +230,108 @@
 
 <script>
 let toastTimer = null;
-function showToast(msg, dur = 2500, type = '') {
+function showToast(msg, dur = 2000) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = 'toast show ' + type;
+    t.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), dur);
 }
 
 class GPSTracker {
-    constructor() { this.watchId = null; this.speed = 0; this.active = false; this.lastPos = null; }
+    constructor() {
+        this.watchId = null;
+        this.speed = 0;
+        this.active = false;
+        this.lastPos = null;
+    }
+
     start() {
-        if (!navigator.geolocation) { showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger'); return false; }
+        if (!navigator.geolocation) {
+            showToast('❌ Trình duyệt không hỗ trợ GPS');
+            return false;
+        }
         this.active = true;
         this.watchId = navigator.geolocation.watchPosition(
-            p => this.handle(p), e => this.err(e),
+            p => this.handle(p),
+            e => this.err(e),
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 1000 }
         );
         this.updUI('Tìm tín hiệu...', 'yellow');
         return true;
     }
+
     stop() {
         this.active = false;
         if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
-        this.speed = 0; this.updUI('Tắt', 'red');
+        this.speed = 0;
+        this.updUI('Tắt', 'red');
     }
+
     handle(pos) {
         if (!this.active) return;
         const c = pos.coords;
-        this.speed = c.speed !== null && c.speed >= 0 ? Math.round(c.speed * 3.6 * 10) / 10 : this.calcSpeed(c, pos.timestamp);
+        if (c.speed !== null && c.speed >= 0) {
+            this.speed = Math.round(c.speed * 3.6 * 10) / 10;
+        } else {
+            this.speed = this.calcSpeed(c, pos.timestamp);
+        }
         this.updUI('GPS', 'green');
     }
-    calcSpeed(c, ts) {
-        if (!this.lastPos) { this.lastPos = { lat: c.latitude, lng: c.longitude, ts }; return 0; }
-        const d = this.dist(this.lastPos.lat, this.lastPos.lng, c.latitude, c.longitude);
+
+    calcSpeed(coords, ts) {
+        if (!this.lastPos) {
+            this.lastPos = { lat: coords.latitude, lng: coords.longitude, ts };
+            return 0;
+        }
+        const d = this.dist(this.lastPos.lat, this.lastPos.lng, coords.latitude, coords.longitude);
         const t = (ts - this.lastPos.ts) / 1000;
-        this.lastPos = { lat: c.latitude, lng: c.longitude, ts };
+        this.lastPos = { lat: coords.latitude, lng: coords.longitude, ts };
         return t > 0 && d > 1 ? Math.round((d / t) * 3.6 * 10) / 10 : 0;
     }
+
     dist(lat1, lon1, lat2, lon2) {
         const R = 6371e3, r = Math.PI / 180;
         const dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
         const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
+
     err(e) {
-        const m = { 1: ['Cấp quyền vị trí', 'red'], 2: ['Không có tín hiệu', 'red'], 3: ['Mất tín hiệu', 'yellow'] }[e.code] || ['Lỗi GPS', 'red'];
+        const m = {
+            1: ['Cấp quyền vị trí', 'red'],
+            2: ['Không có tín hiệu', 'red'],
+            3: ['Mất tín hiệu', 'yellow']
+        }[e.code] || ['Lỗi GPS', 'red'];
         this.updUI(m[0], m[1]);
     }
+
     updUI(txt, color) {
         document.getElementById('gpsDot').className = 'gps-dot ' + color;
         document.getElementById('gpsLabel').textContent = txt;
     }
+
     getSpeed() { return this.speed; }
 }
 
-class Recorder {
-    constructor(maxMB = 200) {
-        this.max = maxMB === 0 ? Infinity : maxMB * 1024 * 1024;
-        this.segTime = 1000;
-        this.chunks = [];
-        this.totalSize = 0;
-        this.totalDur = 0;
-        this.recorder = null;
+class CameraView {
+    constructor() {
         this.stream = null;
-        this.canvasStream = null;
-        this.recording = false;
-        this.rendering = false;
-        this.facing = 'user';
-        this.mirror = false;
-        this.firstChunk = null;
-        this.hasHeader = false;
         this.canvas = document.getElementById('renderCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.video = document.getElementById('videoPreview');
         this.gps = new GPSTracker();
+        this.facing = 'user';
+        this.mirror = false;
+        this.rendering = false;
         this.w = 1280; this.h = 720;
-        this.onChange = null;
     }
-    setMaxMB(mb) { this.max = mb === 0 ? Infinity : mb * 1024 * 1024; this.cap(); this.notify(); }
+
     async initCam(facing = 'user') {
-        const cons = { video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true };
+        const cons = {
+            video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+        };
         this.stream = await navigator.mediaDevices.getUserMedia(cons);
         this.facing = facing;
         this.video.srcObject = this.stream;
@@ -493,70 +339,22 @@ class Recorder {
         const s = this.stream.getVideoTracks()[0].getSettings();
         this.w = s.width || 1280; this.h = s.height || 720;
         this.canvas.width = this.w; this.canvas.height = this.h;
-    }
-    async switchCam(facing) {
-        if (facing === this.facing) { showToast('Đang dùng camera này', 1500); return; }
-        const was = this.recording;
-        if (was) this.stopRec();
-        this.stream?.getTracks().forEach(t => t.stop());
-        await this.initCam(facing);
-        if (was) await this.startRec();
-        showToast(`Đã chuyển camera ${facing === 'user' ? 'trước' : 'sau'}`, 1500);
-    }
-    async startRec() {
-        if (this.recording) return;
-        if (!this.stream) await this.initCam(this.facing);
-        this.chunks = []; this.totalSize = 0; this.totalDur = 0;
-        this.firstChunk = null; this.hasHeader = false;
-        this.canvasStream = this.canvas.captureStream(30);
-        const aTrack = this.stream.getAudioTracks()[0];
-        if (aTrack) this.canvasStream.addTrack(aTrack);
-
-        let mime = 'video/webm;codecs=vp9,opus';
-        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
-
-        this.recorder = new MediaRecorder(this.canvasStream, { mimeType: mime });
-        this.recorder.ondataavailable = e => this.onChunk(e);
-        this.recorder.start(this.segTime);
-        this.recording = true;
-        this.gps.start();
         this.startDraw();
-        this.timer = setInterval(() => { this.cap(); this.notify(); }, 2000);
-        document.getElementById('recBadge').classList.add('show');
-        showToast('🔴 Bắt đầu quay', 2000, 'success');
+        this.gps.start();
     }
-    stopRec() {
-        if (!this.recording) return;
-        this.recorder.stop();
-        this.recording = false;
-        clearInterval(this.timer);
-        this.gps.stop();
-        this.stopDraw();
-        document.getElementById('recBadge').classList.remove('show');
-        showToast('⏹ Đã dừng quay', 2000);
+
+    async switchCam() {
+        const newFacing = this.facing === 'user' ? 'environment' : 'user';
+        this.stream?.getTracks().forEach(t => t.stop());
+        await this.initCam(newFacing);
+        showToast(`Đã chuyển camera ${newFacing === 'user' ? 'trước' : 'sau'}`);
     }
-    onChunk(e) {
-        if (!e.data.size) return;
-        if (!this.hasHeader) { this.firstChunk = e.data; this.hasHeader = true; }
-        this.chunks.push(e.data);
-        this.totalSize += e.data.size;
-        this.totalDur += this.segTime;
-        this.cap(); this.notify();
+
+    toggleMirror() {
+        this.mirror = !this.mirror;
+        showToast(this.mirror ? '🔄 Bật gương hình' : '🔄 Tắt gương hình');
     }
-    cap() {
-        while (this.chunks.length > 1 && this.totalSize > this.max) {
-            const rm = this.chunks.shift();
-            this.totalSize -= rm.size;
-            this.totalDur -= this.segTime;
-            if (rm === this.firstChunk && this.chunks.length) {
-                this.chunks.unshift(rm);
-                this.totalSize += rm.size;
-                this.totalDur += this.segTime;
-                break;
-            }
-        }
-    }
+
     startDraw() {
         if (this.rendering) return;
         this.rendering = true;
@@ -581,7 +379,7 @@ class Recorder {
                 this.ctx.drawImage(this.video, x, y, dw, dh);
             }
 
-            // Vẽ thông tin góc trên trái: ngày, giờ, tốc độ
+            // Vẽ thông tin: ngày, giờ, tốc độ
             const now = new Date();
             const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -644,64 +442,16 @@ class Recorder {
         };
         draw();
     }
-    stopDraw() { this.rendering = false; }
-    toggleMirror() { this.mirror = !this.mirror; showToast(this.mirror ? '🔄 Bật gương' : '🔄 Tắt gương', 1500); }
-    save() {
-        if (!this.chunks.length) return showToast('Chưa có video', 2000, 'warning');
-        const list = this.chunks[0] !== this.firstChunk ? [this.firstChunk, ...this.chunks] : this.chunks;
-        const blob = new Blob(list, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const d = new Date();
-        a.download = `cam-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.mp4`;
-        a.href = url;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-        showToast(`✅ Đã lưu: ${(blob.size / 1048576).toFixed(1)} MB`, 2500, 'success');
-    }
-    fmtSize(b) {
-        if (b < 1024) return b + 'B';
-        if (b < 1048576) return (b / 1024).toFixed(1) + 'KB';
-        return (b / 1048576).toFixed(1) + 'MB';
-    }
-    notify() { if (this.onChange) this.onChange(); }
 }
 
-const rec = new Recorder(200);
+const cam = new CameraView();
 
-function syncUI() {
-    const isRec = rec.recording;
-    const hasData = rec.chunks.length > 0;
+document.getElementById('btnMirror').addEventListener('click', () => cam.toggleMirror());
+document.getElementById('btnCam').addEventListener('click', () => cam.switchCam());
 
-    const btn = document.getElementById('btnRecord');
-    btn.className = 'btn btn-record ' + (isRec ? 'recording' : 'idle');
-    btn.innerHTML = isRec ? '' : '▶';
+cam.initCam('user');
 
-    document.getElementById('segCount').textContent = rec.chunks.length;
-    document.getElementById('durTime').textContent = (rec.totalDur / 1000).toFixed(1) + 's';
-    document.getElementById('sizeVal').textContent = rec.fmtSize(rec.totalSize);
-
-    const maxMB = rec.max === Infinity ? '∞' : Math.round(rec.max / 1048576);
-    const usedMB = Math.round(rec.totalSize / 1048576);
-    const pct = rec.max === Infinity ? 0 : Math.min((rec.totalSize / rec.max) * 100, 100);
-    const bar = document.getElementById('ramBar');
-    bar.style.width = pct + '%';
-    bar.className = 'ram-bar-fill ' + (pct >= 95 ? 'red' : pct >= 80 ? 'yellow' : 'green');
-    document.getElementById('ramText').textContent = `${usedMB}/${maxMB}MB`;
-
-    document.getElementById('btnSave').disabled = !hasData;
-}
-
-rec.onChange = syncUI;
-
-document.getElementById('btnRecord').addEventListener('click', () => rec.recording ? rec.stopRec() : rec.startRec());
-document.getElementById('btnSave').addEventListener('click', () => rec.save());
-document.getElementById('btnMirror').addEventListener('click', () => rec.toggleMirror());
-document.getElementById('btnCam').addEventListener('click', () => rec.switchCam(rec.facing === 'user' ? 'environment' : 'user'));
-document.getElementById('ramLimit').addEventListener('change', e => rec.setMaxMB(parseInt(e.target.value)));
-
-rec.initCam().then(syncUI);
-window.addEventListener('beforeunload', () => rec.stopRec());
+window.addEventListener('beforeunload', () => cam.gps.stop());
 </script>
 
 </body>
