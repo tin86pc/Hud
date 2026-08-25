@@ -27,9 +27,6 @@
             --radius-lg: 20px;
             --radius-md: 14px;
             --shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.6);
-            /* Khoảng trống an toàn - đủ lớn để không bị che */
-            --safe-area-bottom: 180px;
-            --safe-area-right: 180px;
         }
 
         body {
@@ -74,7 +71,7 @@
         .overlay {
             position: absolute;
             inset: 0;
-            z-index: 99; /* Rất cao để chắc chắn trên cùng */
+            z-index: 99;
             pointer-events: none;
             display: flex;
             flex-direction: column;
@@ -84,7 +81,7 @@
 
         .overlay > * { pointer-events: auto; }
 
-        /* ==== THANH TRÊN ==== */
+        /* ==== THANH TRÊN - Đơn giản hơn ==== */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -173,49 +170,15 @@
             50% { opacity: 0.4; }
         }
 
-        .speed-panel {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            padding: 8px 12px;
-            background: var(--panel-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--panel-border);
-            border-radius: var(--radius-md);
-            min-width: 90px;
-        }
-        .speed-value {
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1;
-            color: var(--text-primary);
-            font-variant-numeric: tabular-nums;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-        }
-        .speed-unit {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-left: 2px;
-        }
-        .speed-value.high { color: var(--accent-red); }
-        .speed-value.medium { color: var(--accent-yellow); }
-        .date-time {
-            font-size: 10px;
-            color: var(--text-muted);
-            margin-top: 3px;
-            font-variant-numeric: tabular-nums;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-        }
-
         .center-spacer { flex: 1; }
 
-        /* ==== THANH THÔNG TIN DƯỚI - DỌC ==== */
+        /* ==== THANH THÔNG TIN DƯỚI ==== */
         .info-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 16px;
-            margin-bottom: 12px;
+            padding: 8px 16px;
+            margin-bottom: 8px;
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--panel-border);
@@ -236,13 +199,13 @@
 
         /* ==== THANH RAM ==== */
         .ram-bar-wrapper {
-            padding: 0 16px 12px;
+            padding: 0 16px 8px;
         }
         .ram-panel {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 16px;
+            padding: 8px 16px;
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--panel-border);
@@ -311,15 +274,13 @@
         }
         .ram-selector select:focus { border-color: var(--accent-blue); }
 
-        /* ==== NÚT ĐIỀU KHIỂN - RÕ RÀNG, DỄ BẤM ==== */
+        /* ==== NÚT ĐIỀU KHIỂN - KÉO LÊN CAO HƠN ==== */
         .controls-bar {
             display: flex;
             align-items: center;
             justify-content: space-around;
-            padding: 12px 8px 20px;
-            min-height: 120px; /* Đủ chỗ cho nút */
-            background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
-            border-radius: 24px 24px 0 0;
+            padding: 8px 8px 12px; /* Giảm khoảng dưới kéo nút lên */
+            min-height: 100px;
         }
 
         .ctrl-group {
@@ -344,7 +305,7 @@
             transition: all 0.2s ease;
             border: 1px solid var(--panel-border);
             position: relative;
-            z-index: 100; /* Cao nhất */
+            z-index: 100;
             flex-shrink: 0;
         }
         .ctrl-btn:active { transform: scale(0.92); }
@@ -369,11 +330,9 @@
             background: rgba(255, 107, 53, 0.25);
         }
 
-        /* Nút chuyển camera - gộp thành 1 nút */
         .cam-switch-btn.front { color: var(--accent-blue); }
         .cam-switch-btn.back { color: var(--accent-green); }
 
-        /* Nút quay lớn */
         .record-btn-wrap {
             position: relative;
             z-index: 100;
@@ -424,7 +383,7 @@
         /* ==== THÔNG BÁO TOAST ==== */
         .toast {
             position: fixed;
-            bottom: 200px;
+            bottom: 130px;
             left: 50%;
             transform: translateX(-50%) translateY(80px);
             background: var(--panel-bg);
@@ -453,7 +412,6 @@
 
         /* ==== Responsive ==== */
         @media (max-width: 400px) {
-            .speed-value { font-size: 24px; }
             .btn-record { width: 72px; height: 72px; font-size: 28px; }
             .ctrl-btn { width: 54px; height: 54px; font-size: 20px; }
             .ctrl-btn.secondary { width: 48px; height: 48px; font-size: 20px; }
@@ -484,12 +442,13 @@
             .bottom-stack {
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: flex-start; /* Kéo lên trên */
                 align-items: center;
                 height: 100%;
-                width: 200px;
+                width: 180px;
                 flex-shrink: 0;
                 margin-left: 15px;
+                padding-top: 10px; /* Kéo nội dung lên trên */
             }
 
             .info-bar {
@@ -498,11 +457,11 @@
                 align-items: center;
                 text-align: center;
                 width: 100%;
-                margin-bottom: 15px;
+                margin-bottom: 10px;
             }
 
             .ram-bar-wrapper {
-                padding: 0 0 15px;
+                padding: 0 0 10px;
                 width: 100%;
             }
 
@@ -518,11 +477,10 @@
 
             .controls-bar {
                 flex-direction: column;
-                justify-content: center;
-                gap: 20px;
+                justify-content: flex-start; /* Kéo nút lên trên */
+                gap: 16px;
                 padding: 0;
                 min-height: auto;
-                background: none;
             }
         }
     </style>
@@ -552,13 +510,7 @@
                     <span class="gps-dot red" id="gpsDot"></span>
                     <span id="gpsLabel">Tìm tín hiệu</span>
                 </div>
-                <div class="speed-panel">
-                    <div>
-                        <span class="speed-value" id="speedValue">0</span>
-                        <span class="speed-unit">km/h</span>
-                    </div>
-                    <div class="date-time" id="dateTime">--/--/---- --:--</div>
-                </div>
+                <!-- ✅ BỎ khối tốc độ + thời gian ở đây -> chỉ vẽ vào video -->
             </div>
         </div>
 
@@ -595,6 +547,7 @@
                 </div>
             </div>
 
+            <!-- ✅ NÚT ĐƯỢC KÉO LÊN CAO HƠN -->
             <div class="controls-bar">
                 <div class="ctrl-group">
                     <button class="ctrl-btn secondary" id="btnMirror" title="Lật ngang hình">↔️</button>
@@ -721,7 +674,7 @@ class GPSTracker {
 }
 
 // ============================================================
-// VIDEO RECORDER - VẼ THÔNG TIN CHỈ Ở GÓC TRÊN TRÁI
+// VIDEO RECORDER - VẼ THÔNG TIN VÀO VIDEO CHỈ 1 CHỖ
 // ============================================================
 class DashCamRecorder {
     constructor(maxRamMB = 200) {
@@ -745,7 +698,7 @@ class DashCamRecorder {
         this.ctx = this.canvas.getContext('2d');
         this.video = document.getElementById('videoPreview');
         this.gps = new GPSTracker();
-        this.gps.onUpdate = s => this.updateSpeedUI(s);
+        this.gps.onUpdate = () => {}; // Không cập nhật UI nữa, chỉ vẽ vào canvas
         this.videoW = 1280; this.videoH = 720;
         this.onStateChange = null;
     }
@@ -877,7 +830,7 @@ class DashCamRecorder {
             }
 
             // =================================================
-            // ✅ VẼ CHỈ Ở GÓC TRÊN TRÁI - KHÔNG ĐỤNG ĐẾN NÚT
+            // ✅ VẼ THỜI GIAN + TỐC ĐỘ CHỈ Ở ĐÂY - TRONG VIDEO
             // =================================================
             const now = new Date();
             const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -885,7 +838,7 @@ class DashCamRecorder {
             const speed = this.gps.getSpeed();
             const speedStr = speed.toFixed(1);
 
-            // Luôn vẽ ở góc trên bên trái, kích thước cố định hợp lý
+            // Luôn vẽ ở góc trên bên trái
             const margin = Math.max(20, cw * 0.03);
             const boxW = Math.min(260, cw * 0.28);
             const boxH = Math.min(110, ch * 0.15);
@@ -932,23 +885,12 @@ class DashCamRecorder {
 
             this.ctx.restore();
 
-            // Cập nhật hiển thị trên màn hình
-            document.getElementById('dateTime').textContent = `${dateStr} ${timeStr}`;
-
             requestAnimationFrame(draw);
         };
         draw();
     }
 
     stopRender() { this.rendering = false; }
-
-    updateSpeedUI(speed) {
-        const el = document.getElementById('speedValue');
-        el.textContent = speed.toFixed(1);
-        el.classList.remove('high','medium');
-        if (speed >= 50) el.classList.add('high');
-        else if (speed >= 30) el.classList.add('medium');
-    }
 
     toggleMirror() {
         this.mirrored = !this.mirrored;
