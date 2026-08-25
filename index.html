@@ -27,9 +27,9 @@
             --radius-md: 3vmin;
             --radius-lg: 4vmin;
             
-            /* === Tỷ lệ chia màn hình === */
-            --video-area-h: 80vh; /* Video chiếm 80% chiều cao */
-            --ctrl-area-h: 20vh;  /* Nút bấm chiếm 20% còn lại */
+            /* Tỷ lệ chia màn hình */
+            --video-area-h: 80vh;
+            --ctrl-area-h: 20vh;
         }
 
         html, body {
@@ -47,14 +47,14 @@
         }
 
         /* ======================================
-           VIDEO & CANVAS — THEO TỶ LỀ MÀN HÌNH
+           VIDEO & CANVAS
            ====================================== */
         .video-wrapper {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: var(--video-area-h); /* Chỉ chiếm phần trên */
+            height: var(--video-area-h);
             z-index: 1;
             overflow: hidden;
         }
@@ -75,7 +75,7 @@
         }
 
         /* ======================================
-           GIAO DIỆN ĐIỀU KHIỂN — TRÊN CÙNG
+           GIAO DIỆN ĐIỀU KHIỂN
            ====================================== */
         .overlay {
             position: absolute;
@@ -98,13 +98,7 @@
 
         .top-left { display: flex; flex-direction: column; gap: 1vh; }
 
-        .app-brand {
-            color: var(--text-muted);
-            font-size: 2.5vmin;
-            font-weight: 600;
-            letter-spacing: 0.15vmin;
-            text-transform: uppercase;
-        }
+        /* === BỎ CHỮ "CAM HÀNH TRÌNH" === */
 
         .rec-indicator {
             display: inline-flex;
@@ -158,7 +152,7 @@
 
         .center-spacer { flex: 1; }
 
-        /* === KHỐI DƯỚI — CHIẾM ĐÚNG PHẦN ĐƯỢC GIAO === */
+        /* === KHỐI DƯỚI === */
         .bottom-stack {
             position: absolute;
             bottom: 0;
@@ -234,7 +228,7 @@
         }
         .ram-selector select:focus { border-color: var(--accent-blue); }
 
-        /* === NÚT BẤM — KÍCH THƯỚC THEO % MÀN HÌNH === */
+        /* === NÚT BẤM === */
         .controls-bar {
             display: flex;
             align-items: center;
@@ -338,17 +332,15 @@
 <body>
 
 <div class="container">
-    <!-- Video & Canvas — chỉ ở phần trên theo tỷ lệ -->
     <div class="video-wrapper">
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
     </div>
 
-    <!-- Giao diện điều khiển -->
     <div class="overlay">
         <div class="top-bar">
             <div class="top-left">
-                <span class="app-brand">📹 Cam Hành Trình</span>
+                <!-- BỎ CHỮ "Cam Hành Trình" ĐI RỒI -->
                 <span class="rec-indicator" id="recIndicator">
                     <span class="rec-dot"></span> Đang quay
                 </span>
@@ -363,7 +355,6 @@
         <div class="center-spacer"></div>
     </div>
 
-    <!-- Khối nút bấm ở dưới — chiếm đúng tỷ lệ -->
     <div class="bottom-stack">
         <div class="info-bar">
             <div class="info-item">📦 Đoạn: <span id="segmentCount">0</span></div>
@@ -506,7 +497,7 @@ class GPSTracker {
 }
 
 // ============================================================
-// VIDEO RECORDER — VẼ THEO TỶ LỀ CANVAS
+// VIDEO RECORDER — VẼ NỀN CHỈ BAO QUANH CHỮ
 // ============================================================
 class DashCamRecorder {
     constructor(maxRamMB = 200) {
@@ -648,26 +639,46 @@ class DashCamRecorder {
             }
 
             // ==============================================
-            // VẼ THÔNG TIN THEO TỶ LỀ KÍCH THƯỚC CANVAS
+            // VẼ THÔNG TIN — NỀN CHỈ BAO QUANH ĐÚNG NỘI DUNG
             // ==============================================
             const now = new Date();
             const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             const speed = this.gps.getSpeed();
-            const speedStr = speed.toFixed(1);
+            const speedStr = speed.toFixed(1) + ' km/h';
 
-            // Tất cả tính theo % kích thước canvas
+            // Tính toán font chữ theo kích thước canvas
+            const fontSizeDate = Math.max(cw * 0.028, 14);
+            const fontSizeTime = Math.max(cw * 0.04, 20);
+            const fontSizeSpeed = Math.max(cw * 0.045, 24);
+            const lineSpacing = fontSizeTime * 0.35;
+            const paddingX = Math.max(cw * 0.03, 12);
+            const paddingY = Math.max(ch * 0.025, 8);
             const margin = Math.max(cw * 0.025, 12);
-            const boxW = cw * 0.28;
-            const boxH = ch * 0.15;
-            const boxX = margin;
-            const boxY = margin;
             const radius = Math.max(cw * 0.012, 8);
 
+            // Đặt font trước để đo chiều rộng chữ
+            this.ctx.font = `bold ${fontSizeDate}px -apple-system, sans-serif`;
+            const dateWidth = this.ctx.measureText(dateStr).width;
+            
+            this.ctx.font = `bold ${fontSizeTime}px -apple-system, sans-serif`;
+            const timeWidth = this.ctx.measureText(timeStr).width;
+            
+            this.ctx.font = `bold ${fontSizeSpeed}px -apple-system, sans-serif`;
+            const speedWidth = this.ctx.measureText(speedStr).width;
+
+            // Tính kích thước khối nền vừa đủ với nội dung
+            const textWidth = Math.max(dateWidth, timeWidth, speedWidth);
+            const boxW = textWidth + paddingX * 2;
+            const boxH = paddingY * 2 + fontSizeDate + fontSizeTime + fontSizeSpeed + lineSpacing * 2;
+            const boxX = margin;
+            const boxY = margin;
+
+            // Vẽ nền trong suốt nhẹ, chỉ bao quanh đúng nội dung
             this.ctx.save();
-            this.ctx.shadowColor = 'rgba(0,0,0,0.4)';
-            this.ctx.shadowBlur = cw * 0.015;
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            this.ctx.shadowColor = 'rgba(0,0,0,0.25)';
+            this.ctx.shadowBlur = cw * 0.01;
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; // trong suốt hơn
             this.ctx.beginPath();
             this.ctx.moveTo(boxX + radius, boxY);
             this.ctx.lineTo(boxX + boxW - radius, boxY);
@@ -681,27 +692,26 @@ class DashCamRecorder {
             this.ctx.closePath();
             this.ctx.fill();
             this.ctx.shadowBlur = 0;
-            this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-            this.ctx.lineWidth = Math.max(cw * 0.0015, 1);
-            this.ctx.stroke();
+            this.ctx.restore();
 
-            // Font chữ theo % kích thước canvas
-            const fontSizeDate = Math.max(cw * 0.028, 14);
-            const fontSizeTime = Math.max(cw * 0.04, 20);
-            const fontSizeSpeed = Math.max(cw * 0.045, 24);
+            // Vẽ chữ
+            const textX = boxX + paddingX;
+            let currentY = boxY + paddingY + fontSizeDate * 0.8;
 
             this.ctx.fillStyle = 'rgba(255,255,255,0.95)';
             this.ctx.font = `bold ${fontSizeDate}px -apple-system, sans-serif`;
             this.ctx.textAlign = 'left';
-            this.ctx.fillText(dateStr, boxX + margin, boxY + margin + fontSizeDate * 0.8);
+            this.ctx.fillText(dateStr, textX, currentY);
+            currentY += fontSizeDate + lineSpacing;
 
             this.ctx.font = `bold ${fontSizeTime}px -apple-system, sans-serif`;
-            this.ctx.fillText(timeStr, boxX + margin, boxY + margin + fontSizeDate + fontSizeTime * 0.9);
+            this.ctx.fillText(timeStr, textX, currentY);
+            currentY += fontSizeTime + lineSpacing;
 
             const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
             this.ctx.fillStyle = speedColor;
             this.ctx.font = `bold ${fontSizeSpeed}px -apple-system, sans-serif`;
-            this.ctx.fillText(`${speedStr} km/h`, boxX + margin, boxY + margin + fontSizeDate + fontSizeTime + fontSizeSpeed * 0.8);
+            this.ctx.fillText(speedStr, textX, currentY);
 
             this.ctx.restore();
 
