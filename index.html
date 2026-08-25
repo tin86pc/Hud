@@ -624,7 +624,6 @@
 
         <div class="overlay">
 
-            <!-- TOP BAR -->
             <div class="top-bar">
                 <span class="app-title">📹 Camera Hành Trình</span>
                 <div class="gps-status" id="gpsStatus">
@@ -633,7 +632,6 @@
                 </div>
             </div>
 
-            <!-- CENTER -->
             <div class="center-area">
                 <div class="recording-indicator" id="recIndicator">
                     <span class="red-dot"></span>
@@ -642,7 +640,6 @@
                 </div>
             </div>
 
-            <!-- BOTTOM -->
             <div class="bottom-controls">
 
                 <div class="main-actions">
@@ -650,17 +647,14 @@
                         <span id="recordIcon">▶</span>
                     </button>
 
-                    <!-- LUÔN CHO PHÉP LƯU KHI CÓ DỮ LIỆU -->
                     <button class="btn-secondary save" id="btnSave" disabled>
                         💾 Lưu
                     </button>
 
-                    <!-- LUÔN CHO PHÉP LẬT GƯƠNG -->
                     <button class="btn-secondary flip" id="btnFlipMirror">
                         🔄 Lật
                     </button>
 
-                    <!-- LUÔN CHO PHÉP CHUYỂN CAMERA -->
                     <button class="btn-secondary cam active" id="camFront" data-facing="user">
                         🤳 Trước
                     </button>
@@ -1120,65 +1114,55 @@
                 }
             }
 
-            // ===== START =====
-            async start(facingMode = null) {
+            // ===== CHANGE CAMERA STREAM (KHÔNG RESET RECORDER) =====
+            async changeCameraStream(facingMode) {
                 try {
-                    // Đánh dấu đang chuyển để tránh lỗi
                     this.isSwitching = true;
 
+                    // Lưu trạng thái quay
+                    const wasRecording = this.isRecording;
+
+                    // Dừng stream cũ
                     if (this.stream) {
                         this.stream.getTracks().forEach(track => track.stop());
                         this.stream = null;
                     }
 
-                    const mode = facingMode || this.currentFacingMode;
-                    this.stream = await this.getCamera(mode);
-                    this.currentFacingMode = mode;
+                    // Lấy stream mới
+                    this.stream = await this.getCamera(facingMode);
+                    this.currentFacingMode = facingMode;
 
+                    // Gán vào video element
                     this.video.srcObject = this.stream;
                     await this.video.play();
 
+                    // Cập nhật canvas
                     this.setupCanvas();
 
-                    // KHÔNG reset buffer khi chuyển camera
-                    // Chỉ reset khi bắt đầu quay lần đầu
-                    if (!this.isRecording) {
-                        this.buffer = [];
-                        this.totalSize = 0;
-                        this.totalDuration = 0;
-                        this.firstChunk = null;
-                        this.hasHeader = false;
+                    // Cập nhật canvas stream mới
+                    const newCanvasStream = this.canvas.captureStream(30);
+
+                    // Thêm audio
+                    const audioTracks = this.stream.getAudioTracks();
+                    if (audioTracks.length > 0) {
+                        newCanvasStream.addTrack(audioTracks[0]);
                     }
 
-                    this.isRamFull = false;
-
-                    // Nếu đang quay, cần tạo lại canvas stream và recorder
-                    if (this.isRecording) {
+                    // Nếu đang quay, cần thay thế recorder
+                    if (wasRecording && this.recorder) {
                         // Dừng recorder cũ
-                        if (this.recorder) {
-                            this.recorder.stop();
-                        }
+                        this.recorder.stop();
 
-                        // Tạo stream mới từ canvas
-                        this.canvasStream = this.canvas.captureStream(30);
-
-                        // Thêm audio
-                        const audioTracks = this.stream.getAudioTracks();
-                        if (audioTracks.length > 0) {
-                            this.canvasStream.addTrack(audioTracks[0]);
-                        }
-
-                        // Tạo recorder mới
-                        this.recorder = new MediaRecorder(this.canvasStream, {
+                        // Tạo recorder mới với stream mới
+                        this.recorder = new MediaRecorder(newCanvasStream, {
                             mimeType: 'video/webm;codecs=vp8,opus',
                         });
 
-                        this.recorder.start(this.segmentDurationMs);
-
+                        // QUAN TRỌNG: Giữ nguyên buffer, chỉ thêm dữ liệu mới vào
                         this.recorder.ondataavailable = (event) => {
                             if (event.data.size === 0) return;
 
-                            if (!this.hasHeader) {
+                            if (!this.hasHeader && this.buffer.length === 0) {
                                 this.firstChunk = event.data;
                                 this.hasHeader = true;
                             }
@@ -1217,16 +1201,18 @@
 
                             if (this.onUpdate) this.onUpdate();
                         };
+
+                        // Bắt đầu recorder mới
+                        this.recorder.start(this.segmentDurationMs);
+
+                        // Cập nhật canvas stream
+                        this.canvasStream = newCanvasStream;
                     } else {
-                        // Nếu chưa quay, chỉ cần setup canvas stream
-                        this.canvasStream = this.canvas.captureStream(30);
-                        const audioTracks = this.stream.getAudioTracks();
-                        if (audioTracks.length > 0) {
-                            this.canvasStream.addTrack(audioTracks[0]);
-                        }
+                        // Không quay, chỉ cập nhật stream
+                        this.canvasStream = newCanvasStream;
                     }
 
-                    // Restart render loop
+                    // Tiếp tục render loop
                     this.stopRenderLoop();
                     this.startRenderLoop();
 
@@ -1234,9 +1220,9 @@
                     if (this.onUpdate) this.onUpdate();
                     return true;
                 } catch (err) {
-                    console.error('Lỗi:', err);
+                    console.error('Lỗi chuyển camera:', err);
                     this.isSwitching = false;
-                    showToast('❌ Không thể truy cập camera!', 3000, 'danger');
+                    showToast('❌ Không thể chuyển camera!', 2000, 'danger');
                     return false;
                 }
             }
@@ -1247,7 +1233,7 @@
 
                 // Nếu chưa có stream, khởi tạo
                 if (!this.stream) {
-                    const ok = await this.start(this.currentFacingMode);
+                    const ok = await this.changeCameraStream(this.currentFacingMode);
                     if (!ok) return false;
                 }
 
@@ -1320,7 +1306,6 @@
 
                 this.gps.start();
 
-                // Start render loop nếu chưa chạy
                 if (!this.renderLoopId) {
                     this.startRenderLoop();
                 }
@@ -1347,9 +1332,6 @@
                     clearInterval(this.timerInterval);
                     this.timerInterval = null;
                 }
-
-                // Không dừng GPS khi dừng quay
-                // Không dừng render loop
 
                 if (this.onUpdate) this.onUpdate();
             }
@@ -1425,24 +1407,14 @@
                     return false;
                 }
 
-                const wasRecording = this.isRecording;
-
                 try {
-                    // Giữ nguyên trạng thái quay
-                    const success = await this.start(facingMode);
+                    const success = await this.changeCameraStream(facingMode);
 
                     if (success) {
-                        this.currentFacingMode = facingMode;
                         const label = facingMode === 'user' ? 'Trước' : 'Sau';
 
                         document.getElementById('camFront').classList.toggle('active', facingMode === 'user');
                         document.getElementById('camBack').classList.toggle('active', facingMode === 'environment');
-
-                        // Nếu đang quay, tiếp tục ghi
-                        if (wasRecording) {
-                            this.isRecording = true;
-                            // Cập nhật startTime để không bị reset
-                        }
 
                         showToast(`✅ Đã chuyển sang camera ${label}`, 1500);
 
@@ -1552,7 +1524,6 @@
                 ramStatus.textContent = '✅';
             }
 
-            // Nút Record
             if (recorder.isRecording) {
                 btnRecord.className = 'btn-record recording';
                 recordIcon.textContent = '⏹';
@@ -1571,14 +1542,11 @@
                 statusText.style.color = count > 0 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)';
             }
 
-            // LUÔN CHO PHÉP LƯU KHI CÓ DỮ LIỆU
             btnSave.disabled = count === 0;
 
-            // Camera buttons - LUÔN HOẠT ĐỘNG
             camFront.classList.toggle('active', recorder.currentFacingMode === 'user');
             camBack.classList.toggle('active', recorder.currentFacingMode === 'environment');
 
-            // KHÔNG DISABLE KHI ĐANG QUAY
             camFront.disabled = false;
             camBack.disabled = false;
             btnFlipMirror.disabled = false;
@@ -1588,7 +1556,6 @@
 
         // ===== SỰ KIỆN =====
 
-        // RECORD BUTTON
         btnRecord.addEventListener('click', async () => {
             if (recorder.isRecording) {
                 recorder.stopRecording();
@@ -1603,18 +1570,15 @@
             }
         });
 
-        // SAVE - LUÔN HOẠT ĐỘNG KHI CÓ DỮ LIỆU
         btnSave.addEventListener('click', () => {
             recorder.save();
         });
 
-        // FLIP - LUÔN HOẠT ĐỘNG
         btnFlipMirror.addEventListener('click', () => {
             recorder.toggleMirror();
             updateUI();
         });
 
-        // CAMERA - LUÔN HOẠT ĐỘNG
         camFront.addEventListener('click', async () => {
             await recorder.switchCamera('user');
             updateUI();
@@ -1625,7 +1589,6 @@
             updateUI();
         });
 
-        // RAM
         ramSelect.addEventListener('change', function() {
             const value = parseInt(this.value);
             if (value === 0) {
@@ -1637,9 +1600,8 @@
             updateUI();
         });
 
-        // Khởi tạo camera ngay khi load
         async function initCamera() {
-            const ok = await recorder.start('user');
+            const ok = await recorder.changeCameraStream('user');
             if (ok) {
                 console.log('📷 Camera đã sẵn sàng');
                 updateUI();
@@ -1653,10 +1615,8 @@
             recorder.stop();
         });
 
-        console.log('📹 Camera Hành Trình - Tất cả chức năng hoạt động khi đang quay!');
-        console.log('✅ Lưu video khi đang quay');
-        console.log('✅ Chuyển camera khi đang quay');
-        console.log('✅ Lật gương khi đang quay');
+        console.log('📹 Camera Hành Trình - Sửa lỗi chuyển camera!');
+        console.log('✅ Video không bị lỗi khi chuyển camera');
     </script>
 </body>
 </html>
