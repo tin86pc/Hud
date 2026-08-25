@@ -18,17 +18,11 @@
             --panel-border: rgba(255, 255, 255, 0.18);
             --text-primary: #fff;
             --text-secondary: rgba(255, 255, 255, 0.8);
-            --text-muted: rgba(255, 255, 255, 0.45);
             --accent-green: #34c759;
             --accent-blue: #007aff;
             --accent-orange: #ff9500;
             --accent-red: #ff3b30;
 
-            /* === Tỉ lệ hiển thị: 90% màn hình, giữ nguyên tỉ lệ 16:9 === */
-            --preview-scale: 0.9;
-            --aspect-ratio: 16/9;
-
-            /* Kích thước theo vmin */
             --btn-size: 14vmin;
             --btn-border: 0.5vmin;
             --modal-w: 65vmin;
@@ -42,100 +36,60 @@
             --font-small: 3vmin;
             --bar-h: 1.8vmin;
             --dot-size: 2.2vmin;
+
+            /* Tỉ lệ hiển thị: 90% màn hình, giữ 16:9 */
+            --preview-scale: 0.9;
+            --ar: 16/9;
         }
 
         html, body {
             height: 100%;
             font-family: -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-dark);
+            background: #000;
             overflow: hidden;
             position: fixed;
             width: 100%;
-            font-size: var(--font-base);
         }
 
         .app {
             position: relative;
             width: 100vw;
             height: 100vh;
-            overflow: hidden;
-            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* === Vùng Video Preview: giữ tỉ lệ 16:9, thu nhỏ 90% === */
-        .video-wrap {
+        /* Khung chứa canvas — giữ tỉ lệ 16:9, thu nhỏ 90% */
+        .canvas-container {
             position: relative;
             width: calc(100vw * var(--preview-scale));
-            aspect-ratio: var(--aspect-ratio);
             max-height: calc(100vh * var(--preview-scale));
+            aspect-ratio: var(--ar);
             background: #000;
-            overflow: hidden;
-            z-index: 1;
             border-radius: 3vmin;
+            overflow: hidden;
             box-shadow: 0 0 6vmin rgba(0,0,0,0.6);
+            cursor: pointer;
         }
 
-        #videoPreview {
-            display: none; /* Chỉ dùng làm nguồn, không hiển thị trực tiếp */
-        }
-
+        /* Canvas — luôn vừa khít khung chứa */
         #renderCanvas {
             width: 100%;
             height: 100%;
             display: block;
-            object-fit: contain;
         }
 
-        /* === HUD tham chiếu (giữa preview) === */
-        .hud {
+        /* Video nguồn — ẩn đi, chỉ dùng làm nguồn */
+        #videoPreview {
             position: absolute;
-            top: 4%;
-            left: 4%;
-            z-index: 3;
+            opacity: 0;
             pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            gap: 2%;
+            width: 1px;
+            height: 1px;
         }
 
-        .gps-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 2vmin;
-            padding: 2vmin 4vmin;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 10vmin;
-            font-size: var(--font-small);
-            color: var(--text-secondary);
-            backdrop-filter: blur(10px);
-            white-space: nowrap;
-        }
-
-        .gps-dot {
-            width: var(--dot-size);
-            height: var(--dot-size);
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        .gps-dot.green { background: var(--accent-green); }
-        .gps-dot.yellow { background: var(--accent-orange); }
-        .gps-dot.red { background: var(--accent-red); }
-
-        .speed-badge {
-            font-size: var(--font-speed);
-            font-weight: 700;
-            color: var(--accent-green);
-            background: rgba(0, 0, 0, 0.4);
-            padding: 1.5vmin 4vmin;
-            border-radius: 4vmin;
-            display: inline-block;
-            backdrop-filter: blur(10px);
-        }
-
-        /* === MODAL Điều khiển === */
+        /* === Nút điều khiển trung tâm === */
         .control-modal {
             position: absolute;
             top: 50%;
@@ -153,9 +107,7 @@
             gap: var(--gap);
             padding: var(--pad);
             z-index: 10;
-            box-shadow: 0 2vmin 8vmin rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(20px);
-            
             opacity: 0;
             visibility: hidden;
             transition: all 0.25s ease;
@@ -193,25 +145,20 @@
             user-select: none;
         }
 
-        .btn:active {
-            transform: scale(0.9);
-            background: rgba(255, 255, 255, 0.2);
-        }
-
+        .btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
         .btn:disabled { opacity: 0.35; pointer-events: none; }
 
         .btn-mirror { color: var(--text-secondary); }
         .btn-cam { color: var(--accent-blue); }
         .btn-save { color: var(--accent-orange); border-color: rgba(255, 149, 0, 0.3); }
 
-        /* === Thanh RAM === */
         .ram-row {
             display: flex;
             align-items: center;
             gap: 2.5vmin;
             width: 100%;
             font-size: var(--font-small);
-            color: var(--text-muted);
+            color: rgba(255,255,255,0.45);
         }
 
         .ram-bar-bg {
@@ -241,15 +188,10 @@
             color: var(--text-secondary);
             font-size: var(--font-small);
             outline: none;
-            cursor: pointer;
         }
 
-        .ram-text {
-            font-variant-numeric: tabular-nums;
-            white-space: nowrap;
-        }
+        .ram-text { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-        /* === Thông báo === */
         .toast {
             position: fixed;
             bottom: 10vmin;
@@ -274,22 +216,18 @@
         .toast.warning { border-color: rgba(255, 149, 0, 0.4); }
         .toast.danger { border-color: rgba(255, 59, 48, 0.4); }
 
-        /* === Màn hình NGANG === */
         @media (orientation: landscape) {
-            :root {
-                --modal-w: 30vmin;
-                --modal-h: 70vmin;
-            }
+            :root { --modal-w: 30vmin; --modal-h: 70vmin; }
             .btn-row { flex-direction: column; gap: var(--gap); }
-            .ram-row { flex-direction: column; align-items: flex-start; width: 100%; }
+            .ram-row { flex-direction: column; align-items: flex-start; }
             .ram-bar-bg { width: 100%; }
         }
     </style>
 </head>
 <body>
 
-<div class="app" id="appScreen">
-    <div class="video-wrap">
+<div class="app">
+    <div class="canvas-container" id="canvasContainer">
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
     </div>
@@ -320,7 +258,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// === Hiển thị thông báo ===
 let toastTimer = null;
 function showToast(msg, dur = 2500, type = '') {
     const t = document.getElementById('toast');
@@ -330,9 +267,8 @@ function showToast(msg, dur = 2500, type = '') {
     toastTimer = setTimeout(() => t.classList.remove('show'), dur);
 }
 
-// === Hiện/Ẩn Modal ===
 const controlModal = document.getElementById('controlModal');
-const appScreen = document.getElementById('appScreen');
+const canvasContainer = document.getElementById('canvasContainer');
 let hideTimer = null;
 const SHOW_DURATION = 5000;
 
@@ -341,19 +277,20 @@ function showControls() {
     clearTimeout(hideTimer);
     hideTimer = setTimeout(hideControls, SHOW_DURATION);
 }
-
 function hideControls() {
     controlModal.classList.remove('visible');
     clearTimeout(hideTimer);
 }
 
-appScreen.addEventListener('click', showControls);
-appScreen.addEventListener('touchstart', e => {
+canvasContainer.addEventListener('click', e => {
+    if (e.target.closest('.btn') || e.target.closest('select')) return;
+    showControls();
+});
+canvasContainer.addEventListener('touchstart', e => {
     if (e.target.closest('.btn') || e.target.closest('select')) return;
     showControls();
 }, { passive: true });
 
-// === Theo dõi GPS & Tốc độ ===
 class GPSTracker {
     constructor() {
         this.watchId = null;
@@ -361,8 +298,9 @@ class GPSTracker {
         this.active = false;
         this.lastPos = null;
         this.gpsStatus = 'searching';
+        this.statusText = 'Tìm tín hiệu...';
+        this.statusColor = 'yellow';
     }
-
     start() {
         if (!navigator.geolocation) {
             showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger');
@@ -375,19 +313,13 @@ class GPSTracker {
             e => this.err(e),
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 1000 }
         );
-        this.updUI('Tìm tín hiệu...', 'yellow');
-        this.gpsStatus = 'searching';
         return true;
     }
-
     stop() {
         this.active = false;
         if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
         this.speed = 0;
-        this.updUI('Tắt', 'red');
-        this.gpsStatus = 'lost';
     }
-
     handle(pos) {
         if (!this.active) return;
         const c = pos.coords;
@@ -396,11 +328,10 @@ class GPSTracker {
         } else {
             this.speed = this.calcSpeed(c, pos.timestamp);
         }
-        this.updUI('GPS', 'green');
         this.gpsStatus = 'ok';
-        this.speed = Math.round(this.speed * 10) / 10;
+        this.statusText = 'GPS';
+        this.statusColor = 'green';
     }
-
     calcSpeed(coords, ts) {
         if (!this.lastPos) {
             this.lastPos = { lat: coords.latitude, lng: coords.longitude, ts };
@@ -411,36 +342,28 @@ class GPSTracker {
         this.lastPos = { lat: coords.latitude, lng: coords.longitude, ts };
         return t > 0 && d > 1 ? Math.round((d / t) * 3.6 * 10) / 10 : 0;
     }
-
     dist(lat1, lon1, lat2, lon2) {
         const R = 6371e3, r = Math.PI / 180;
         const dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
         const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
-
     err(e) {
         const m = {
             1: ['Cấp quyền vị trí', 'red'],
             2: ['Không có tín hiệu', 'red'],
             3: ['Mất tín hiệu', 'yellow']
         }[e.code] || ['Lỗi GPS', 'red'];
-        this.updUI(m[0], m[1]);
+        this.statusText = m[0];
+        this.statusColor = m[1];
         this.gpsStatus = e.code === 1 ? 'denied' : 'lost';
     }
-
-    updUI(txt, color) {
-        this.statusText = txt;
-        this.statusColor = color;
-    }
-
     getSpeed() { return this.speed; }
     getStatus() { return this.gpsStatus; }
-    getStatusText() { return this.statusText || 'Tìm tín hiệu...'; }
-    getStatusColor() { return this.statusColor || 'yellow'; }
+    getStatusText() { return this.statusText; }
+    getStatusColor() { return this.statusColor; }
 }
 
-// === Quản lý Video + Vẽ HUD lên canvas ===
 class VideoRecorder {
     constructor(maxMB = 200) {
         this.max = maxMB === 0 ? Infinity : maxMB * 1024 * 1024;
@@ -455,14 +378,11 @@ class VideoRecorder {
         this.facing = 'user';
         this.mirror = false;
         this.rendering = false;
-        
-        // Độ phân giải cơ sở & tỉ lệ thu nhỏ
-        this.baseW = 1280;
-        this.baseH = 720;
-        this.scaleFactor = 0.9;
-        this.w = Math.round(this.baseW * this.scaleFactor);
-        this.h = Math.round(this.baseH * this.scaleFactor);
-        
+
+        // === Độ phân giải cố định, tỉ lệ 16:9 ===
+        this.w = 1152;  // 1280 × 0.9
+        this.h = 648;   // 720 × 0.9
+
         this.stream = null;
         this.canvasStream = null;
         this.recorder = null;
@@ -478,11 +398,7 @@ class VideoRecorder {
 
     async initCam(facing = 'user') {
         const cons = {
-            video: { 
-                facingMode: facing, 
-                width: { ideal: this.baseW }, 
-                height: { ideal: this.baseH } 
-            },
+            video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: true
         };
         try {
@@ -490,11 +406,11 @@ class VideoRecorder {
             this.facing = facing;
             this.video.srcObject = this.stream;
             await this.video.play();
-            
-            // Đặt canvas = kích thước sẽ lưu ra file
+
+            // Đặt canvas cố định kích thước — đây chính là kích thước file lưu
             this.canvas.width = this.w;
             this.canvas.height = this.h;
-            
+
             this.startDraw();
             this.gps.start();
             this.startRecording();
@@ -592,78 +508,6 @@ class VideoRecorder {
         document.getElementById('btnSave').disabled = this.chunks.length === 0;
     }
 
-    // === Vẽ HUD trên canvas ===
-    drawHUD() {
-        const cw = this.canvas.width, ch = this.canvas.height;
-        const ctx = this.ctx;
-
-        const now = new Date();
-        const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        const speed = this.gps.getSpeed();
-        const speedStr = speed.toFixed(1) + ' km/h';
-        const gpsStatus = this.gps.getStatus();
-        const gpsText = this.gps.getStatusText();
-
-        // Tính tỉ lệ vmin DỰA TRÊN KÍCH THƯỚC CANVAS (không phải màn hình)
-        const vmin = Math.min(cw, ch) / 100;
-        const baseSize = 3.5 * vmin;
-        const timeSize = 5 * vmin;
-        const speedSize = 6 * vmin;
-        const padX = 4 * vmin;
-        const padY = 3 * vmin;
-        const margin = 4 * vmin;
-        const radius = 4 * vmin;
-        const lineGap = 2 * vmin;
-        const dotR = 1.1 * vmin;
-
-        // Tính kích thước khối hiển thị
-        ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const dateW = ctx.measureText(date).width;
-        ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const timeW = ctx.measureText(time).width;
-        ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const speedW = ctx.measureText(speedStr).width;
-
-        const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
-        const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
-        const bx = margin, by = margin;
-
-        // Vẽ nền mờ
-        ctx.save();
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        this.roundRect(ctx, bx, by, boxW, boxH, radius);
-        ctx.fill();
-        ctx.restore();
-
-        let tx = bx + padX, ty = by + padY + baseSize * 0.8;
-
-        // Ngày
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        ctx.fillText(date, tx, ty);
-        ty += baseSize + lineGap;
-
-        // Giờ
-        ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        ctx.fillText(time, tx, ty);
-        ty += timeSize + lineGap;
-
-        // Tốc độ
-        const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
-        ctx.fillStyle = speedColor;
-        ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        ctx.fillText(speedStr, tx, ty);
-
-        // Chấm trạng thái GPS
-        const dotX = bx + padX - dotR;
-        const dotY = by + padY + baseSize * 0.5;
-        ctx.beginPath();
-        ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
-        ctx.fillStyle = gpsStatus === 'ok' ? '#34c759' : gpsStatus === 'searching' ? '#ff9500' : '#ff3b30';
-        ctx.fill();
-    }
-
     roundRect(ctx, x, y, w, h, r) {
         ctx.beginPath();
         ctx.moveTo(x + r, y);
@@ -678,6 +522,70 @@ class VideoRecorder {
         ctx.closePath();
     }
 
+    drawHUD() {
+        const cw = this.canvas.width, ch = this.canvas.height;
+        const ctx = this.ctx;
+
+        const now = new Date();
+        const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        const speed = this.gps.getSpeed();
+        const speedStr = speed.toFixed(1) + ' km/h';
+        const gpsText = this.gps.getStatusText();
+        const gpsColor = this.gps.getStatusColor();
+
+        const vmin = Math.min(cw, ch) / 100;
+        const baseSize = 3.5 * vmin;
+        const timeSize = 5 * vmin;
+        const speedSize = 6 * vmin;
+        const padX = 4 * vmin;
+        const padY = 3 * vmin;
+        const margin = 4 * vmin;
+        const radius = 4 * vmin;
+        const lineGap = 2 * vmin;
+        const dotR = 1.1 * vmin;
+
+        ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const dateW = ctx.measureText(date).width;
+        ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const timeW = ctx.measureText(time).width;
+        ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        const speedW = ctx.measureText(speedStr).width;
+
+        const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
+        const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
+        const bx = margin, by = margin;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.roundRect(ctx, bx, by, boxW, boxH, radius);
+        ctx.fill();
+        ctx.restore();
+
+        let tx = bx + padX, ty = by + padY + baseSize * 0.8;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        ctx.fillText(date, tx, ty);
+        ty += baseSize + lineGap;
+
+        ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        ctx.fillText(time, tx, ty);
+        ty += timeSize + lineGap;
+
+        const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
+        ctx.fillStyle = speedColor;
+        ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        ctx.fillText(speedStr, tx, ty);
+
+        const dotX = bx + padX - dotR;
+        const dotY = by + padY + baseSize * 0.5;
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+        ctx.fillStyle = gpsColor === 'green' ? '#34c759' : gpsColor === 'yellow' ? '#ff9500' : '#ff3b30';
+        ctx.fill();
+    }
+
     startDraw() {
         if (this.rendering) return;
         this.rendering = true;
@@ -686,11 +594,11 @@ class VideoRecorder {
             const cw = this.canvas.width, ch = this.canvas.height;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            // === Tính tỉ lệ vẽ video vào canvas CHÍNH XÁC ===
-            const vw = this.video.videoWidth || this.baseW;
-            const vh = this.video.videoHeight || this.baseH;
-            
-            // Luôn giữ tỉ lệ video, không méo, không cắt thừa
+            // === Tính tỉ lệ video vào canvas một cách CHÍNH XÁC ===
+            const vw = this.video.videoWidth || 1280;
+            const vh = this.video.videoHeight || 720;
+
+            // Giữ tỉ lệ, không méo, không cắt — vừa khít trong canvas
             const scale = Math.min(cw / vw, ch / vh);
             const dw = vw * scale;
             const dh = vh * scale;
@@ -717,7 +625,6 @@ class VideoRecorder {
     }
 }
 
-// === Khởi tạo ===
 const cam = new VideoRecorder(200);
 
 function attachClick(el, handler) {
