@@ -24,7 +24,11 @@
             --accent-orange: #ff9500;
             --accent-red: #ff3b30;
 
-            /* === Tất cả kích thước theo vmin === */
+            /* === Tỉ lệ hiển thị: 90% màn hình, giữ nguyên tỉ lệ 16:9 === */
+            --preview-scale: 0.9;
+            --aspect-ratio: 16/9;
+
+            /* Kích thước theo vmin */
             --btn-size: 14vmin;
             --btn-border: 0.5vmin;
             --modal-w: 65vmin;
@@ -38,9 +42,6 @@
             --font-small: 3vmin;
             --bar-h: 1.8vmin;
             --dot-size: 2.2vmin;
-
-            /* === Tỉ lệ hiển thị & ghi video: 90% === */
-            --preview-scale: 0.9;
         }
 
         html, body {
@@ -64,11 +65,12 @@
             justify-content: center;
         }
 
-        /* === Vùng Video Preview 90% === */
+        /* === Vùng Video Preview: giữ tỉ lệ 16:9, thu nhỏ 90% === */
         .video-wrap {
             position: relative;
             width: calc(100vw * var(--preview-scale));
-            height: calc(100vh * var(--preview-scale));
+            aspect-ratio: var(--aspect-ratio);
+            max-height: calc(100vh * var(--preview-scale));
             background: #000;
             overflow: hidden;
             z-index: 1;
@@ -77,40 +79,26 @@
         }
 
         #videoPreview {
-            width: 100%;
-            height: 100%;
-            display: block;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-            opacity: 0;
-            pointer-events: none;
+            display: none; /* Chỉ dùng làm nguồn, không hiển thị trực tiếp */
         }
 
         #renderCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             display: block;
-            object-fit: cover;
-            z-index: 2;
-            pointer-events: none;
+            object-fit: contain;
         }
 
-        /* === HUD tham chiếu === */
+        /* === HUD tham chiếu (giữa preview) === */
         .hud {
             position: absolute;
-            top: 4vmin;
-            left: 4vmin;
+            top: 4%;
+            left: 4%;
             z-index: 3;
             pointer-events: none;
             display: flex;
             flex-direction: column;
-            gap: 2vmin;
-            opacity: 0;
+            gap: 2%;
         }
 
         .gps-badge {
@@ -147,7 +135,7 @@
             backdrop-filter: blur(10px);
         }
 
-        /* === MODAL Ở GIỮA === */
+        /* === MODAL Điều khiển === */
         .control-modal {
             position: absolute;
             top: 50%;
@@ -304,13 +292,6 @@
     <div class="video-wrap">
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
-        <div class="hud">
-            <div class="gps-badge">
-                <span class="gps-dot red" id="gpsDot"></span>
-                <span id="gpsLabel">Tìm tín hiệu</span>
-            </div>
-            <div class="speed-badge" id="speedDisplay">0.0 km/h</div>
-        </div>
     </div>
 
     <div class="control-modal" id="controlModal">
@@ -417,9 +398,7 @@ class GPSTracker {
         }
         this.updUI('GPS', 'green');
         this.gpsStatus = 'ok';
-        document.getElementById('speedDisplay').textContent = this.speed.toFixed(1) + ' km/h';
-        const speedEl = document.getElementById('speedDisplay');
-        speedEl.style.color = this.speed >= 50 ? '#ff3b30' : this.speed >= 30 ? '#ff9500' : '#34c759';
+        this.speed = Math.round(this.speed * 10) / 10;
     }
 
     calcSpeed(coords, ts) {
@@ -451,12 +430,14 @@ class GPSTracker {
     }
 
     updUI(txt, color) {
-        document.getElementById('gpsDot').className = 'gps-dot ' + color;
-        document.getElementById('gpsLabel').textContent = txt;
+        this.statusText = txt;
+        this.statusColor = color;
     }
 
     getSpeed() { return this.speed; }
     getStatus() { return this.gpsStatus; }
+    getStatusText() { return this.statusText || 'Tìm tín hiệu...'; }
+    getStatusColor() { return this.statusColor || 'yellow'; }
 }
 
 // === Quản lý Video + Vẽ HUD lên canvas ===
@@ -474,10 +455,14 @@ class VideoRecorder {
         this.facing = 'user';
         this.mirror = false;
         this.rendering = false;
-        this.baseW = 1280; this.baseH = 720;
-        this.scaleFactor = 0.9; // Giảm độ phân giải file ra 90%
+        
+        // Độ phân giải cơ sở & tỉ lệ thu nhỏ
+        this.baseW = 1280;
+        this.baseH = 720;
+        this.scaleFactor = 0.9;
         this.w = Math.round(this.baseW * this.scaleFactor);
         this.h = Math.round(this.baseH * this.scaleFactor);
+        
         this.stream = null;
         this.canvasStream = null;
         this.recorder = null;
@@ -493,7 +478,11 @@ class VideoRecorder {
 
     async initCam(facing = 'user') {
         const cons = {
-            video: { facingMode: facing, width: { ideal: this.baseW }, height: { ideal: this.baseH } },
+            video: { 
+                facingMode: facing, 
+                width: { ideal: this.baseW }, 
+                height: { ideal: this.baseH } 
+            },
             audio: true
         };
         try {
@@ -501,9 +490,11 @@ class VideoRecorder {
             this.facing = facing;
             this.video.srcObject = this.stream;
             await this.video.play();
-            // Đặt canvas = 90% độ phân giải camera → file ra cũng 90%
+            
+            // Đặt canvas = kích thước sẽ lưu ra file
             this.canvas.width = this.w;
             this.canvas.height = this.h;
+            
             this.startDraw();
             this.gps.start();
             this.startRecording();
@@ -610,10 +601,11 @@ class VideoRecorder {
         const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         const speed = this.gps.getSpeed();
-        const gpsStatus = this.gps.getStatus();
         const speedStr = speed.toFixed(1) + ' km/h';
+        const gpsStatus = this.gps.getStatus();
+        const gpsText = this.gps.getStatusText();
 
-        // Tính tỉ lệ vmin theo kích thước canvas (đã thu nhỏ)
+        // Tính tỉ lệ vmin DỰA TRÊN KÍCH THƯỚC CANVAS (không phải màn hình)
         const vmin = Math.min(cw, ch) / 100;
         const baseSize = 3.5 * vmin;
         const timeSize = 5 * vmin;
@@ -625,6 +617,7 @@ class VideoRecorder {
         const lineGap = 2 * vmin;
         const dotR = 1.1 * vmin;
 
+        // Tính kích thước khối hiển thị
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const dateW = ctx.measureText(date).width;
         ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -636,6 +629,7 @@ class VideoRecorder {
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
         const bx = margin, by = margin;
 
+        // Vẽ nền mờ
         ctx.save();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         this.roundRect(ctx, bx, by, boxW, boxH, radius);
@@ -644,20 +638,24 @@ class VideoRecorder {
 
         let tx = bx + padX, ty = by + padY + baseSize * 0.8;
 
+        // Ngày
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(date, tx, ty);
         ty += baseSize + lineGap;
 
+        // Giờ
         ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(time, tx, ty);
         ty += timeSize + lineGap;
 
+        // Tốc độ
         const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
         ctx.fillStyle = speedColor;
         ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(speedStr, tx, ty);
 
+        // Chấm trạng thái GPS
         const dotX = bx + padX - dotR;
         const dotY = by + padY + baseSize * 0.5;
         ctx.beginPath();
@@ -688,24 +686,31 @@ class VideoRecorder {
             const cw = this.canvas.width, ch = this.canvas.height;
             this.ctx.clearRect(0, 0, cw, ch);
 
+            // === Tính tỉ lệ vẽ video vào canvas CHÍNH XÁC ===
             const vw = this.video.videoWidth || this.baseW;
             const vh = this.video.videoHeight || this.baseH;
-            const r = vw / vh, cr = cw / ch;
-            let dw, dh, x, y;
-            if (r > cr) { dh = ch; dw = dh * r; x = (cw - dw) / 2; y = 0; }
-            else { dw = cw; dh = dw / r; x = 0; y = (ch - dh) / 2; }
+            
+            // Luôn giữ tỉ lệ video, không méo, không cắt thừa
+            const scale = Math.min(cw / vw, ch / vh);
+            const dw = vw * scale;
+            const dh = vh * scale;
+            const x = (cw - dw) / 2;
+            const y = (ch - dh) / 2;
 
+            // === Vẽ video ===
             if (this.mirror) {
                 this.ctx.save();
-                this.ctx.translate(cw / 2, 0);
+                this.ctx.translate(cw, 0);
                 this.ctx.scale(-1, 1);
-                this.ctx.drawImage(this.video, -dw / 2, y, dw, dh);
+                this.ctx.drawImage(this.video, cw - x - dw, y, dw, dh);
                 this.ctx.restore();
             } else {
                 this.ctx.drawImage(this.video, x, y, dw, dh);
             }
 
+            // === Vẽ HUD lên trên ===
             this.drawHUD();
+
             requestAnimationFrame(draw);
         };
         draw();
