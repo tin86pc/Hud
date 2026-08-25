@@ -34,7 +34,6 @@
             flex-direction: column;
         }
 
-        /* ===== VIDEO FULL MÀN ===== */
         .video-wrapper {
             position: absolute;
             top: 0;
@@ -59,7 +58,6 @@
             object-fit: cover;
         }
 
-        /* ===== OVERLAY - TẤT CẢ NỔI TRÊN VIDEO ===== */
         .overlay {
             position: absolute;
             top: 0;
@@ -215,7 +213,6 @@
             pointer-events: auto;
         }
 
-        /* Nút RECORD chính (Bắt đầu/Dừng) */
         .btn-record {
             width: 64px;
             height: 64px;
@@ -272,7 +269,6 @@
             }
         }
 
-        /* Nút phụ */
         .btn-secondary {
             padding: 10px 16px;
             border: none;
@@ -621,13 +617,11 @@
 
     <div class="container">
 
-        <!-- ===== VIDEO ===== -->
         <div class="video-wrapper">
             <video id="videoPreview" autoplay muted playsinline></video>
             <canvas id="renderCanvas"></canvas>
         </div>
 
-        <!-- ===== OVERLAY ===== -->
         <div class="overlay">
 
             <!-- TOP BAR -->
@@ -639,7 +633,7 @@
                 </div>
             </div>
 
-            <!-- CENTER - Recording indicator -->
+            <!-- CENTER -->
             <div class="center-area">
                 <div class="recording-indicator" id="recIndicator">
                     <span class="red-dot"></span>
@@ -648,25 +642,25 @@
                 </div>
             </div>
 
-            <!-- BOTTOM CONTROLS -->
+            <!-- BOTTOM -->
             <div class="bottom-controls">
 
-                <!-- MAIN BUTTONS -->
                 <div class="main-actions">
-
-                    <!-- Nút RECORD (Bắt đầu/Dừng) -->
                     <button class="btn-record idle" id="btnRecord">
                         <span id="recordIcon">▶</span>
                     </button>
 
+                    <!-- LUÔN CHO PHÉP LƯU KHI CÓ DỮ LIỆU -->
                     <button class="btn-secondary save" id="btnSave" disabled>
                         💾 Lưu
                     </button>
 
+                    <!-- LUÔN CHO PHÉP LẬT GƯƠNG -->
                     <button class="btn-secondary flip" id="btnFlipMirror">
                         🔄 Lật
                     </button>
 
+                    <!-- LUÔN CHO PHÉP CHUYỂN CAMERA -->
                     <button class="btn-secondary cam active" id="camFront" data-facing="user">
                         🤳 Trước
                     </button>
@@ -676,7 +670,6 @@
                     </button>
                 </div>
 
-                <!-- INFO BAR -->
                 <div class="info-bar">
                     <div class="left">
                         <span>📦 <span class="value" id="segmentCount">0</span></span>
@@ -688,7 +681,6 @@
                     </div>
                 </div>
 
-                <!-- RAM BAR -->
                 <div class="ram-section">
                     <span class="label">💾 RAM</span>
                     <div class="bar-track">
@@ -911,6 +903,7 @@
                 this.videoHeight = 720;
 
                 this.canvasReady = false;
+                this.isSwitching = false;
             }
 
             setMaxRam(mb) {
@@ -1127,8 +1120,12 @@
                 }
             }
 
+            // ===== START =====
             async start(facingMode = null) {
                 try {
+                    // Đánh dấu đang chuyển để tránh lỗi
+                    this.isSwitching = true;
+
                     if (this.stream) {
                         this.stream.getTracks().forEach(track => track.stop());
                         this.stream = null;
@@ -1143,97 +1140,223 @@
 
                     this.setupCanvas();
 
-                    this.buffer = [];
-                    this.totalSize = 0;
-                    this.totalDuration = 0;
-                    this.firstChunk = null;
-                    this.hasHeader = false;
-                    this.isRamFull = false;
-
-                    this.canvasStream = this.canvas.captureStream(30);
-
-                    const audioTracks = this.stream.getAudioTracks();
-                    if (audioTracks.length > 0) {
-                        this.canvasStream.addTrack(audioTracks[0]);
+                    // KHÔNG reset buffer khi chuyển camera
+                    // Chỉ reset khi bắt đầu quay lần đầu
+                    if (!this.isRecording) {
+                        this.buffer = [];
+                        this.totalSize = 0;
+                        this.totalDuration = 0;
+                        this.firstChunk = null;
+                        this.hasHeader = false;
                     }
 
-                    this.recorder = new MediaRecorder(this.canvasStream, {
-                        mimeType: 'video/webm;codecs=vp8,opus',
-                    });
+                    this.isRamFull = false;
 
-                    this.recorder.start(this.segmentDurationMs);
-
-                    this.recorder.ondataavailable = (event) => {
-                        if (event.data.size === 0) return;
-
-                        if (!this.hasHeader) {
-                            this.firstChunk = event.data;
-                            this.hasHeader = true;
+                    // Nếu đang quay, cần tạo lại canvas stream và recorder
+                    if (this.isRecording) {
+                        // Dừng recorder cũ
+                        if (this.recorder) {
+                            this.recorder.stop();
                         }
 
-                        this.buffer.push(event.data);
-                        this.totalSize += event.data.size;
-                        this.totalDuration += this.segmentDurationMs;
+                        // Tạo stream mới từ canvas
+                        this.canvasStream = this.canvas.captureStream(30);
 
-                        while (this.totalDuration > this.maxDurationMs && this.buffer.length > 0) {
-                            const oldest = this.buffer.shift();
-                            if (oldest) {
-                                this.totalSize -= oldest.size;
-                                this.totalDuration -= this.segmentDurationMs;
+                        // Thêm audio
+                        const audioTracks = this.stream.getAudioTracks();
+                        if (audioTracks.length > 0) {
+                            this.canvasStream.addTrack(audioTracks[0]);
+                        }
+
+                        // Tạo recorder mới
+                        this.recorder = new MediaRecorder(this.canvasStream, {
+                            mimeType: 'video/webm;codecs=vp8,opus',
+                        });
+
+                        this.recorder.start(this.segmentDurationMs);
+
+                        this.recorder.ondataavailable = (event) => {
+                            if (event.data.size === 0) return;
+
+                            if (!this.hasHeader) {
+                                this.firstChunk = event.data;
+                                this.hasHeader = true;
                             }
-                        }
 
-                        if (this.buffer.length % 10 === 0) {
-                            this.autoAdjustRam();
-                        }
+                            this.buffer.push(event.data);
+                            this.totalSize += event.data.size;
+                            this.totalDuration += this.segmentDurationMs;
 
-                        let loopCount = 0;
-                        while (this.maxRamBytes > 0 &&
-                            this.totalSize > this.maxRamBytes &&
-                            this.buffer.length > 1) {
-                            const oldest = this.buffer.shift();
-                            if (oldest) {
-                                this.totalSize -= oldest.size;
-                                this.totalDuration -= this.segmentDurationMs;
+                            while (this.totalDuration > this.maxDurationMs && this.buffer.length > 0) {
+                                const oldest = this.buffer.shift();
+                                if (oldest) {
+                                    this.totalSize -= oldest.size;
+                                    this.totalDuration -= this.segmentDurationMs;
+                                }
                             }
-                            loopCount++;
-                            if (loopCount > 100) break;
+
+                            if (this.buffer.length % 10 === 0) {
+                                this.autoAdjustRam();
+                            }
+
+                            let loopCount = 0;
+                            while (this.maxRamBytes > 0 &&
+                                this.totalSize > this.maxRamBytes &&
+                                this.buffer.length > 1) {
+                                const oldest = this.buffer.shift();
+                                if (oldest) {
+                                    this.totalSize -= oldest.size;
+                                    this.totalDuration -= this.segmentDurationMs;
+                                }
+                                loopCount++;
+                                if (loopCount > 100) break;
+                            }
+
+                            this.ensureHeader();
+                            this.checkRamLimit();
+
+                            if (this.onUpdate) this.onUpdate();
+                        };
+                    } else {
+                        // Nếu chưa quay, chỉ cần setup canvas stream
+                        this.canvasStream = this.canvas.captureStream(30);
+                        const audioTracks = this.stream.getAudioTracks();
+                        if (audioTracks.length > 0) {
+                            this.canvasStream.addTrack(audioTracks[0]);
                         }
+                    }
 
-                        this.ensureHeader();
-                        this.checkRamLimit();
-
-                        if (this.onUpdate) this.onUpdate();
-                    };
-
-                    this.isRecording = true;
-                    this.startTime = Date.now();
-
-                    this.gps.start();
+                    // Restart render loop
+                    this.stopRenderLoop();
                     this.startRenderLoop();
 
-                    this.timerInterval = setInterval(() => {
-                        if (this.isRecording) {
-                            this.autoAdjustRam();
-                        }
-                        if (this.onUpdate) this.onUpdate();
-                    }, 2000);
-
+                    this.isSwitching = false;
                     if (this.onUpdate) this.onUpdate();
                     return true;
                 } catch (err) {
                     console.error('Lỗi:', err);
+                    this.isSwitching = false;
                     showToast('❌ Không thể truy cập camera!', 3000, 'danger');
                     return false;
                 }
             }
 
-            stop() {
+            // ===== START RECORDING =====
+            async startRecording() {
+                if (this.isRecording) return;
+
+                // Nếu chưa có stream, khởi tạo
+                if (!this.stream) {
+                    const ok = await this.start(this.currentFacingMode);
+                    if (!ok) return false;
+                }
+
+                // Reset buffer khi bắt đầu quay mới
+                this.buffer = [];
+                this.totalSize = 0;
+                this.totalDuration = 0;
+                this.firstChunk = null;
+                this.hasHeader = false;
+
+                // Tạo stream từ canvas
+                this.canvasStream = this.canvas.captureStream(30);
+
+                const audioTracks = this.stream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    this.canvasStream.addTrack(audioTracks[0]);
+                }
+
+                this.recorder = new MediaRecorder(this.canvasStream, {
+                    mimeType: 'video/webm;codecs=vp8,opus',
+                });
+
+                this.recorder.start(this.segmentDurationMs);
+
+                this.recorder.ondataavailable = (event) => {
+                    if (event.data.size === 0) return;
+
+                    if (!this.hasHeader) {
+                        this.firstChunk = event.data;
+                        this.hasHeader = true;
+                    }
+
+                    this.buffer.push(event.data);
+                    this.totalSize += event.data.size;
+                    this.totalDuration += this.segmentDurationMs;
+
+                    while (this.totalDuration > this.maxDurationMs && this.buffer.length > 0) {
+                        const oldest = this.buffer.shift();
+                        if (oldest) {
+                            this.totalSize -= oldest.size;
+                            this.totalDuration -= this.segmentDurationMs;
+                        }
+                    }
+
+                    if (this.buffer.length % 10 === 0) {
+                        this.autoAdjustRam();
+                    }
+
+                    let loopCount = 0;
+                    while (this.maxRamBytes > 0 &&
+                        this.totalSize > this.maxRamBytes &&
+                        this.buffer.length > 1) {
+                        const oldest = this.buffer.shift();
+                        if (oldest) {
+                            this.totalSize -= oldest.size;
+                            this.totalDuration -= this.segmentDurationMs;
+                        }
+                        loopCount++;
+                        if (loopCount > 100) break;
+                    }
+
+                    this.ensureHeader();
+                    this.checkRamLimit();
+
+                    if (this.onUpdate) this.onUpdate();
+                };
+
+                this.isRecording = true;
+                this.startTime = Date.now();
+
+                this.gps.start();
+
+                // Start render loop nếu chưa chạy
+                if (!this.renderLoopId) {
+                    this.startRenderLoop();
+                }
+
+                this.timerInterval = setInterval(() => {
+                    if (this.isRecording) {
+                        this.autoAdjustRam();
+                    }
+                    if (this.onUpdate) this.onUpdate();
+                }, 2000);
+
+                if (this.onUpdate) this.onUpdate();
+                return true;
+            }
+
+            // ===== STOP RECORDING =====
+            stopRecording() {
                 if (this.recorder && this.isRecording) {
                     this.recorder.stop();
                     this.isRecording = false;
                 }
 
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+
+                // Không dừng GPS khi dừng quay
+                // Không dừng render loop
+
+                if (this.onUpdate) this.onUpdate();
+            }
+
+            // ===== STOP (full stop) =====
+            stop() {
+                this.stopRecording();
                 this.gps.stop();
                 this.stopRenderLoop();
 
@@ -1245,6 +1368,7 @@
                 if (this.onUpdate) this.onUpdate();
             }
 
+            // ===== SAVE =====
             save() {
                 if (this.buffer.length === 0) {
                     showToast('⚠️ Chưa có dữ liệu video!', 2000);
@@ -1289,26 +1413,36 @@
                 }
             }
 
+            // ===== SWITCH CAMERA =====
             async switchCamera(facingMode) {
                 if (facingMode === this.currentFacingMode) {
                     showToast('ℹ️ Đã ở camera này rồi!', 1500);
                     return false;
                 }
 
-                const wasRecording = this.isRecording;
-
-                if (wasRecording) {
-                    this.stop();
+                if (this.isSwitching) {
+                    showToast('⏳ Đang chuyển camera...', 1000);
+                    return false;
                 }
 
+                const wasRecording = this.isRecording;
+
                 try {
+                    // Giữ nguyên trạng thái quay
                     const success = await this.start(facingMode);
+
                     if (success) {
                         this.currentFacingMode = facingMode;
                         const label = facingMode === 'user' ? 'Trước' : 'Sau';
 
                         document.getElementById('camFront').classList.toggle('active', facingMode === 'user');
                         document.getElementById('camBack').classList.toggle('active', facingMode === 'environment');
+
+                        // Nếu đang quay, tiếp tục ghi
+                        if (wasRecording) {
+                            this.isRecording = true;
+                            // Cập nhật startTime để không bị reset
+                        }
 
                         showToast(`✅ Đã chuyển sang camera ${label}`, 1500);
 
@@ -1323,6 +1457,7 @@
                 }
             }
 
+            // ===== TOGGLE MIRROR =====
             toggleMirror() {
                 this.isMirrored = !this.isMirrored;
                 showToast(this.isMirrored ? '🔄 Đã bật gương' : '🔄 Đã tắt gương', 1500);
@@ -1372,7 +1507,6 @@
         const recorder = new VideoRecorderWithOverlay(15 * 60 * 1000, 200);
         const gps = recorder.getGPS();
 
-        // DOM
         const btnRecord = document.getElementById('btnRecord');
         const recordIcon = document.getElementById('recordIcon');
         const recIndicator = document.getElementById('recIndicator');
@@ -1390,8 +1524,6 @@
         const ramBar = document.getElementById('ramBar');
         const ramStatus = document.getElementById('ramStatus');
         const ramSelect = document.getElementById('ramSelect');
-
-        let recording = false;
 
         function updateUI() {
             const count = recorder.getSegmentCount();
@@ -1431,24 +1563,25 @@
                 recTime.textContent = `${min}:${sec}`;
                 statusText.textContent = 'ĐANG QUAY';
                 statusText.style.color = '#ff3b30';
-                btnSave.disabled = true;
             } else {
                 btnRecord.className = 'btn-record idle';
                 recordIcon.textContent = '▶';
                 recIndicator.classList.remove('show');
                 statusText.textContent = count > 0 ? 'Đã dừng' : 'Sẵn sàng';
                 statusText.style.color = count > 0 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)';
-                btnSave.disabled = count === 0;
             }
 
-            // Camera buttons
+            // LUÔN CHO PHÉP LƯU KHI CÓ DỮ LIỆU
+            btnSave.disabled = count === 0;
+
+            // Camera buttons - LUÔN HOẠT ĐỘNG
             camFront.classList.toggle('active', recorder.currentFacingMode === 'user');
             camBack.classList.toggle('active', recorder.currentFacingMode === 'environment');
 
-            // Disable camera buttons khi đang quay
-            camFront.disabled = recorder.isRecording;
-            camBack.disabled = recorder.isRecording;
-            btnFlipMirror.disabled = recorder.isRecording;
+            // KHÔNG DISABLE KHI ĐANG QUAY
+            camFront.disabled = false;
+            camBack.disabled = false;
+            btnFlipMirror.disabled = false;
         }
 
         recorder.onUpdate = updateUI;
@@ -1458,13 +1591,11 @@
         // RECORD BUTTON
         btnRecord.addEventListener('click', async () => {
             if (recorder.isRecording) {
-                // Đang quay -> Dừng
-                recorder.stop();
+                recorder.stopRecording();
                 showToast('⏹ Đã dừng quay', 1500);
                 updateUI();
             } else {
-                // Đang dừng -> Bắt đầu
-                const ok = await recorder.start(recorder.currentFacingMode);
+                const ok = await recorder.startRecording();
                 if (ok) {
                     showToast('🔴 Đã bắt đầu quay!', 1500);
                     updateUI();
@@ -1472,18 +1603,18 @@
             }
         });
 
-        // SAVE
+        // SAVE - LUÔN HOẠT ĐỘNG KHI CÓ DỮ LIỆU
         btnSave.addEventListener('click', () => {
             recorder.save();
         });
 
-        // FLIP
+        // FLIP - LUÔN HOẠT ĐỘNG
         btnFlipMirror.addEventListener('click', () => {
             recorder.toggleMirror();
             updateUI();
         });
 
-        // CAMERA
+        // CAMERA - LUÔN HOẠT ĐỘNG
         camFront.addEventListener('click', async () => {
             await recorder.switchCamera('user');
             updateUI();
@@ -1506,15 +1637,26 @@
             updateUI();
         });
 
+        // Khởi tạo camera ngay khi load
+        async function initCamera() {
+            const ok = await recorder.start('user');
+            if (ok) {
+                console.log('📷 Camera đã sẵn sàng');
+                updateUI();
+            }
+        }
+        initCamera();
+
         updateUI();
 
         window.addEventListener('beforeunload', () => {
             recorder.stop();
         });
 
-        console.log('📹 Camera Hành Trình - Thiết kế mới!');
-        console.log('✅ Nút Bắt đầu/Dừng gộp thành 1');
-        console.log('✅ Giao diện tối giản, chuyên nghiệp');
+        console.log('📹 Camera Hành Trình - Tất cả chức năng hoạt động khi đang quay!');
+        console.log('✅ Lưu video khi đang quay');
+        console.log('✅ Chuyển camera khi đang quay');
+        console.log('✅ Lật gương khi đang quay');
     </script>
 </body>
 </html>
