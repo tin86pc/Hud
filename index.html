@@ -37,7 +37,6 @@
             --bar-h: 1.8vmin;
             --dot-size: 2.2vmin;
 
-            /* Tỉ lệ hiển thị: 90% màn hình, giữ 16:9 */
             --preview-scale: 0.9;
             --ar: 16/9;
         }
@@ -60,7 +59,6 @@
             justify-content: center;
         }
 
-        /* Khung chứa canvas — giữ tỉ lệ 16:9, thu nhỏ 90% */
         .canvas-container {
             position: relative;
             width: calc(100vw * var(--preview-scale));
@@ -73,14 +71,12 @@
             cursor: pointer;
         }
 
-        /* Canvas — luôn vừa khít khung chứa */
         #renderCanvas {
             width: 100%;
             height: 100%;
             display: block;
         }
 
-        /* Video nguồn — ẩn đi, chỉ dùng làm nguồn */
         #videoPreview {
             position: absolute;
             opacity: 0;
@@ -89,7 +85,6 @@
             height: 1px;
         }
 
-        /* === Nút điều khiển trung tâm === */
         .control-modal {
             position: absolute;
             top: 50%;
@@ -379,9 +374,12 @@ class VideoRecorder {
         this.mirror = false;
         this.rendering = false;
 
-        // === Độ phân giải cố định, tỉ lệ 16:9 ===
-        this.w = 1152;  // 1280 × 0.9
-        this.h = 648;   // 720 × 0.9
+        // Kích thước canvas cố định
+        this.w = 1280;  // Độ phân giải gốc
+        this.h = 720;
+
+        // Lưu vị trí khung video sau khi co giãn
+        this.videoRect = { x: 0, y: 0, w: this.w, h: this.h };
 
         this.stream = null;
         this.canvasStream = null;
@@ -407,7 +405,6 @@ class VideoRecorder {
             this.video.srcObject = this.stream;
             await this.video.play();
 
-            // Đặt canvas cố định kích thước — đây chính là kích thước file lưu
             this.canvas.width = this.w;
             this.canvas.height = this.h;
 
@@ -523,7 +520,7 @@ class VideoRecorder {
     }
 
     drawHUD() {
-        const cw = this.canvas.width, ch = this.canvas.height;
+        const { x, y, w: vw, h: vh } = this.videoRect;
         const ctx = this.ctx;
 
         const now = new Date();
@@ -531,10 +528,10 @@ class VideoRecorder {
         const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         const speed = this.gps.getSpeed();
         const speedStr = speed.toFixed(1) + ' km/h';
-        const gpsText = this.gps.getStatusText();
         const gpsColor = this.gps.getStatusColor();
 
-        const vmin = Math.min(cw, ch) / 100;
+        // Tính kích thước chữ theo tỉ lệ KHUNG VIDEO, không phải cả canvas
+        const vmin = Math.min(vw, vh) / 100;
         const baseSize = 3.5 * vmin;
         const timeSize = 5 * vmin;
         const speedSize = 6 * vmin;
@@ -545,6 +542,7 @@ class VideoRecorder {
         const lineGap = 2 * vmin;
         const dotR = 1.1 * vmin;
 
+        // Vẽ HUD vào GÓC KHUNG VIDEO, không phải góc canvas
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const dateW = ctx.measureText(date).width;
         ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -554,7 +552,8 @@ class VideoRecorder {
 
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
-        const bx = margin, by = margin;
+        const bx = x + margin;  // <<<< Bắt đầu từ vị trí thực tế của video
+        const by = y + margin;
 
         ctx.save();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
@@ -594,16 +593,28 @@ class VideoRecorder {
             const cw = this.canvas.width, ch = this.canvas.height;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            // === Tính tỉ lệ video vào canvas một cách CHÍNH XÁC ===
-            const vw = this.video.videoWidth || 1280;
-            const vh = this.video.videoHeight || 720;
+            const vw = this.video.videoWidth || cw;
+            const vh = this.video.videoHeight || ch;
 
-            // Giữ tỉ lệ, không méo, không cắt — vừa khít trong canvas
-            const scale = Math.min(cw / vw, ch / vh);
+            // === Tính co giãn cho video vừa khít toàn bộ canvas ===
+            // Dùng cover: cho đầy khung, có thể cắt 2 cạnh
+            // Hoặc dùng contain: hiện hết, có thể có viền đen
+            const useCover = false; // Đặt true để cho đầy khung, cắt viền
+
+            let scale;
+            if (useCover) {
+                scale = Math.max(cw / vw, ch / vh); // Cho đầy khung, cắt thừa
+            } else {
+                scale = Math.min(cw / vw, ch / vh); // Hiện hết, có viền đen
+            }
+
             const dw = vw * scale;
             const dh = vh * scale;
             const x = (cw - dw) / 2;
             const y = (ch - dh) / 2;
+
+            // Lưu lại vị trí thực tế của khung video để vẽ HUD đúng vị trí
+            this.videoRect = { x, y, w: dw, h: dh };
 
             // === Vẽ video ===
             if (this.mirror) {
@@ -616,7 +627,7 @@ class VideoRecorder {
                 this.ctx.drawImage(this.video, x, y, dw, dh);
             }
 
-            // === Vẽ HUD lên trên ===
+            // === Vẽ HUD vào đúng vị trí khung video ===
             this.drawHUD();
 
             requestAnimationFrame(draw);
