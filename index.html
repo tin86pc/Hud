@@ -76,7 +76,8 @@
             height: 100%;
             display: block;
             background: #000;
-            object-fit: cover;
+            object-fit: contain;
+            /* <--- QUAN TRỌNG: giữ nguyên tỉ lệ video */
         }
 
         .gps-status-mini {
@@ -755,7 +756,7 @@
                 this.renderLoopId = null;
 
                 this.currentFacingMode = 'user';
-                this.isMirrored = false; // Mặc định KHÔNG lật
+                this.isMirrored = false;
 
                 this.onUpdate = null;
                 this.isRamFull = false;
@@ -774,6 +775,9 @@
                 this.videoHeight = 720;
 
                 this.canvasReady = false;
+
+                // Tỉ lệ khung hình video thực tế
+                this.videoAspectRatio = 16 / 9;
             }
 
             setMaxRam(mb) {
@@ -856,13 +860,15 @@
                     const settings = videoTrack.getSettings();
                     this.videoWidth = settings.width || 1280;
                     this.videoHeight = settings.height || 720;
+                    this.videoAspectRatio = this.videoWidth / this.videoHeight;
                 }
 
+                // Set canvas đúng tỉ lệ video
                 this.canvas.width = this.videoWidth;
                 this.canvas.height = this.videoHeight;
                 this.canvas.style.width = '100%';
                 this.canvas.style.height = '100%';
-                this.canvas.style.objectFit = 'cover';
+                this.canvas.style.aspectRatio = `${this.videoWidth} / ${this.videoHeight}`;
 
                 this.canvasReady = true;
             }
@@ -874,16 +880,38 @@
                     const w = this.canvas.width;
                     const h = this.canvas.height;
 
-                    // === QUAN TRỌNG: LẬT ẢNH TRÊN CANVAS ===
-                    // Nếu bật gương, vẽ lật ngang để preview và video giống nhau
+                    // === VẼ VIDEO VÀO CANVAS (GIỮ ĐÚNG TỈ LỆ) ===
+                    this.ctx.clearRect(0, 0, w, h);
+
+                    // Tính toán để video fill canvas nhưng giữ tỉ lệ
+                    const videoAspect = this.video.videoWidth / this.video.videoHeight;
+                    const canvasAspect = w / h;
+
+                    let drawW, drawH, offsetX, offsetY;
+
+                    if (videoAspect > canvasAspect) {
+                        // Video rộng hơn canvas
+                        drawH = h;
+                        drawW = h * videoAspect;
+                        offsetX = (w - drawW) / 2;
+                        offsetY = 0;
+                    } else {
+                        // Video cao hơn canvas
+                        drawW = w;
+                        drawH = w / videoAspect;
+                        offsetX = 0;
+                        offsetY = (h - drawH) / 2;
+                    }
+
+                    // Lật ảnh nếu bật gương
                     if (this.isMirrored) {
-                        // Lật ngang canvas trước khi vẽ
                         this.ctx.save();
+                        this.ctx.translate(w / 2, 0);
                         this.ctx.scale(-1, 1);
-                        this.ctx.drawImage(this.video, -w, 0, w, h);
+                        this.ctx.drawImage(this.video, -drawW / 2, offsetY, drawW, drawH);
                         this.ctx.restore();
                     } else {
-                        this.ctx.drawImage(this.video, 0, 0, w, h);
+                        this.ctx.drawImage(this.video, offsetX, offsetY, drawW, drawH);
                     }
 
                     // === OVERLAY (không bị lật) ===
@@ -988,9 +1016,6 @@
                     await this.video.play();
 
                     this.setupCanvas();
-
-                    // KHÔNG dùng transform CSS nữa, dùng canvas để lật
-                    // this.video.style.transform = 'scaleX(-1)'; // XÓA DÒNG NÀY
 
                     this.buffer = [];
                     this.totalSize = 0;
@@ -1172,7 +1197,6 @@
                 }
             }
 
-            // ===== LẬT GƯƠNG =====
             toggleMirror() {
                 this.isMirrored = !this.isMirrored;
                 showToast(this.isMirrored ? '🔄 Đã bật gương' : '🔄 Đã tắt gương', 1500);
@@ -1336,7 +1360,6 @@
             updateUI();
         });
 
-        // ===== NÚT LẬT GƯƠNG =====
         btnFlipMirror.addEventListener('click', () => {
             recorder.toggleMirror();
             updateUI();
@@ -1349,7 +1372,7 @@
         });
 
         console.log('📹 Camera Hành Trình - Preview = Video lưu!');
-        console.log('✅ Lật gương bằng canvas, video lưu giống preview');
+        console.log('✅ Cùng tỉ lệ 16:9, lật gương bằng canvas');
     </script>
 </body>
 </html>
