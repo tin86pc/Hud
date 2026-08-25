@@ -18,9 +18,11 @@
             --panel-border: rgba(255, 255, 255, 0.18);
             --text-primary: #fff;
             --text-secondary: rgba(255, 255, 255, 0.8);
+            --text-muted: rgba(255, 255, 255, 0.45);
             --accent-green: #34c759;
             --accent-blue: #007aff;
             --accent-orange: #ff9500;
+            --accent-red: #ff3b30;
         }
 
         html, body {
@@ -107,7 +109,7 @@
         }
         .gps-dot.green { background: var(--accent-green); }
         .gps-dot.yellow { background: var(--accent-orange); }
-        .gps-dot.red { background: #ff3b30; }
+        .gps-dot.red { background: var(--accent-red); }
 
         .speed-badge {
             font-size: 28px;
@@ -126,16 +128,17 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0.8);
-            width: 220px;
-            height: 120px;
+            width: 320px;
+            min-height: 140px;
             background: var(--panel-bg);
             border: 1px solid var(--panel-border);
             border-radius: 20px;
             display: flex;
-            flex-direction: row;
-            justify-content: space-around;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            padding: 0 20px;
+            gap: 14px;
+            padding: 18px 22px;
             z-index: 10;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(20px);
@@ -153,9 +156,17 @@
             transform: translate(-50%, -50%) scale(1);
         }
 
+        .btn-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+        }
+
         .btn {
-            width: 72px;
-            height: 72px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             border: 2px solid var(--panel-border);
             background: rgba(255, 255, 255, 0.08);
@@ -164,11 +175,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 24px;
             transition: all 0.15s ease;
             touch-action: manipulation;
-            min-width: 72px;
-            min-height: 72px;
+            min-width: 64px;
+            min-height: 64px;
             -webkit-user-select: none;
             user-select: none;
         }
@@ -178,8 +189,56 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        .btn:disabled { opacity: 0.35; pointer-events: none; }
+
         .btn-mirror { color: var(--text-secondary); }
         .btn-cam { color: var(--accent-blue); }
+        .btn-save { color: var(--accent-orange); border-color: rgba(255, 149, 0, 0.3); }
+
+        /* === Thanh RAM === */
+        .ram-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .ram-bar-bg {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .ram-bar-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.3s, background 0.3s;
+        }
+        .ram-bar-fill.green { background: var(--accent-green); }
+        .ram-bar-fill.yellow { background: var(--accent-orange); }
+        .ram-bar-fill.red { background: var(--accent-red); animation: blink 0.8s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+        .ram-row select {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--panel-border);
+            background: rgba(0,0,0,0.3);
+            color: var(--text-secondary);
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .ram-text {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
 
         /* === Thông báo === */
         .toast {
@@ -202,15 +261,19 @@
             text-align: center;
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: rgba(52, 199, 89, 0.4); }
+        .toast.warning { border-color: rgba(255, 149, 0, 0.4); }
+        .toast.danger { border-color: rgba(255, 59, 48, 0.4); }
 
         /* === Màn hình NGANG === */
         @media (orientation: landscape) {
             .control-modal {
-                width: 120px;
-                height: 220px;
-                flex-direction: column;
-                padding: 20px 0;
+                width: 160px;
+                min-height: 300px;
             }
+            .btn-row { flex-direction: column; gap: 16px; }
+            .ram-row { flex-direction: column; align-items: flex-start; width: 100%; }
+            .ram-bar-bg { width: 100%; }
         }
     </style>
 </head>
@@ -234,8 +297,25 @@
 
     <!-- MODAL NÚT Ở GIỮA MÀN HÌNH -->
     <div class="control-modal" id="controlModal">
-        <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
-        <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
+        <div class="btn-row">
+            <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
+            <button class="btn btn-save" id="btnSave" disabled title="Lưu video">💾</button>
+            <button class="btn btn-cam" id="btnCam" title="Chuyển camera">📷</button>
+        </div>
+        <div class="ram-row">
+            <span>RAM:</span>
+            <div class="ram-bar-bg"><div class="ram-bar-fill green" id="ramBar"></div></div>
+            <span class="ram-text" id="ramText">0/200MB</span>
+            <select id="ramLimit">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200" selected>200</option>
+                <option value="300">300</option>
+                <option value="500">500</option>
+                <option value="1000">1GB</option>
+                <option value="0">∞</option>
+            </select>
+        </div>
     </div>
 </div>
 
@@ -244,19 +324,19 @@
 <script>
 // === Hiển thị thông báo ===
 let toastTimer = null;
-function showToast(msg, dur = 2000) {
+function showToast(msg, dur = 2500, type = '') {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.classList.add('show');
+    t.className = 'toast show ' + type;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), dur);
 }
 
-// === Hiện/Ẩn Modal Ở GIỮA ===
+// === Hiện/Ẩn Modal ===
 const controlModal = document.getElementById('controlModal');
 const appScreen = document.getElementById('appScreen');
 let hideTimer = null;
-const SHOW_DURATION = 4000; // Hiện 4 giây rồi ẩn
+const SHOW_DURATION = 5000;
 
 function showControls() {
     controlModal.classList.add('visible');
@@ -269,10 +349,9 @@ function hideControls() {
     clearTimeout(hideTimer);
 }
 
-// Chạm màn hình → hiện modal, chạm lại reset đếm ngược
 appScreen.addEventListener('click', showControls);
-appScreen.addEventListener('touchstart', function(e) {
-    if (e.target.closest('.btn')) return; // Bấm nút thì không reset
+appScreen.addEventListener('touchstart', e => {
+    if (e.target.closest('.btn') || e.target.closest('select')) return;
     showControls();
 }, { passive: true });
 
@@ -287,7 +366,7 @@ class GPSTracker {
 
     start() {
         if (!navigator.geolocation) {
-            showToast('❌ Trình duyệt không hỗ trợ GPS');
+            showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger');
             return false;
         }
         this.active = true;
@@ -356,10 +435,14 @@ class GPSTracker {
     getSpeed() { return this.speed; }
 }
 
-// === Camera & Canvas ===
-class CameraView {
-    constructor() {
-        this.stream = null;
+// === Quản lý Video Lưu trên RAM ===
+class VideoRecorder {
+    constructor(maxMB = 200) {
+        this.max = maxMB === 0 ? Infinity : maxMB * 1024 * 1024;
+        this.chunks = [];
+        this.totalSize = 0;
+        this.firstChunk = null;
+        this.hasHeader = false;
         this.canvas = document.getElementById('renderCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.video = document.getElementById('videoPreview');
@@ -368,12 +451,23 @@ class CameraView {
         this.mirror = false;
         this.rendering = false;
         this.w = 1280; this.h = 720;
+        this.stream = null;
+        this.canvasStream = null;
+        this.recorder = null;
+        this.recording = false;
+        this.segTime = 1000;
+    }
+
+    setMaxMB(mb) {
+        this.max = mb === 0 ? Infinity : mb * 1024 * 1024;
+        this.capChunks();
+        this.updateRAMUI();
     }
 
     async initCam(facing = 'user') {
         const cons = {
             video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: false
+            audio: true
         };
         try {
             this.stream = await navigator.mediaDevices.getUserMedia(cons);
@@ -387,9 +481,10 @@ class CameraView {
             this.canvas.height = this.h;
             this.startDraw();
             this.gps.start();
+            this.startRecording();
             return true;
         } catch (err) {
-            showToast('❌ Không truy cập được camera');
+            showToast('❌ Không truy cập được camera', 3000, 'danger');
             console.error(err);
             return false;
         }
@@ -397,16 +492,88 @@ class CameraView {
 
     async switchCam() {
         const newFacing = this.facing === 'user' ? 'environment' : 'user';
-        if (this.stream) {
-            this.stream.getTracks().forEach(t => t.stop());
-        }
+        this.stopRecording();
+        this.stream?.getTracks().forEach(t => t.stop());
+        this.chunks = []; this.totalSize = 0; this.firstChunk = null; this.hasHeader = false;
         await this.initCam(newFacing);
-        showToast(`Đã chuyển camera: ${newFacing === 'user' ? 'Trước' : 'Sau'}`);
+        showToast(`Đã chuyển camera: ${newFacing === 'user' ? 'Trước' : 'Sau'}`, 2000);
     }
 
     toggleMirror() {
         this.mirror = !this.mirror;
-        showToast(this.mirror ? '🔄 Bật gương hình' : '🔄 Tắt gương hình');
+        showToast(this.mirror ? '🔄 Bật gương hình' : '🔄 Tắt gương hình', 2000);
+    }
+
+    startRecording() {
+        if (this.recording) return;
+        this.chunks = []; this.totalSize = 0; this.firstChunk = null; this.hasHeader = false;
+        this.canvasStream = this.canvas.captureStream(30);
+        const aTrack = this.stream?.getAudioTracks()[0];
+        if (aTrack) this.canvasStream.addTrack(aTrack);
+
+        let mime = 'video/webm;codecs=vp9,opus';
+        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp8,opus';
+        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
+
+        this.recorder = new MediaRecorder(this.canvasStream, { mimeType: mime });
+        this.recorder.ondataavailable = e => this.onChunk(e);
+        this.recorder.start(this.segTime);
+        this.recording = true;
+    }
+
+    stopRecording() {
+        if (!this.recording) return;
+        this.recorder.stop();
+        this.recording = false;
+    }
+
+    onChunk(e) {
+        if (!e.data.size) return;
+        if (!this.hasHeader) { this.firstChunk = e.data; this.hasHeader = true; }
+        this.chunks.push(e.data);
+        this.totalSize += e.data.size;
+        this.capChunks();
+        this.updateRAMUI();
+    }
+
+    capChunks() {
+        while (this.chunks.length > 1 && this.totalSize > this.max) {
+            const rm = this.chunks.shift();
+            this.totalSize -= rm.size;
+            if (rm === this.firstChunk && this.chunks.length) {
+                this.chunks.unshift(rm);
+                this.totalSize += rm.size;
+                break;
+            }
+        }
+    }
+
+    saveVideo() {
+        if (!this.chunks.length) {
+            showToast('Chưa có video để lưu', 2500, 'warning');
+            return;
+        }
+        const list = this.chunks[0] !== this.firstChunk ? [this.firstChunk, ...this.chunks] : this.chunks;
+        const blob = new Blob(list, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const d = new Date();
+        a.download = `cam-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.webm`;
+        a.href = url;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        showToast(`✅ Đã lưu: ${(blob.size / 1048576).toFixed(1)} MB`, 3000, 'success');
+    }
+
+    updateRAMUI() {
+        const maxMB = this.max === Infinity ? '∞' : Math.round(this.max / 1048576);
+        const usedMB = Math.round(this.totalSize / 1048576);
+        const pct = this.max === Infinity ? 0 : Math.min((this.totalSize / this.max) * 100, 100);
+        const bar = document.getElementById('ramBar');
+        bar.style.width = pct + '%';
+        bar.className = 'ram-bar-fill ' + (pct >= 95 ? 'red' : pct >= 80 ? 'yellow' : 'green');
+        document.getElementById('ramText').textContent = `${usedMB}/${maxMB}MB`;
+        document.getElementById('btnSave').disabled = this.chunks.length === 0;
     }
 
     startDraw() {
@@ -441,7 +608,7 @@ class CameraView {
 }
 
 // === Khởi tạo & Gắn sự kiện ===
-const cam = new CameraView();
+const cam = new VideoRecorder(200);
 
 function attachClick(el, handler) {
     el.addEventListener('click', handler);
@@ -453,10 +620,16 @@ function attachClick(el, handler) {
 
 attachClick(document.getElementById('btnMirror'), () => cam.toggleMirror());
 attachClick(document.getElementById('btnCam'), () => cam.switchCam());
+attachClick(document.getElementById('btnSave'), () => cam.saveVideo());
+
+document.getElementById('ramLimit').addEventListener('change', e => cam.setMaxMB(parseInt(e.target.value)));
 
 cam.initCam('user');
 
-window.addEventListener('beforeunload', () => cam.gps.stop());
+window.addEventListener('beforeunload', () => {
+    cam.stopRecording();
+    cam.gps.stop();
+});
 </script>
 
 </body>
