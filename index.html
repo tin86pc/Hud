@@ -11,33 +11,6 @@
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
-
-        :root {
-            --bg-dark: #000;
-            --panel-bg: rgba(20, 20, 25, 0.92);
-            --panel-border: rgba(255, 255, 255, 0.18);
-            --text-primary: #fff;
-            --text-secondary: rgba(255, 255, 255, 0.8);
-            --accent-green: #34c759;
-            --accent-blue: #007aff;
-            --accent-orange: #ff9500;
-            --accent-red: #ff3b30;
-
-            --btn-size: 14vmin;
-            --btn-border: 0.5vmin;
-            --modal-w: 65vmin;
-            --modal-h: 30vmin;
-            --modal-radius: 4vmin;
-            --gap: 3vmin;
-            --pad: 4vmin;
-            --font-base: 3.5vmin;
-            --font-time: 5vmin;
-            --font-speed: 6vmin;
-            --font-small: 3vmin;
-            --bar-h: 1.8vmin;
-            --dot-size: 2.2vmin;
-        }
-
         html, body {
             height: 100%;
             font-family: -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
@@ -46,7 +19,6 @@
             position: fixed;
             width: 100%;
         }
-
         .app {
             position: relative;
             width: 100vw;
@@ -54,25 +26,20 @@
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .canvas-container {
-            position: relative;
-            width: calc(100vw * 0.9);
-            max-height: calc(100vh * 0.9);
             background: #000;
-            border-radius: 3vmin;
-            overflow: hidden;
-            box-shadow: 0 0 6vmin rgba(0,0,0,0.6);
-            cursor: pointer;
         }
-
+        .canvas-container {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            overflow: hidden;
+        }
         #renderCanvas {
             width: 100%;
             height: 100%;
             display: block;
+            object-fit: cover;
         }
-
         #videoPreview {
             position: absolute;
             opacity: 0;
@@ -80,36 +47,33 @@
             width: 1px;
             height: 1px;
         }
-
         .control-modal {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0.8);
-            width: var(--modal-w);
-            min-height: var(--modal-h);
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: var(--modal-radius);
+            width: 70vmin;
+            min-height: 30vmin;
+            background: rgba(20, 20, 25, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 4vmin;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: var(--gap);
-            padding: var(--pad);
+            gap: 3vmin;
+            padding: 4vmin;
             z-index: 10;
             backdrop-filter: blur(20px);
             opacity: 0;
             visibility: hidden;
             transition: all 0.25s ease;
         }
-
         .control-modal.visible {
             opacity: 1;
             visibility: visible;
             transform: translate(-50%, -50%) scale(1);
         }
-
         .btn-row {
             display: flex;
             flex-direction: row;
@@ -117,14 +81,13 @@
             align-items: center;
             width: 100%;
         }
-
         .btn {
-            width: var(--btn-size);
-            height: var(--btn-size);
+            width: 14vmin;
+            height: 14vmin;
             border-radius: 50%;
-            border: var(--btn-border) solid var(--panel-border);
+            border: 0.5vmin solid rgba(255, 255, 255, 0.18);
             background: rgba(255, 255, 255, 0.08);
-            color: var(--text-secondary);
+            color: rgba(255, 255, 255, 0.8);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -135,67 +98,59 @@
             -webkit-user-select: none;
             user-select: none;
         }
-
         .btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
         .btn:disabled { opacity: 0.35; pointer-events: none; }
-
-        .btn-mirror { color: var(--text-secondary); }
-        .btn-cam { color: var(--accent-blue); }
+        .btn-mirror { color: rgba(255, 255, 255, 0.8); }
+        .btn-cam { color: #007aff; }
         .btn-rotate { color: #9c27b0; }
-        .btn-save { color: var(--accent-orange); border-color: rgba(255, 149, 0, 0.3); }
-
+        .btn-save { color: #ff9500; border-color: rgba(255, 149, 0, 0.3); }
         .ram-row {
             display: flex;
             align-items: center;
             gap: 2.5vmin;
             width: 100%;
-            font-size: var(--font-small);
+            font-size: 3vmin;
             color: rgba(255,255,255,0.45);
         }
-
         .ram-bar-bg {
             flex: 1;
-            height: var(--bar-h);
+            height: 1.8vmin;
             background: rgba(255,255,255,0.1);
             border-radius: 1vmin;
             overflow: hidden;
         }
-
         .ram-bar-fill {
             height: 100%;
             width: 0%;
             border-radius: 1vmin;
             transition: width 0.3s, background 0.3s;
         }
-        .ram-bar-fill.green { background: var(--accent-green); }
-        .ram-bar-fill.yellow { background: var(--accent-orange); }
-        .ram-bar-fill.red { background: var(--accent-red); animation: blink 0.8s infinite; }
+        .ram-bar-fill.green { background: #34c759; }
+        .ram-bar-fill.yellow { background: #ff9500; }
+        .ram-bar-fill.red { background: #ff3b30; animation: blink 0.8s infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
         .ram-row select {
             padding: 1vmin 2vmin;
             border-radius: 1.5vmin;
-            border: 1px solid var(--panel-border);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             background: rgba(0,0,0,0.3);
-            color: var(--text-secondary);
-            font-size: var(--font-small);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 3vmin;
             outline: none;
         }
-
         .ram-text { font-variant-numeric: tabular-nums; white-space: nowrap; }
-
         .toast {
             position: fixed;
             bottom: 10vmin;
             left: 50%;
             transform: translateX(-50%) translateY(2vmin);
-            background: var(--panel-bg);
-            color: var(--text-primary);
+            background: rgba(20, 20, 25, 0.92);
+            color: #fff;
             padding: 3vmin 6vmin;
             border-radius: 3vmin;
-            font-size: var(--font-base);
+            font-size: 3.5vmin;
             backdrop-filter: blur(15px);
-            border: 1px solid var(--panel-border);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             opacity: 0;
             transition: all 0.3s ease;
             pointer-events: none;
@@ -207,23 +162,20 @@
         .toast.success { border-color: rgba(52, 199, 89, 0.4); }
         .toast.warning { border-color: rgba(255, 149, 0, 0.4); }
         .toast.danger { border-color: rgba(255, 59, 48, 0.4); }
-
         @media (orientation: landscape) {
-            :root { --modal-w: 30vmin; --modal-h: 70vmin; }
-            .btn-row { flex-direction: column; gap: var(--gap); }
+            .control-modal { width: 30vmin; min-height: 70vmin; }
+            .btn-row { flex-direction: column; gap: 3vmin; }
             .ram-row { flex-direction: column; align-items: flex-start; }
             .ram-bar-bg { width: 100%; }
         }
     </style>
 </head>
 <body>
-
 <div class="app">
     <div class="canvas-container" id="canvasContainer">
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
     </div>
-
     <div class="control-modal" id="controlModal">
         <div class="btn-row">
             <button class="btn btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
@@ -247,7 +199,6 @@
         </div>
     </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -264,7 +215,6 @@ const controlModal = document.getElementById('controlModal');
 const canvasContainer = document.getElementById('canvasContainer');
 let hideTimer = null;
 const SHOW_DURATION = 5000;
-
 function showControls() {
     controlModal.classList.add('visible');
     clearTimeout(hideTimer);
@@ -274,7 +224,6 @@ function hideControls() {
     controlModal.classList.remove('visible');
     clearTimeout(hideTimer);
 }
-
 canvasContainer.addEventListener('click', e => {
     if (e.target.closest('.btn') || e.target.closest('select')) return;
     showControls();
@@ -370,9 +319,8 @@ class VideoRecorder {
         this.gps = new GPSTracker();
         this.facing = 'user';
         this.mirror = false;
-        this.rotate = 0; // 0, 90, 180, 270
+        this.rotate = 0;
         this.rendering = false;
-
         this.stream = null;
         this.canvasStream = null;
         this.recorder = null;
@@ -396,10 +344,6 @@ class VideoRecorder {
             this.facing = facing;
             this.video.srcObject = this.stream;
             await this.video.play();
-
-            this.canvas.width = 1280;
-            this.canvas.height = 720;
-
             this.startDraw();
             this.gps.start();
             this.startRecording();
@@ -437,11 +381,9 @@ class VideoRecorder {
         this.canvasStream = this.canvas.captureStream(30);
         const aTrack = this.stream?.getAudioTracks()[0];
         if (aTrack) this.canvasStream.addTrack(aTrack);
-
         let mime = 'video/webm;codecs=vp9,opus';
         if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp8,opus';
         if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
-
         this.recorder = new MediaRecorder(this.canvasStream, { mimeType: mime });
         this.recorder.ondataavailable = e => this.onChunk(e);
         this.recorder.start(this.segTime);
@@ -517,8 +459,10 @@ class VideoRecorder {
         ctx.closePath();
     }
 
-    drawHUDForAngle(angle, cw, ch) {
+    drawHUD() {
         const ctx = this.ctx;
+        const cw = this.canvas.width;
+        const ch = this.canvas.height;
         const now = new Date();
         const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -526,7 +470,6 @@ class VideoRecorder {
         const speedStr = speed.toFixed(1) + ' km/h';
         const gpsColor = this.gps.getStatusColor();
 
-        // Tính kích thước chữ theo khung
         const vmin = Math.min(cw, ch) / 100;
         const baseSize = 3.5 * vmin;
         const timeSize = 5 * vmin;
@@ -538,7 +481,6 @@ class VideoRecorder {
         const lineGap = 2 * vmin;
         const dotR = 1.1 * vmin;
 
-        // Tính kích thước khối HUD
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         const dateW = ctx.measureText(date).width;
         ctx.font = `bold ${timeSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
@@ -549,50 +491,12 @@ class VideoRecorder {
         const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
         const boxH = padY * 2 + baseSize + timeSize + speedSize + lineGap * 2;
 
-        let bx, by, tx, ty;
-
-        // === Tính vị trí theo từng góc ===
-        ctx.save();
-        switch (angle) {
-            case 0:
-                bx = margin;
-                by = margin;
-                tx = bx + padX;
-                ty = by + padY + baseSize * 0.8;
-                break;
-            case 90:
-                // Xoay 90°: HUD ở góc trên-bên trái theo hướng nhìn → góc trên-bên phải tọa độ gốc
-                ctx.translate(cw, 0);
-                ctx.rotate(Math.PI / 2);
-                bx = margin;
-                by = margin;
-                tx = bx + padX;
-                ty = by + padY + baseSize * 0.8;
-                break;
-            case 180:
-                ctx.translate(cw, ch);
-                ctx.rotate(Math.PI);
-                bx = margin;
-                by = margin;
-                tx = bx + padX;
-                ty = by + padY + baseSize * 0.8;
-                break;
-            case 270:
-                ctx.translate(0, ch);
-                ctx.rotate(-Math.PI / 2);
-                bx = margin;
-                by = margin;
-                tx = bx + padX;
-                ty = by + padY + baseSize * 0.8;
-                break;
-        }
-
-        // Vẽ khối nền
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        this.roundRect(ctx, bx, by, boxW, boxH, radius);
+        this.roundRect(ctx, margin, margin, boxW, boxH, radius);
         ctx.fill();
 
-        // Vẽ chữ
+        let tx = margin + padX, ty = margin + padY + baseSize * 0.8;
+
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.font = `bold ${baseSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(date, tx, ty);
@@ -607,15 +511,12 @@ class VideoRecorder {
         ctx.font = `bold ${speedSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
         ctx.fillText(speedStr, tx, ty);
 
-        // Vẽ chấm GPS
-        const dotX = bx + padX - dotR;
-        const dotY = by + padY + baseSize * 0.5;
+        const dotX = margin + padX - dotR;
+        const dotY = margin + padY + baseSize * 0.5;
         ctx.beginPath();
         ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
         ctx.fillStyle = gpsColor === 'green' ? '#34c759' : gpsColor === 'yellow' ? '#ff9500' : '#ff3b30';
         ctx.fill();
-
-        ctx.restore();
     }
 
     startDraw() {
@@ -623,7 +524,6 @@ class VideoRecorder {
         this.rendering = true;
         const draw = () => {
             if (!this.rendering) return;
-
             const vw = this.video.videoWidth;
             const vh = this.video.videoHeight;
             if (!vw || !vh) {
@@ -631,7 +531,7 @@ class VideoRecorder {
                 return;
             }
 
-            // === Xác định kích thước canvas sau khi xoay ===
+            // Bước 1: Xác định kích thước logic sau khi xoay
             let outW, outH;
             if (this.rotate === 90 || this.rotate === 270) {
                 outW = vh;
@@ -641,34 +541,33 @@ class VideoRecorder {
                 outH = vh;
             }
 
-            // Cập nhật canvas nếu kích thước thay đổi
+            // Cập nhật canvas
             if (this.canvas.width !== outW || this.canvas.height !== outH) {
                 this.canvas.width = outW;
                 this.canvas.height = outH;
             }
-
             const cw = outW, ch = outH;
             this.ctx.clearRect(0, 0, cw, ch);
 
-            // === Tính tỉ lệ vẽ video vừa khít khung ===
-            const scale = Math.min(cw / vw, ch / vh);
+            // Bước 2: Tính tỉ lệ COVER (điền đầy khung, cắt bớt nếu cần, không viền đen)
+            const scaleX = cw / vw;
+            const scaleY = ch / vh;
+            const scale = Math.max(scaleX, scaleY); // max = cover, min = contain
             const dw = vw * scale;
             const dh = vh * scale;
             const dx = (cw - dw) / 2;
             const dy = (ch - dh) / 2;
 
-            // === Vẽ video ===
+            // Bước 3: Xoay + lật + vẽ video — TẤT CẢ trong cùng hệ tọa độ
             this.ctx.save();
-            if (this.mirror) {
-                this.ctx.scale(-1, 1);
-                this.ctx.drawImage(this.video, -dx - dw, dy, dw, dh);
-            } else {
-                this.ctx.drawImage(this.video, dx, dy, dw, dh);
-            }
+            this.ctx.translate(cw / 2, ch / 2);
+            this.ctx.rotate((this.rotate * Math.PI) / 180);
+            if (this.mirror) this.ctx.scale(-1, 1);
+            this.ctx.drawImage(this.video, -dw / 2, -dh / 2, dw, dh);
             this.ctx.restore();
 
-            // === Vẽ HUD: tính vị trí đúng theo từng góc xoay ===
-            this.drawHUDForAngle(this.rotate, cw, ch);
+            // Bước 4: Vẽ HUD — SAU khi xoay, tọa độ gốc đã đúng
+            this.drawHUD();
 
             requestAnimationFrame(draw);
         };
@@ -677,29 +576,17 @@ class VideoRecorder {
 }
 
 const cam = new VideoRecorder(200);
-
 function attachClick(el, handler) {
     el.addEventListener('click', handler);
-    el.addEventListener('touchstart', e => {
-        e.stopPropagation();
-        handler();
-    }, { passive: true });
+    el.addEventListener('touchstart', e => { e.stopPropagation(); handler(); }, { passive: true });
 }
-
 attachClick(document.getElementById('btnMirror'), () => cam.toggleMirror());
 attachClick(document.getElementById('btnRotate'), () => cam.toggleRotate());
 attachClick(document.getElementById('btnCam'), () => cam.switchCam());
 attachClick(document.getElementById('btnSave'), () => cam.saveVideo());
-
 document.getElementById('ramLimit').addEventListener('change', e => cam.setMaxMB(parseInt(e.target.value)));
-
 cam.initCam('user');
-
-window.addEventListener('beforeunload', () => {
-    cam.stopRecording();
-    cam.gps.stop();
-});
+window.addEventListener('beforeunload', () => { cam.stopRecording(); cam.gps.stop(); });
 </script>
-
 </body>
 </html>
