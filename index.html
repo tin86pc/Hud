@@ -14,10 +14,10 @@
 
         :root {
             --bg-dark: #000;
-            --panel-bg: rgba(20, 20, 25, 0.85);
-            --panel-border: rgba(255, 255, 255, 0.1);
+            --panel-bg: rgba(15, 15, 20, 0.9);
+            --panel-border: rgba(255, 255, 255, 0.12);
             --text-primary: #fff;
-            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-secondary: rgba(255, 255, 255, 0.75);
             --text-muted: rgba(255, 255, 255, 0.45);
             --accent-red: #ff3b30;
             --accent-green: #34c759;
@@ -26,10 +26,9 @@
             --accent-orange: #ff6b35;
             --scale: 0.9;
 
-            /* Kích thước thanh điều khiển */
-            --control-bar-h: 130px;
-            --control-bar-h-landscape: 100vh;
-            --control-bar-w-landscape: 220px;
+            /* Chiều cao thanh điều khiển - đủ để hiển thị đầy đủ */
+            --control-h: 140px;
+            --control-w-landscape: 230px;
         }
 
         html, body {
@@ -39,7 +38,7 @@
             overflow: hidden;
         }
 
-        .app-container {
+        .app {
             position: relative;
             width: 100vw;
             height: 100vh;
@@ -47,15 +46,14 @@
         }
 
         /* === Vùng Video === */
-        .video-area {
+        .video-wrap {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: calc(100vh - var(--control-bar-h));
-            background: #111;
+            height: calc(100vh - var(--control-h));
+            background: #000;
             overflow: hidden;
-            z-index: 1;
         }
 
         #videoPreview {
@@ -75,39 +73,38 @@
             object-fit: cover;
         }
 
-        /* === Chỉ báo trạng thái trên video === */
-        .video-overlay-hud {
+        /* === Thông tin trên video === */
+        .hud {
             position: absolute;
-            top: calc(15px * var(--scale));
-            left: calc(15px * var(--scale));
+            top: 12px;
+            left: 12px;
             z-index: 10;
             pointer-events: none;
             display: flex;
             flex-direction: column;
-            gap: calc(6px * var(--scale));
+            gap: 8px;
         }
 
-        .rec-indicator {
+        .rec-badge {
             display: inline-flex;
             align-items: center;
-            gap: calc(8px * var(--scale));
-            padding: calc(6px * var(--scale)) calc(12px * var(--scale));
+            gap: 6px;
+            padding: 5px 12px;
             background: rgba(255, 59, 48, 0.15);
             border: 1px solid rgba(255, 59, 48, 0.3);
-            border-radius: calc(20px * var(--scale));
-            font-size: calc(14px * var(--scale));
+            border-radius: 20px;
+            font-size: 13px;
             color: var(--accent-red);
             font-weight: 600;
             opacity: 0;
-            transform: translateY(-5px);
-            transition: all 0.3s ease;
+            transition: opacity 0.3s;
             backdrop-filter: blur(10px);
         }
-        .rec-indicator.show { opacity: 1; transform: translateY(0); }
+        .rec-badge.show { opacity: 1; }
 
         .rec-dot {
-            width: calc(10px * var(--scale));
-            height: calc(10px * var(--scale));
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             background: var(--accent-red);
             animation: recPulse 1s infinite;
@@ -117,21 +114,21 @@
             50% { opacity: 0.4; transform: scale(0.7); }
         }
 
-        .gps-status {
+        .gps-badge {
             display: inline-flex;
             align-items: center;
-            gap: calc(8px * var(--scale));
-            padding: calc(5px * var(--scale)) calc(10px * var(--scale));
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: calc(15px * var(--scale));
-            font-size: calc(13px * var(--scale));
+            gap: 6px;
+            padding: 5px 12px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 20px;
+            font-size: 13px;
             color: var(--text-secondary);
             backdrop-filter: blur(10px);
         }
 
         .gps-dot {
-            width: calc(8px * var(--scale));
-            height: calc(8px * var(--scale));
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
             flex-shrink: 0;
         }
@@ -145,169 +142,149 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: var(--control-bar-h);
+            height: var(--control-h);
             background: var(--panel-bg);
             border-top: 1px solid var(--panel-border);
-            padding: calc(12px * var(--scale)) calc(20px * var(--scale));
+            padding: 10px 16px 14px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             z-index: 5;
         }
 
-        /* Thông tin trạng thái */
-        .status-row {
+        /* Hàng thông tin - không bị gãy dòng, đều khoảng cách */
+        .info-row {
             display: flex;
+            flex-wrap: nowrap;
             justify-content: space-between;
             align-items: center;
-            font-size: calc(13px * var(--scale));
+            gap: 8px;
+            font-size: 13px;
             color: var(--text-muted);
         }
 
-        .status-group {
-            display: flex;
-            gap: calc(16px * var(--scale));
-        }
-
-        .status-item {
+        .info-item {
             display: flex;
             align-items: baseline;
-            gap: calc(4px * var(--scale));
+            gap: 3px;
+            white-space: nowrap;
         }
 
-        .status-label { }
-        .status-value {
+        .info-val {
             color: var(--text-secondary);
             font-weight: 500;
             font-variant-numeric: tabular-nums;
         }
 
-        .ram-control {
+        .ram-wrap {
             display: flex;
             align-items: center;
-            gap: calc(8px * var(--scale));
+            gap: 6px;
+            white-space: nowrap;
         }
 
-        .ram-control label {
-            font-size: calc(12px * var(--scale));
-            color: var(--text-muted);
-        }
-
-        .ram-control select {
-            padding: calc(3px * var(--scale)) calc(8px * var(--scale));
-            border-radius: calc(6px * var(--scale));
-            border: 1px solid var(--panel-border);
-            background: rgba(0, 0, 0, 0.3);
-            color: var(--text-secondary);
-            font-size: calc(12px * var(--scale));
-            outline: none;
-        }
-
-        .ram-bar-container {
-            flex: 1;
-            height: calc(6px * var(--scale));
+        .ram-bar-bg {
+            width: 70px;
+            height: 6px;
             background: rgba(255,255,255,0.1);
-            border-radius: calc(3px * var(--scale));
+            border-radius: 3px;
             overflow: hidden;
-            max-width: 100px;
         }
 
         .ram-bar-fill {
             height: 100%;
             width: 0%;
-            border-radius: calc(3px * var(--scale));
-            transition: width 0.4s ease, background 0.4s ease;
+            border-radius: 3px;
+            transition: width 0.4s, background 0.4s;
         }
         .ram-bar-fill.green { background: var(--accent-green); }
         .ram-bar-fill.yellow { background: var(--accent-yellow); }
         .ram-bar-fill.red { background: var(--accent-red); animation: blink 0.8s infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
-        /* Nút điều khiển */
-        .buttons-row {
+        .ram-wrap select {
+            padding: 2px 6px;
+            border-radius: 5px;
+            border: 1px solid var(--panel-border);
+            background: rgba(0,0,0,0.3);
+            color: var(--text-secondary);
+            font-size: 12px;
+            outline: none;
+        }
+
+        /* Hàng nút bấm - hiển thị đầy đủ, dễ chạm */
+        .btn-row {
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding: calc(4px * var(--scale)) 0 calc(8px * var(--scale));
+            padding: 4px 0;
         }
 
-        .ctrl-btn {
-            width: calc(50px * var(--scale));
-            height: calc(50px * var(--scale));
+        .btn {
             border-radius: 50%;
             border: none;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255,255,255,0.08);
             color: var(--text-secondary);
-            font-size: calc(20px * var(--scale));
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
             border: 1px solid var(--panel-border);
             flex-shrink: 0;
         }
-        .ctrl-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.15); }
-        .ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-        .ctrl-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: var(--text-primary); }
+        .btn:active { transform: scale(0.92); background: rgba(255,255,255,0.15); }
+        .btn:disabled { opacity: 0.3; pointer-events: none; }
 
-        .ctrl-btn.secondary {
-            width: calc(44px * var(--scale));
-            height: calc(44px * var(--scale));
-            font-size: calc(18px * var(--scale));
+        .btn-sm {
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
         }
-        .ctrl-btn.save-btn { color: var(--accent-orange); border-color: rgba(255, 107, 53, 0.3); }
-        .ctrl-btn.cam-switch-btn { color: var(--accent-blue); }
-        .ctrl-btn.mirror-btn { color: var(--text-secondary); }
 
-        .record-btn {
-            width: calc(70px * var(--scale));
-            height: calc(70px * var(--scale));
-            border-radius: 50%;
-            border: calc(4px * var(--scale)) solid rgba(255, 255, 255, 0.25);
-            background: rgba(255, 255, 255, 0.08);
+        .btn-record {
+            width: 72px;
+            height: 72px;
+            border-width: 4px;
+            border-style: solid;
+            border-color: rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.08);
             color: #fff;
-            font-size: calc(28px * var(--scale));
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.25s ease;
-            flex-shrink: 0;
+            font-size: 28px;
         }
-        .record-btn:active { transform: scale(0.93); }
-        .record-btn.idle { border-color: rgba(52, 199, 89, 0.5); background: rgba(52, 199, 89, 0.12); }
-        .record-btn.recording { border-color: rgba(255, 59, 48, 0.6); background: rgba(255, 59, 48, 0.15); }
-        .record-btn.recording::after {
+        .btn-record.idle { border-color: rgba(52, 199, 89, 0.5); background: rgba(52, 199, 89, 0.12); }
+        .btn-record.recording { border-color: rgba(255, 59, 48, 0.6); background: rgba(255, 59, 48, 0.15); }
+        .btn-record.recording::after {
             content: '';
             position: absolute;
-            width: calc(70px * var(--scale));
-            height: calc(70px * var(--scale));
+            width: 72px;
+            height: 72px;
             border-radius: 50%;
-            border: calc(2px * var(--scale)) solid transparent;
+            border: 2px solid transparent;
             border-top-color: var(--accent-red);
-            animation: recordRing 1.5s linear infinite;
+            animation: spin 1.5s linear infinite;
         }
-        @keyframes recordRing {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .btn-mirror { color: var(--text-secondary); }
+        .btn-save { color: var(--accent-orange); border-color: rgba(255, 107, 53, 0.3); }
+        .btn-cam { color: var(--accent-blue); }
 
         /* === Thông báo === */
         .toast {
             position: fixed;
-            bottom: calc(var(--control-bar-h) + 20px);
+            bottom: calc(var(--control-h) + 16px);
             left: 50%;
             transform: translateX(-50%) translateY(10px);
             background: var(--panel-bg);
             color: var(--text-primary);
-            padding: calc(12px * var(--scale)) calc(20px * var(--scale));
-            border-radius: calc(12px * var(--scale));
-            font-size: calc(14px * var(--scale));
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
             backdrop-filter: blur(15px);
             border: 1px solid var(--panel-border);
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
             pointer-events: none;
             z-index: 100;
             max-width: 90vw;
@@ -320,46 +297,41 @@
 
         /* === Màn hình NGANG === */
         @media (orientation: landscape) {
-            .video-area {
-                width: calc(100vw - var(--control-bar-w-landscape));
+            .video-wrap {
+                width: calc(100vw - var(--control-w-landscape));
                 height: 100vh;
             }
 
             .control-bar {
-                width: var(--control-bar-w-landscape);
+                width: var(--control-w-landscape);
                 height: 100vh;
                 left: auto;
                 right: 0;
                 bottom: 0;
                 flex-direction: column;
                 justify-content: space-between;
-                padding: calc(20px * var(--scale)) calc(16px * var(--scale));
+                padding: 20px 14px;
             }
 
-            .status-row {
+            .info-row {
                 flex-direction: column;
-                gap: calc(12px * var(--scale));
+                gap: 12px;
                 align-items: flex-start;
                 width: 100%;
             }
 
-            .status-group {
-                width: 100%;
-                justify-content: space-between;
-            }
+            .ram-wrap { width: 100%; }
+            .ram-bar-bg { flex: 1; width: auto; }
 
-            .ram-control { width: 100%; }
-            .ram-bar-container { max-width: none; }
-
-            .buttons-row {
+            .btn-row {
                 flex-direction: column;
-                gap: calc(20px * var(--scale));
-                padding: calc(10px * var(--scale)) 0;
+                gap: 24px;
+                padding: 10px 0;
             }
 
             .toast {
                 bottom: 20px;
-                right: calc(var(--control-bar-w-landscape) + 20px);
+                right: calc(var(--control-w-landscape) + 20px);
                 left: auto;
                 transform: translateY(10px);
             }
@@ -369,18 +341,18 @@
 </head>
 <body>
 
-<div class="app-container">
+<div class="app">
     <!-- Vùng Video -->
-    <div class="video-area">
+    <div class="video-wrap">
         <video id="videoPreview" autoplay muted playsinline></video>
         <canvas id="renderCanvas"></canvas>
 
         <!-- Thông tin trên video -->
-        <div class="video-overlay-hud">
-            <div class="rec-indicator" id="recIndicator">
+        <div class="hud">
+            <div class="rec-badge" id="recBadge">
                 <span class="rec-dot"></span> Đang quay
             </div>
-            <div class="gps-status">
+            <div class="gps-badge">
                 <span class="gps-dot red" id="gpsDot"></span>
                 <span id="gpsLabel">Tìm tín hiệu</span>
             </div>
@@ -389,29 +361,25 @@
 
     <!-- Thanh Điều Khiển -->
     <div class="control-bar">
-        <!-- Hàng trạng thái -->
-        <div class="status-row">
-            <div class="status-group">
-                <div class="status-item">
-                    <span class="status-label">Đoạn:</span>
-                    <span class="status-value" id="segmentCount">0</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Thời gian:</span>
-                    <span class="status-value" id="totalDuration">0s</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Kích thước:</span>
-                    <span class="status-value" id="totalSize">0 MB</span>
-                </div>
+        <!-- Hàng thông tin - không bị gãy dòng -->
+        <div class="info-row">
+            <div class="info-item">
+                <span>Đoạn:</span>
+                <span class="info-val" id="segCount">0</span>
             </div>
-            <div class="ram-control">
-                <label>RAM:</label>
-                <div class="ram-bar-container">
-                    <div class="ram-bar-fill green" id="ramBar"></div>
-                </div>
-                <span class="status-value" id="ramUsage">0/200MB</span>
-                <select id="ramLimitSelect">
+            <div class="info-item">
+                <span>Thời gian:</span>
+                <span class="info-val" id="durTime">0.0s</span>
+            </div>
+            <div class="info-item">
+                <span>Kích thước:</span>
+                <span class="info-val" id="sizeVal">0B</span>
+            </div>
+            <div class="ram-wrap">
+                <span>RAM:</span>
+                <div class="ram-bar-bg"><div class="ram-bar-fill green" id="ramBar"></div></div>
+                <span class="info-val" id="ramText">0/200MB</span>
+                <select id="ramLimit">
                     <option value="50">50</option>
                     <option value="100">100</option>
                     <option value="200" selected>200</option>
@@ -423,400 +391,317 @@
             </div>
         </div>
 
-        <!-- Hàng nút bấm -->
-        <div class="buttons-row">
-            <button class="ctrl-btn secondary mirror-btn" id="btnMirror" title="Lật ngang hình">↔️</button>
-            <button class="record-btn idle" id="btnRecordMain" title="Bắt đầu/Kết thúc quay">▶</button>
-            <button class="ctrl-btn secondary save-btn" id="btnDownload" disabled title="Lưu video">💾</button>
-            <button class="ctrl-btn secondary cam-switch-btn" id="camSwitchBtn" title="Chuyển camera">📷</button>
+        <!-- Hàng nút bấm - hiển thị đầy đủ -->
+        <div class="btn-row">
+            <button class="btn btn-sm btn-mirror" id="btnMirror" title="Lật ngang hình">↔️</button>
+            <button class="btn btn-record idle" id="btnRecord" title="Bắt đầu/Kết thúc quay">▶</button>
+            <button class="btn btn-sm btn-save" id="btnSave" disabled title="Lưu video">💾</button>
+            <button class="btn btn-sm btn-cam" id="btnCam" title="Chuyển camera">📷</button>
         </div>
     </div>
 </div>
 
-<div class="toast" id="toastMsg"></div>
+<div class="toast" id="toast"></div>
 
 <script>
 let toastTimer = null;
-function showToast(msg, duration = 2500, type = '') {
-    const t = document.getElementById('toastMsg');
+function showToast(msg, dur = 2500, type = '') {
+    const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = 'toast show ' + type;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+    toastTimer = setTimeout(() => t.classList.remove('show'), dur);
 }
 
 class GPSTracker {
-    constructor() {
-        this.watchId = null;
-        this.speed = 0;
-        this.active = false;
-        this.lastPos = null;
-    }
-
+    constructor() { this.watchId = null; this.speed = 0; this.active = false; this.lastPos = null; }
     start() {
-        if (!navigator.geolocation) {
-            showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger');
-            return false;
-        }
+        if (!navigator.geolocation) { showToast('❌ Trình duyệt không hỗ trợ GPS', 3000, 'danger'); return false; }
         this.active = true;
         this.watchId = navigator.geolocation.watchPosition(
-            p => this.handlePos(p),
-            e => this.handleErr(e),
+            p => this.handle(p), e => this.err(e),
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 1000 }
         );
-        this.updateUI('Tìm tín hiệu...', 'yellow');
+        this.updUI('Tìm tín hiệu...', 'yellow');
         return true;
     }
-
     stop() {
         this.active = false;
-        if (this.watchId !== null) navigator.geolocation.clearWatch(this.watchId);
-        this.speed = 0;
-        this.updateUI('Tắt', 'red');
+        if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+        this.speed = 0; this.updUI('Tắt', 'red');
     }
-
-    handlePos(pos) {
+    handle(pos) {
         if (!this.active) return;
         const c = pos.coords;
-        if (c.speed !== null && c.speed >= 0) {
-            this.speed = Math.round(c.speed * 3.6 * 10) / 10;
-        } else {
-            this.speed = this.calcSpeedFromPos(c, pos.timestamp);
-        }
-        this.updateUI('GPS', 'green');
+        this.speed = c.speed !== null && c.speed >= 0 ? Math.round(c.speed * 3.6 * 10) / 10 : this.calcSpeed(c, pos.timestamp);
+        this.updUI('GPS', 'green');
     }
-
-    calcSpeedFromPos(coords, ts) {
-        if (!this.lastPos) {
-            this.lastPos = { lat: coords.latitude, lng: coords.longitude, ts };
-            return 0;
-        }
-        const d = this.distHaversine(this.lastPos.lat, this.lastPos.lng, coords.latitude, coords.longitude);
+    calcSpeed(c, ts) {
+        if (!this.lastPos) { this.lastPos = { lat: c.latitude, lng: c.longitude, ts }; return 0; }
+        const d = this.dist(this.lastPos.lat, this.lastPos.lng, c.latitude, c.longitude);
         const t = (ts - this.lastPos.ts) / 1000;
-        this.lastPos = { lat: coords.latitude, lng: coords.longitude, ts };
+        this.lastPos = { lat: c.latitude, lng: c.longitude, ts };
         return t > 0 && d > 1 ? Math.round((d / t) * 3.6 * 10) / 10 : 0;
     }
-
-    distHaversine(lat1, lon1, lat2, lon2) {
-        const R = 6371e3, toRad = d => d * Math.PI / 180;
-        const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    dist(lat1, lon1, lat2, lon2) {
+        const R = 6371e3, r = Math.PI / 180;
+        const dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
-
-    handleErr(e) {
-        const map = {
-            [e.PERMISSION_DENIED]: ['Cấp quyền vị trí', 'red'],
-            [e.POSITION_UNAVAILABLE]: ['Không có tín hiệu', 'red'],
-            [e.TIMEOUT]: ['Mất tín hiệu', 'yellow']
-        };
-        const [text, color] = map[e.code] || ['Lỗi GPS', 'red'];
-        this.updateUI(text, color);
+    err(e) {
+        const m = { 1: ['Cấp quyền vị trí', 'red'], 2: ['Không có tín hiệu', 'red'], 3: ['Mất tín hiệu', 'yellow'] }[e.code] || ['Lỗi GPS', 'red'];
+        this.updUI(m[0], m[1]);
     }
-
-    updateUI(text, color) {
-        const dot = document.getElementById('gpsDot');
-        dot.className = 'gps-dot ' + color;
-        document.getElementById('gpsLabel').textContent = text;
+    updUI(txt, color) {
+        document.getElementById('gpsDot').className = 'gps-dot ' + color;
+        document.getElementById('gpsLabel').textContent = txt;
     }
-
     getSpeed() { return this.speed; }
 }
 
-class DashCamRecorder {
-    constructor(maxRamMB = 200) {
-        this.maxRam = maxRamMB === 0 ? Infinity : maxRamMB * 1024 * 1024;
-        this.segmentTime = 1000;
-        this.buffer = [];
+class Recorder {
+    constructor(maxMB = 200) {
+        this.max = maxMB === 0 ? Infinity : maxMB * 1024 * 1024;
+        this.segTime = 1000;
+        this.chunks = [];
         this.totalSize = 0;
-        this.totalDuration = 0;
+        this.totalDur = 0;
         this.recorder = null;
         this.stream = null;
         this.canvasStream = null;
         this.recording = false;
         this.rendering = false;
         this.facing = 'user';
-        this.mirrored = false;
+        this.mirror = false;
         this.firstChunk = null;
         this.hasHeader = false;
         this.canvas = document.getElementById('renderCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.video = document.getElementById('videoPreview');
         this.gps = new GPSTracker();
-        this.videoW = 1280; this.videoH = 720;
-        this.onStateChange = null;
-        this.scale = 0.9;
+        this.w = 1280; this.h = 720;
+        this.onChange = null;
     }
-
-    setMaxRamMB(mb) {
-        this.maxRam = mb === 0 ? Infinity : mb * 1024 * 1024;
-        this.enforceLimits();
-        this.notifyChange();
-    }
-
-    async initCamera(facing = 'user') {
+    setMaxMB(mb) { this.max = mb === 0 ? Infinity : mb * 1024 * 1024; this.cap(); this.notify(); }
+    async initCam(facing = 'user') {
         const cons = { video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true };
         this.stream = await navigator.mediaDevices.getUserMedia(cons);
         this.facing = facing;
         this.video.srcObject = this.stream;
         await this.video.play();
         const s = this.stream.getVideoTracks()[0].getSettings();
-        this.videoW = s.width || 1280; this.videoH = s.height || 720;
-        this.canvas.width = this.videoW; this.canvas.height = this.videoH;
-        return true;
+        this.w = s.width || 1280; this.h = s.height || 720;
+        this.canvas.width = this.w; this.canvas.height = this.h;
     }
-
-    async switchCamera(facing) {
+    async switchCam(facing) {
         if (facing === this.facing) { showToast('Đang dùng camera này', 1500); return; }
-        const wasRecording = this.recording;
-        if (this.recording) this.stopRecording();
+        const was = this.recording;
+        if (was) this.stopRec();
         this.stream?.getTracks().forEach(t => t.stop());
-        await this.initCamera(facing);
-        if (wasRecording) await this.startRecording();
-        this.updateCamButton();
-        showToast(`Đã chuyển sang camera ${facing === 'user' ? 'trước' : 'sau'}`, 1500);
+        await this.initCam(facing);
+        if (was) await this.startRec();
+        showToast(`Đã chuyển camera ${facing === 'user' ? 'trước' : 'sau'}`, 1500);
     }
-
-    updateCamButton() {
-        // Cập nhật trạng thái nếu cần
-    }
-
-    async startRecording() {
+    async startRec() {
         if (this.recording) return;
-        if (!this.stream) await this.initCamera(this.facing);
-        this.buffer = []; this.totalSize = 0; this.totalDuration = 0;
+        if (!this.stream) await this.initCam(this.facing);
+        this.chunks = []; this.totalSize = 0; this.totalDur = 0;
         this.firstChunk = null; this.hasHeader = false;
         this.canvasStream = this.canvas.captureStream(30);
-        const aTracks = this.stream.getAudioTracks();
-        if (aTracks[0]) this.canvasStream.addTrack(aTracks[0]);
+        const aTrack = this.stream.getAudioTracks()[0];
+        if (aTrack) this.canvasStream.addTrack(aTrack);
 
-        let mimeType = 'video/webm;codecs=vp9,opus';
-        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+        let mime = 'video/webm;codecs=vp9,opus';
+        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp8,opus';
+        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
 
-        this.recorder = new MediaRecorder(this.canvasStream, { mimeType });
-        this.recorder.ondataavailable = e => this.handleChunk(e);
-        this.recorder.start(this.segmentTime);
+        this.recorder = new MediaRecorder(this.canvasStream, { mimeType: mime });
+        this.recorder.ondataavailable = e => this.onChunk(e);
+        this.recorder.start(this.segTime);
         this.recording = true;
         this.gps.start();
-        this.startRender();
-        this.timer = setInterval(() => { this.enforceLimits(); this.notifyChange(); }, 2000);
-        this.notifyChange();
-        document.getElementById('recIndicator').classList.add('show');
+        this.startDraw();
+        this.timer = setInterval(() => { this.cap(); this.notify(); }, 2000);
+        document.getElementById('recBadge').classList.add('show');
         showToast('🔴 Bắt đầu quay', 2000, 'success');
     }
-
-    stopRecording() {
+    stopRec() {
         if (!this.recording) return;
         this.recorder.stop();
         this.recording = false;
         clearInterval(this.timer);
         this.gps.stop();
-        this.stopRender();
-        document.getElementById('recIndicator').classList.remove('show');
-        this.notifyChange();
+        this.stopDraw();
+        document.getElementById('recBadge').classList.remove('show');
         showToast('⏹ Đã dừng quay', 2000);
     }
-
-    handleChunk(e) {
+    onChunk(e) {
         if (!e.data.size) return;
         if (!this.hasHeader) { this.firstChunk = e.data; this.hasHeader = true; }
-        this.buffer.push(e.data);
+        this.chunks.push(e.data);
         this.totalSize += e.data.size;
-        this.totalDuration += this.segmentTime;
-        this.enforceLimits();
-        this.notifyChange();
+        this.totalDur += this.segTime;
+        this.cap(); this.notify();
     }
-
-    enforceLimits() {
-        while (this.buffer.length > 1 && this.totalSize > this.maxRam) {
-            const removed = this.buffer.shift();
-            this.totalSize -= removed.size;
-            this.totalDuration -= this.segmentTime;
-            if (removed === this.firstChunk && this.buffer.length) {
-                this.buffer.unshift(removed);
-                this.totalSize += removed.size;
-                this.totalDuration += this.segmentTime;
+    cap() {
+        while (this.chunks.length > 1 && this.totalSize > this.max) {
+            const rm = this.chunks.shift();
+            this.totalSize -= rm.size;
+            this.totalDur -= this.segTime;
+            if (rm === this.firstChunk && this.chunks.length) {
+                this.chunks.unshift(rm);
+                this.totalSize += rm.size;
+                this.totalDur += this.segTime;
                 break;
             }
         }
     }
-
-    startRender() {
+    startDraw() {
         if (this.rendering) return;
         this.rendering = true;
         const draw = () => {
             if (!this.rendering) return;
-            const cw = this.canvas.width;
-            const ch = this.canvas.height;
+            const cw = this.canvas.width, ch = this.canvas.height;
             this.ctx.clearRect(0, 0, cw, ch);
 
             const vw = this.video.videoWidth, vh = this.video.videoHeight;
-            const vRatio = vw / vh, cRatio = cw / ch;
-            let dw, dh, ox, oy;
-            if (vRatio > cRatio) { dh = ch; dw = dh * vRatio; ox = (cw - dw) / 2; oy = 0; }
-            else { dw = cw; dh = dw / vRatio; ox = 0; oy = (ch - dh) / 2; }
+            const r = vw / vh, cr = cw / ch;
+            let dw, dh, x, y;
+            if (r > cr) { dh = ch; dw = dh * r; x = (cw - dw) / 2; y = 0; }
+            else { dw = cw; dh = dw / r; x = 0; y = (ch - dh) / 2; }
 
-            if (this.mirrored) {
+            if (this.mirror) {
                 this.ctx.save();
                 this.ctx.translate(cw / 2, 0);
                 this.ctx.scale(-1, 1);
-                this.ctx.drawImage(this.video, -dw / 2, oy, dw, dh);
+                this.ctx.drawImage(this.video, -dw / 2, y, dw, dh);
                 this.ctx.restore();
             } else {
-                this.ctx.drawImage(this.video, ox, oy, dw, dh);
+                this.ctx.drawImage(this.video, x, y, dw, dh);
             }
 
-            // === Vẽ thông tin: ngày, giờ, tốc độ ===
+            // Vẽ thông tin góc trên trái: ngày, giờ, tốc độ
             const now = new Date();
-            const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-            const speed = this.gps.getSpeed();
-            const speedStr = speed.toFixed(1) + ' km/h';
+            const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            const spd = this.gps.getSpeed();
+            const spdTxt = spd.toFixed(1) + ' km/h';
 
-            const fontSizeDate = Math.max(cw * 0.022 * this.scale, 12 * this.scale);
-            const fontSizeTime = Math.max(cw * 0.035 * this.scale, 18 * this.scale);
-            const fontSizeSpeed = Math.max(cw * 0.038 * this.scale, 20 * this.scale);
-            const lineSpacing = fontSizeTime * 0.3;
-            const paddingX = Math.max(cw * 0.022 * this.scale, 10 * this.scale);
-            const paddingY = Math.max(ch * 0.018 * this.scale, 7 * this.scale);
-            const margin = Math.max(cw * 0.018 * this.scale, 10 * this.scale);
-            const radius = Math.max(cw * 0.01 * this.scale, 6 * this.scale);
+            const fsDate = Math.max(cw * 0.022, 12);
+            const fsTime = Math.max(cw * 0.035, 18);
+            const fsSpd = Math.max(cw * 0.038, 20);
+            const padX = Math.max(cw * 0.022, 10);
+            const padY = Math.max(ch * 0.018, 7);
+            const margin = Math.max(cw * 0.018, 10);
+            const radius = Math.max(cw * 0.01, 6);
+            const lineGap = fsTime * 0.3;
 
-            this.ctx.font = `bold ${fontSizeDate}px -apple-system, sans-serif`;
-            const dateWidth = this.ctx.measureText(dateStr).width;
-            this.ctx.font = `bold ${fontSizeTime}px -apple-system, sans-serif`;
-            const timeWidth = this.ctx.measureText(timeStr).width;
-            this.ctx.font = `bold ${fontSizeSpeed}px -apple-system, sans-serif`;
-            const speedWidth = this.ctx.measureText(speedStr).width;
+            this.ctx.font = `bold ${fsDate}px -apple-system, sans-serif`;
+            const wDate = this.ctx.measureText(date).width;
+            this.ctx.font = `bold ${fsTime}px -apple-system, sans-serif`;
+            const wTime = this.ctx.measureText(time).width;
+            this.ctx.font = `bold ${fsSpd}px -apple-system, sans-serif`;
+            const wSpd = this.ctx.measureText(spdTxt).width;
 
-            const textWidth = Math.max(dateWidth, timeWidth, speedWidth);
-            const boxW = textWidth + paddingX * 2;
-            const boxH = paddingY * 2 + fontSizeDate + fontSizeTime + fontSizeSpeed + lineSpacing * 2;
-            const boxX = margin;
-            const boxY = margin;
+            const boxW = Math.max(wDate, wTime, wSpd) + padX * 2;
+            const boxH = padY * 2 + fsDate + fsTime + fsSpd + lineGap * 2;
+            const bx = margin, by = margin;
 
             this.ctx.save();
-            this.ctx.shadowColor = 'rgba(0,0,0,0.2)';
-            this.ctx.shadowBlur = cw * 0.008 * this.scale;
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            this.ctx.fillStyle = 'rgba(0,0,0,0.35)';
             this.ctx.beginPath();
-            this.ctx.moveTo(boxX + radius, boxY);
-            this.ctx.lineTo(boxX + boxW - radius, boxY);
-            this.ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + radius);
-            this.ctx.lineTo(boxX + boxW, boxY + boxH - radius);
-            this.ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - radius, boxY + boxH);
-            this.ctx.lineTo(boxX + radius, boxY + boxH);
-            this.ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - radius);
-            this.ctx.lineTo(boxX, boxY + radius);
-            this.ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+            this.ctx.moveTo(bx + radius, by);
+            this.ctx.lineTo(bx + boxW - radius, by);
+            this.ctx.quadraticCurveTo(bx + boxW, by, bx + boxW, by + radius);
+            this.ctx.lineTo(bx + boxW, by + boxH - radius);
+            this.ctx.quadraticCurveTo(bx + boxW, by + boxH, bx + boxW - radius, by + boxH);
+            this.ctx.lineTo(bx + radius, by + boxH);
+            this.ctx.quadraticCurveTo(bx, by + boxH, bx, by + boxH - radius);
+            this.ctx.lineTo(bx, by + radius);
+            this.ctx.quadraticCurveTo(bx, by, bx + radius, by);
             this.ctx.closePath();
             this.ctx.fill();
-            this.ctx.shadowBlur = 0;
             this.ctx.restore();
 
-            const textX = boxX + paddingX;
-            let currentY = boxY + paddingY + fontSizeDate * 0.8;
+            const tx = bx + padX;
+            let ty = by + padY + fsDate * 0.8;
 
             this.ctx.fillStyle = 'rgba(255,255,255,0.95)';
-            this.ctx.font = `bold ${fontSizeDate}px -apple-system, sans-serif`;
-            this.ctx.textAlign = 'left';
-            this.ctx.fillText(dateStr, textX, currentY);
-            currentY += fontSizeDate + lineSpacing;
+            this.ctx.font = `bold ${fsDate}px -apple-system, sans-serif`;
+            this.ctx.fillText(date, tx, ty);
+            ty += fsDate + lineGap;
 
-            this.ctx.font = `bold ${fontSizeTime}px -apple-system, sans-serif`;
-            this.ctx.fillText(timeStr, textX, currentY);
-            currentY += fontSizeTime + lineSpacing;
+            this.ctx.font = `bold ${fsTime}px -apple-system, sans-serif`;
+            this.ctx.fillText(time, tx, ty);
+            ty += fsTime + lineGap;
 
-            const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
-            this.ctx.fillStyle = speedColor;
-            this.ctx.font = `bold ${fontSizeSpeed}px -apple-system, sans-serif`;
-            this.ctx.fillText(speedStr, textX, currentY);
-
-            this.ctx.restore();
+            this.ctx.fillStyle = spd >= 50 ? '#ff3b30' : spd >= 30 ? '#ff9500' : '#34c759';
+            this.ctx.font = `bold ${fsSpd}px -apple-system, sans-serif`;
+            this.ctx.fillText(spdTxt, tx, ty);
 
             requestAnimationFrame(draw);
         };
         draw();
     }
-
-    stopRender() { this.rendering = false; }
-
-    toggleMirror() {
-        this.mirrored = !this.mirrored;
-        showToast(this.mirrored ? '🔄 Bật gương hình' : '🔄 Tắt gương hình', 1500);
-    }
-
-    saveVideo() {
-        if (!this.buffer.length) return showToast('Chưa có video để lưu', 2000, 'warning');
-        const chunks = this.buffer[0] !== this.firstChunk ? [this.firstChunk, ...this.buffer] : this.buffer;
-        const blob = new Blob(chunks, { type: 'video/webm' });
+    stopDraw() { this.rendering = false; }
+    toggleMirror() { this.mirror = !this.mirror; showToast(this.mirror ? '🔄 Bật gương' : '🔄 Tắt gương', 1500); }
+    save() {
+        if (!this.chunks.length) return showToast('Chưa có video', 2000, 'warning');
+        const list = this.chunks[0] !== this.firstChunk ? [this.firstChunk, ...this.chunks] : this.chunks;
+        const blob = new Blob(list, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         const d = new Date();
-        a.download = `cam-hanh-trinh-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.mp4`;
+        a.download = `cam-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.mp4`;
         a.href = url;
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 10000);
         showToast(`✅ Đã lưu: ${(blob.size / 1048576).toFixed(1)} MB`, 2500, 'success');
     }
-
-    formatSize(b) {
-        if (b < 1024) return b + ' B';
-        if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
-        return (b / 1048576).toFixed(1) + ' MB';
+    fmtSize(b) {
+        if (b < 1024) return b + 'B';
+        if (b < 1048576) return (b / 1024).toFixed(1) + 'KB';
+        return (b / 1048576).toFixed(1) + 'MB';
     }
-
-    notifyChange() {
-        if (this.onStateChange) this.onStateChange();
-    }
+    notify() { if (this.onChange) this.onChange(); }
 }
 
-const recorder = new DashCamRecorder(200);
+const rec = new Recorder(200);
 
 function syncUI() {
-    const isRec = recorder.recording;
-    const hasData = recorder.buffer.length > 0;
+    const isRec = rec.recording;
+    const hasData = rec.chunks.length > 0;
 
-    const btn = document.getElementById('btnRecordMain');
-    btn.className = 'record-btn ' + (isRec ? 'recording' : 'idle');
+    const btn = document.getElementById('btnRecord');
+    btn.className = 'btn btn-record ' + (isRec ? 'recording' : 'idle');
     btn.innerHTML = isRec ? '' : '▶';
 
-    document.getElementById('segmentCount').textContent = recorder.buffer.length;
-    document.getElementById('totalDuration').textContent = (recorder.totalDuration / 1000).toFixed(1) + 's';
-    document.getElementById('totalSize').textContent = recorder.formatSize(recorder.totalSize);
+    document.getElementById('segCount').textContent = rec.chunks.length;
+    document.getElementById('durTime').textContent = (rec.totalDur / 1000).toFixed(1) + 's';
+    document.getElementById('sizeVal').textContent = rec.fmtSize(rec.totalSize);
 
-    const maxMB = recorder.maxRam === Infinity ? '∞' : Math.round(recorder.maxRam / 1048576);
-    const usedMB = Math.round(recorder.totalSize / 1048576);
-    const percent = recorder.maxRam === Infinity ? 0 : Math.min((recorder.totalSize / recorder.maxRam) * 100, 100);
-    document.getElementById('ramBar').style.width = percent + '%';
-    document.getElementById('ramBar').className = 'ram-bar-fill ' + (percent >= 95 ? 'red' : percent >= 80 ? 'yellow' : 'green');
-    document.getElementById('ramUsage').textContent = `${usedMB}/${maxMB}MB`;
+    const maxMB = rec.max === Infinity ? '∞' : Math.round(rec.max / 1048576);
+    const usedMB = Math.round(rec.totalSize / 1048576);
+    const pct = rec.max === Infinity ? 0 : Math.min((rec.totalSize / rec.max) * 100, 100);
+    const bar = document.getElementById('ramBar');
+    bar.style.width = pct + '%';
+    bar.className = 'ram-bar-fill ' + (pct >= 95 ? 'red' : pct >= 80 ? 'yellow' : 'green');
+    document.getElementById('ramText').textContent = `${usedMB}/${maxMB}MB`;
 
-    document.getElementById('btnDownload').disabled = !hasData;
+    document.getElementById('btnSave').disabled = !hasData;
 }
 
-recorder.onStateChange = syncUI;
+rec.onChange = syncUI;
 
-document.getElementById('btnRecordMain').addEventListener('click', () => {
-    recorder.recording ? recorder.stopRecording() : recorder.startRecording();
-});
-document.getElementById('btnDownload').addEventListener('click', () => recorder.saveVideo());
-document.getElementById('btnMirror').addEventListener('click', () => recorder.toggleMirror());
-document.getElementById('camSwitchBtn').addEventListener('click', async () => {
-    const newFacing = recorder.facing === 'user' ? 'environment' : 'user';
-    await recorder.switchCamera(newFacing);
-});
-document.getElementById('ramLimitSelect').addEventListener('change', e => {
-    recorder.setMaxRamMB(parseInt(e.target.value));
-    syncUI();
-});
+document.getElementById('btnRecord').addEventListener('click', () => rec.recording ? rec.stopRec() : rec.startRec());
+document.getElementById('btnSave').addEventListener('click', () => rec.save());
+document.getElementById('btnMirror').addEventListener('click', () => rec.toggleMirror());
+document.getElementById('btnCam').addEventListener('click', () => rec.switchCam(rec.facing === 'user' ? 'environment' : 'user'));
+document.getElementById('ramLimit').addEventListener('change', e => rec.setMaxMB(parseInt(e.target.value)));
 
-recorder.initCamera('user').then(() => {
-    syncUI();
-});
-
-window.addEventListener('beforeunload', () => recorder.stopRecording());
+rec.initCam().then(syncUI);
+window.addEventListener('beforeunload', () => rec.stopRec());
 </script>
 
 </body>
