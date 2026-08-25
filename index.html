@@ -32,7 +32,6 @@
             overflow: hidden;
         }
 
-        /* ===== VIDEO ===== */
         .video-wrapper {
             position: absolute;
             top: 0;
@@ -57,7 +56,6 @@
             object-fit: cover;
         }
 
-        /* ===== OVERLAY ===== */
         .overlay {
             position: absolute;
             top: 0;
@@ -69,7 +67,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 14px 16px 18px;
+            padding: 12px 14px 16px;
         }
 
         /* ===== TOP BAR ===== */
@@ -99,14 +97,15 @@
             display: none;
             align-items: center;
             gap: 6px;
-            padding: 3px 12px 3px 8px;
+            padding: 2px 10px 2px 6px;
             background: rgba(255, 59, 48, 0.2);
             border: 1px solid rgba(255, 59, 48, 0.3);
             border-radius: 30px;
-            font-size: 9px;
+            font-size: 8px;
             color: #ff3b30;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .top-bar .rec-badge.show {
@@ -114,8 +113,8 @@
         }
 
         .top-bar .rec-badge .dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background: #ff3b30;
             animation: pulse-dot 1s infinite;
@@ -134,8 +133,8 @@
         .top-bar .gps-status {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 3px 10px 3px 8px;
+            gap: 5px;
+            padding: 2px 8px 2px 6px;
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(8px);
             border-radius: 30px;
@@ -144,8 +143,8 @@
         }
 
         .top-bar .gps-status .dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             display: inline-block;
             flex-shrink: 0;
@@ -174,7 +173,7 @@
         }
 
         .top-bar .gps-status .gps-label {
-            font-size: 8px;
+            font-size: 7px;
             color: rgba(255, 255, 255, 0.3);
             font-weight: 500;
         }
@@ -186,21 +185,6 @@
             align-items: center;
             justify-content: center;
             pointer-events: none;
-        }
-
-        /* ===== TIME DISPLAY ===== */
-        .time-display {
-            font-family: 'Courier New', monospace;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.06);
-            font-size: 64px;
-            letter-spacing: 4px;
-            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
-            transition: color 0.3s;
-        }
-
-        .time-display.active {
-            color: rgba(255, 255, 255, 0.15);
         }
 
         /* ===== BOTTOM CONTROLS ===== */
@@ -216,19 +200,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             pointer-events: auto;
         }
 
-        /* Nút RECORD chính */
         .btn-record {
-            width: 72px;
-            height: 72px;
+            width: 68px;
+            height: 68px;
             border-radius: 50%;
             border: 3px solid rgba(255, 255, 255, 0.1);
             background: rgba(255, 255, 255, 0.03);
             color: #fff;
-            font-size: 28px;
+            font-size: 26px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
@@ -290,13 +273,8 @@
             }
         }
 
-        .btn-record .icon {
-            transition: all 0.3s;
-        }
-
-        /* Nút chức năng */
         .func-btn {
-            padding: 10px 14px;
+            padding: 10px 12px;
             border: none;
             border-radius: 12px;
             font-size: 11px;
@@ -305,12 +283,12 @@
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             backdrop-filter: blur(8px);
             background: rgba(255, 255, 255, 0.04);
             color: rgba(255, 255, 255, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.03);
-            min-width: 52px;
+            min-width: 44px;
             justify-content: center;
         }
 
@@ -342,21 +320,59 @@
             opacity: 0.2;
         }
 
-        .func-btn.cam {
-            font-size: 10px;
-            padding: 10px 12px;
-            min-width: 44px;
-        }
-
-        .func-btn.cam.active {
-            background: rgba(100, 181, 246, 0.12);
-            color: #64b5f6;
-            border-color: rgba(100, 181, 246, 0.1);
-        }
-
         .func-btn.flip {
             font-size: 11px;
-            min-width: 44px;
+            min-width: 40px;
+        }
+
+        /* ===== NÚT CAMERA GỘP ===== */
+        .cam-group {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
+        }
+
+        .cam-group .cam-btn {
+            padding: 10px 12px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+            min-width: 36px;
+            justify-content: center;
+        }
+
+        .cam-group .cam-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .cam-group .cam-btn.active {
+            background: rgba(100, 181, 246, 0.12);
+            color: #64b5f6;
+        }
+
+        .cam-group .cam-btn:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+
+        .cam-group .divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            flex-shrink: 0;
         }
 
         /* ===== INFO ROW ===== */
@@ -364,7 +380,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 4px 12px;
+            padding: 4px 10px;
             background: rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(8px);
             border-radius: 10px;
@@ -387,8 +403,8 @@
             font-size: 10px;
         }
 
-        .info-row .item .val.highlight {
-            color: #ff6b35;
+        .info-row .item .val.rec {
+            color: #ff3b30;
         }
 
         /* ===== RAM ROW ===== */
@@ -396,12 +412,16 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 0 2px;
-            pointer-events: none;
+            padding: 4px 10px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(8px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            pointer-events: auto;
         }
 
         .ram-row .label {
-            color: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.15);
             font-size: 8px;
             font-weight: 600;
             text-transform: uppercase;
@@ -411,10 +431,11 @@
 
         .ram-row .track {
             flex: 1;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.03);
+            height: 4px;
+            background: rgba(255, 255, 255, 0.04);
             border-radius: 10px;
             overflow: hidden;
+            min-width: 40px;
         }
 
         .ram-row .track .fill {
@@ -448,29 +469,41 @@
         }
 
         .ram-row .info {
-            color: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.15);
             font-size: 8px;
             white-space: nowrap;
-        }
-
-        .ram-row .info .num {
-            color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* ===== RAM SETTINGS ===== */
-        .ram-settings {
             display: flex;
             align-items: center;
             gap: 4px;
-            pointer-events: auto;
         }
 
-        .ram-settings select {
-            padding: 1px 8px;
-            border-radius: 12px;
+        .ram-row .info .num {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .ram-row .info .status-icon {
+            font-size: 8px;
+        }
+
+        .ram-row .ram-select-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ram-row .ram-select-wrap label {
+            color: rgba(255, 255, 255, 0.08);
+            font-size: 7px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .ram-row .ram-select-wrap select {
+            padding: 1px 6px;
+            border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.03);
             background: rgba(255, 255, 255, 0.02);
-            color: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.2);
             font-size: 8px;
             font-weight: 500;
             cursor: pointer;
@@ -478,15 +511,15 @@
             transition: border-color 0.3s;
         }
 
-        .ram-settings select:hover {
+        .ram-row .ram-select-wrap select:hover {
             border-color: rgba(255, 255, 255, 0.06);
         }
 
-        .ram-settings select:focus {
+        .ram-row .ram-select-wrap select:focus {
             border-color: rgba(100, 181, 246, 0.15);
         }
 
-        .ram-settings select option {
+        .ram-row .ram-select-wrap select option {
             background: #1a1a2e;
             color: #fff;
         }
@@ -532,34 +565,21 @@
             }
 
             .btn-record {
-                width: 60px;
-                height: 60px;
-                font-size: 22px;
+                width: 58px;
+                height: 58px;
+                font-size: 20px;
             }
 
             .func-btn {
                 padding: 8px 10px;
                 font-size: 10px;
-                min-width: 40px;
-            }
-
-            .func-btn.cam {
-                padding: 8px 8px;
-                font-size: 9px;
                 min-width: 36px;
             }
 
-            .func-btn.flip {
-                min-width: 36px;
+            .cam-group .cam-btn {
+                padding: 8px 10px;
                 font-size: 10px;
-            }
-
-            .time-display {
-                font-size: 48px;
-            }
-
-            .info-row {
-                padding: 3px 8px;
+                min-width: 32px;
             }
 
             .info-row .item {
@@ -569,33 +589,33 @@
             .info-row .item .val {
                 font-size: 9px;
             }
+
+            .action-row {
+                gap: 8px;
+            }
         }
 
         @media (max-width: 380px) {
             .btn-record {
                 width: 50px;
                 height: 50px;
-                font-size: 18px;
+                font-size: 16px;
             }
 
             .func-btn {
-                padding: 6px 6px;
+                padding: 6px 8px;
                 font-size: 9px;
-                min-width: 32px;
+                min-width: 30px;
             }
 
-            .func-btn.cam {
-                padding: 6px 4px;
-                font-size: 8px;
+            .cam-group .cam-btn {
+                padding: 6px 8px;
+                font-size: 9px;
                 min-width: 28px;
             }
 
             .action-row {
                 gap: 6px;
-            }
-
-            .time-display {
-                font-size: 36px;
             }
 
             .info-row .item {
@@ -604,6 +624,14 @@
 
             .info-row .item .val {
                 font-size: 8px;
+            }
+
+            .ram-row {
+                padding: 3px 8px;
+            }
+
+            .ram-row .info {
+                font-size: 7px;
             }
         }
 
@@ -619,25 +647,25 @@
             }
 
             .func-btn {
-                padding: 5px 8px;
+                padding: 6px 8px;
                 font-size: 9px;
             }
 
-            .func-btn.cam {
-                padding: 5px 6px;
-                font-size: 8px;
-            }
-
-            .time-display {
-                font-size: 32px;
-            }
-
-            .info-row {
-                padding: 2px 6px;
+            .cam-group .cam-btn {
+                padding: 6px 8px;
+                font-size: 9px;
             }
 
             .bottom-area {
                 gap: 6px;
+            }
+
+            .info-row {
+                padding: 2px 8px;
+            }
+
+            .ram-row {
+                padding: 2px 8px;
             }
         }
     </style>
@@ -670,10 +698,8 @@
                 </div>
             </div>
 
-            <!-- CENTER -->
-            <div class="center-area">
-                <div class="time-display" id="timeDisplay">00:00</div>
-            </div>
+            <!-- CENTER - Trống -->
+            <div class="center-area"></div>
 
             <!-- BOTTOM -->
             <div class="bottom-area">
@@ -688,8 +714,12 @@
 
                     <button class="func-btn save" id="btnSave" disabled>💾</button>
 
-                    <button class="func-btn cam active" id="camFront" data-facing="user">📷</button>
-                    <button class="func-btn cam" id="camBack" data-facing="environment">⟳</button>
+                    <!-- NÚT CAMERA GỘP -->
+                    <div class="cam-group">
+                        <button class="cam-btn active" id="camFront" data-facing="user">📷</button>
+                        <span class="divider"></span>
+                        <button class="cam-btn" id="camBack" data-facing="environment">⟳</button>
+                    </div>
                 </div>
 
                 <!-- INFO ROW -->
@@ -708,9 +738,10 @@
                     </div>
                     <span class="info">
                         <span class="num" id="usedRamText">0</span>/<span class="num" id="maxRamText">200</span>MB
-                        <span id="ramStatus" style="margin-left:4px;color:#4caf50;">✓</span>
+                        <span class="status-icon" id="ramStatus" style="color:#4caf50;">✓</span>
                     </span>
-                    <div class="ram-settings">
+                    <div class="ram-select-wrap">
+                        <label>GH</label>
                         <select id="ramSelect">
                             <option value="50">50</option>
                             <option value="100">100</option>
@@ -1481,7 +1512,6 @@
         const btnRecord = document.getElementById('btnRecord');
         const recordIcon = document.getElementById('recordIcon');
         const recBadge = document.getElementById('recBadge');
-        const timeDisplay = document.getElementById('timeDisplay');
         const btnSave = document.getElementById('btnSave');
         const btnFlipMirror = document.getElementById('btnFlipMirror');
         const camFront = document.getElementById('camFront');
@@ -1515,12 +1545,15 @@
             if (usagePercent >= 95) {
                 ramBar.classList.add('red');
                 ramStatus.textContent = '🔥';
+                ramStatus.style.color = '#f44336';
             } else if (usagePercent >= 80) {
                 ramBar.classList.add('yellow');
                 ramStatus.textContent = '⚡';
+                ramStatus.style.color = '#ff9800';
             } else {
                 ramBar.classList.add('green');
                 ramStatus.textContent = '✓';
+                ramStatus.style.color = '#4caf50';
             }
 
             // Record button
@@ -1528,24 +1561,16 @@
                 btnRecord.className = 'btn-record recording';
                 recordIcon.textContent = '⏹';
                 recBadge.classList.add('show');
-                const elapsed = recorder.getElapsedSeconds();
-                const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
-                const sec = String(elapsed % 60).padStart(2, '0');
-                timeDisplay.textContent = `${min}:${sec}`;
-                timeDisplay.className = 'time-display active';
                 statusText.textContent = 'REC';
                 statusText.style.color = '#ff3b30';
             } else {
                 btnRecord.className = 'btn-record idle';
                 recordIcon.textContent = '▶';
                 recBadge.classList.remove('show');
-                timeDisplay.className = 'time-display';
                 if (count > 0) {
-                    timeDisplay.textContent = recorder.formatTime(recorder.totalDuration);
                     statusText.textContent = 'Dừng';
                     statusText.style.color = 'rgba(255,255,255,0.4)';
                 } else {
-                    timeDisplay.textContent = '00:00';
                     statusText.textContent = 'Sẵn sàng';
                     statusText.style.color = 'rgba(255,255,255,0.2)';
                 }
@@ -1624,8 +1649,10 @@
             recorder.stop();
         });
 
-        console.log('📹 Camera Hành Trình - Thiết kế mới!');
-        console.log('✅ Giao diện tối giản, chuyên nghiệp');
+        console.log('📹 Camera Hành Trình - Hoàn thiện!');
+        console.log('✅ Gộp nút cam trước/sau');
+        console.log('✅ RAM và tùy chọn hiển thị đầy đủ');
+        console.log('✅ Bỏ số thời gian giữa màn hình');
     </script>
 </body>
 </html>
