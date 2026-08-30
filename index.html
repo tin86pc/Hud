@@ -648,8 +648,16 @@ class VideoRecorder {
 
 const cam = new VideoRecorder(200);
 function attachClick(el, handler) {
-    el.addEventListener('click', handler);
-    el.addEventListener('touchstart', e => { e.stopPropagation(); handler(); }, { passive: true });
+    let firedByTouch = false;
+    el.addEventListener('touchstart', e => {
+        firedByTouch = true;
+        e.preventDefault();
+        handler();
+    }, { passive: false });
+    el.addEventListener('click', e => {
+        if (firedByTouch) { firedByTouch = false; return; }
+        handler();
+    });
 }
 attachClick(document.getElementById('btnMirror'), () => cam.toggleMirror());
 attachClick(document.getElementById('btnRotate'), () => cam.toggleRotate());
