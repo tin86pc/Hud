@@ -310,10 +310,8 @@ class GPSTracker {
 class VideoRecorder {
     constructor(maxMB = 200) {
         this.max = maxMB === 0 ? Infinity : maxMB * 1024 * 1024;
-        this.chunks = [];
+        this.segments = [];      // mảng các Blob, MỖI Blob là 1 đoạn video WebM hoàn chỉnh, tự đóng gói
         this.totalSize = 0;
-        this.firstChunk = null;
-        this.hasHeader = false;
         this.canvas = document.getElementById('renderCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.video = document.getElementById('videoPreview');
@@ -326,7 +324,9 @@ class VideoRecorder {
         this.canvasStream = null;
         this.recorder = null;
         this.recording = false;
-        this.segTime = 1000;
+        this.segMs = 5000;       // độ dài mỗi đoạn ghi (ms)
+        this.segTimer = null;
+        this.mime = 'video/webm';
         this.cameraReady = false;
         this.switching = false;
         this.wakeLock = null;
@@ -353,7 +353,7 @@ class VideoRecorder {
 
     setMaxMB(mb) {
         this.max = mb === 0 ? Infinity : mb * 1024 * 1024;
-        this.capChunks();
+        this.capSegments();
         this.updateRAMUI();
     }
 
@@ -412,12 +412,8 @@ class VideoRecorder {
             this.stream = null;
         }
 
-        this.chunks = [];
+        this.segments = [];
         this.totalSize = 0;
-        this.firstChunk = null;
-        this.hasHeader = false;
-
-        await new Promise(resolve => setTimeout(resolve, 300));
 
         const ok = await this.initCam(newFacing);
         if (ok) {
@@ -443,7 +439,8 @@ class VideoRecorder {
 
     startRecording() {
         if (this.recording) return;
-        this.chunks = []; this.totalSize = 0; this.firstChunk = null; this.hasHeader = false;
+        this.segments = [];
+        this.totalSize = 0;
 
         if (this.canvasStream) {
             this.canvasStream.getTracks().forEach(track => track.stop());
@@ -452,50 +449,64 @@ class VideoRecorder {
         const aTrack = this.stream?.getAudioTracks()[0];
         if (aTrack) this.canvasStream.addTrack(aTrack);
 
-        let mime = 'video/webm;codecs=vp9,opus';
-        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
+        this.mime = 'video/webm;codecs=vp9,opus';
+        if (!MediaRecorder.isTypeSupported(this.mime)) this.mime = 'video/webm;codecs=vp8,opus';
+        if (!MediaRecorder.isTypeSupported(this.mime)) this.mime = 'video/webm';
 
-        this.recorder = new MediaRecorder(this.canvasStream, { mimeType: mime });
-        this.recorder.ondataavailable = e => this.onChunk(e);
-        this.recorder.start(this.segTime);
         this.recording = true;
+        this.startSegment();
+    }
+
+    // Mỗi đoạn là một vòng đời start()/stop() riêng của MediaRecorder, nên khi
+    // stop() xảy ra thì trình duyệt tự đóng gói thành 1 file WebM hoàn chỉnh,
+    // có header/thông tin thời lượng đầy đủ (không phải một mảnh cắt dở dang).
+    startSegment() {
+        if (!this.recording) return;
+        this.recorder = new MediaRecorder(this.canvasStream, { mimeType: this.mime });
+        let segBlob = null;
+        this.recorder.ondataavailable = e => { if (e.data && e.data.size) segBlob = e.data; };
+        this.recorder.onstop = () => {
+            if (segBlob) this.onSegmentComplete(segBlob);
+            if (this.recording) this.startSegment();
+        };
+        this.recorder.start();
+        clearTimeout(this.segTimer);
+        this.segTimer = setTimeout(() => {
+            if (this.recorder && this.recorder.state === 'recording') this.recorder.stop();
+        }, this.segMs);
     }
 
     stopRecording() {
         if (!this.recording) return;
-        this.recorder.stop();
         this.recording = false;
+        clearTimeout(this.segTimer);
+        if (this.recorder && this.recorder.state !== 'inactive') this.recorder.stop();
     }
 
-    onChunk(e) {
-        if (!e.data.size) return;
-        if (!this.hasHeader) { this.firstChunk = e.data; this.hasHeader = true; }
-        this.chunks.push(e.data);
-        this.totalSize += e.data.size;
-        this.capChunks();
+    onSegmentComplete(blob) {
+        this.segments.push(blob);
+        this.totalSize += blob.size;
+        this.capSegments();
         this.updateRAMUI();
     }
 
-    capChunks() {
-        while (this.chunks.length > 1 && this.totalSize > this.max) {
-            const rm = this.chunks.shift();
+    // Đầy RAM thì bỏ NGUYÊN đoạn cũ nhất, không cắt dở bên trong 1 đoạn
+    // => mọi đoạn còn lại luôn là file WebM hợp lệ, tự đóng gói.
+    capSegments() {
+        while (this.segments.length > 1 && this.totalSize > this.max) {
+            const rm = this.segments.shift();
             this.totalSize -= rm.size;
-            if (rm === this.firstChunk && this.chunks.length) {
-                this.chunks.unshift(rm);
-                this.totalSize += rm.size;
-                break;
-            }
         }
     }
 
     saveVideo() {
-        if (!this.chunks.length) {
+        if (!this.segments.length) {
             showToast('Chưa có video để lưu', 2500, 'warning');
             return;
         }
-        const list = this.chunks[0] !== this.firstChunk ? [this.firstChunk, ...this.chunks] : this.chunks;
-        const blob = new Blob(list, { type: 'video/webm' });
+        // Nối các đoạn WebM hoàn chỉnh liên tiếp nhau — an toàn vì mỗi đoạn
+        // tự nó đã là 1 file hợp lệ (khác với việc cắt dở giữa 1 file trước đây).
+        const blob = new Blob(this.segments, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         const d = new Date();
@@ -514,7 +525,7 @@ class VideoRecorder {
         bar.style.width = pct + '%';
         bar.className = 'ram-bar-fill ' + (pct >= 95 ? 'red' : pct >= 80 ? 'yellow' : 'green');
         document.getElementById('ramText').textContent = `${usedMB}/${maxMB}MB`;
-        document.getElementById('btnSave').disabled = this.chunks.length === 0;
+        document.getElementById('btnSave').disabled = this.segments.length === 0;
     }
 
     roundRect(ctx, x, y, w, h, r) {
@@ -619,7 +630,7 @@ class VideoRecorder {
         const dotY = c.hudY + c.padY + c.baseFontSize * 0.5;
 
         this.ctx.beginPath();
-        this.ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+        this.ctx.arc(dotX, dotY, c.dotR, 0, Math.PI * 2);
         this.ctx.fillStyle = '#34c759';
         this.ctx.fill();
 
