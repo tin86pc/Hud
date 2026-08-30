@@ -240,14 +240,17 @@ function hideControls() {
     controlModal.classList.remove('visible');
     clearTimeout(hideTimer);
 }
-canvasContainer.addEventListener('click', e => {
-    if (e.target.closest('.btn') || e.target.closest('select')) return;
-    showControls();
-});
+let containerFiredByTouch = false;
 canvasContainer.addEventListener('touchstart', e => {
     if (e.target.closest('.btn') || e.target.closest('select')) return;
+    containerFiredByTouch = true;
     showControls();
 }, { passive: true });
+canvasContainer.addEventListener('click', e => {
+    if (e.target.closest('.btn') || e.target.closest('select')) return;
+    if (containerFiredByTouch) { containerFiredByTouch = false; return; }
+    showControls();
+});
 
 class GPSTracker {
     constructor() {
@@ -326,6 +329,26 @@ class VideoRecorder {
         this.segTime = 1000;
         this.cameraReady = false;
         this.switching = false;
+        this.wakeLock = null;
+        this.hudCache = null;
+        this.hudCacheSecond = null;
+    }
+
+    async acquireWakeLock() {
+        if (!('wakeLock' in navigator)) return;
+        try {
+            this.wakeLock = await navigator.wakeLock.request('screen');
+            this.wakeLock.addEventListener('release', () => { this.wakeLock = null; });
+        } catch (err) {
+            console.warn('Wake Lock lỗi:', err);
+        }
+    }
+
+    async releaseWakeLock() {
+        if (this.wakeLock) {
+            try { await this.wakeLock.release(); } catch (e) {}
+            this.wakeLock = null;
+        }
     }
 
     setMaxMB(mb) {
@@ -360,6 +383,7 @@ class VideoRecorder {
                 this.startDraw();
                 this.gps.start();
                 this.startRecording();
+                this.acquireWakeLock();
                 showToast('✅ Camera đã sẵn sàng', 2000, 'success');
                 return true;
             } catch (err) {
@@ -421,6 +445,9 @@ class VideoRecorder {
         if (this.recording) return;
         this.chunks = []; this.totalSize = 0; this.firstChunk = null; this.hasHeader = false;
 
+        if (this.canvasStream) {
+            this.canvasStream.getTracks().forEach(track => track.stop());
+        }
         this.canvasStream = this.canvas.captureStream(30);
         const aTrack = this.stream?.getAudioTracks()[0];
         if (aTrack) this.canvasStream.addTrack(aTrack);
@@ -513,19 +540,49 @@ class VideoRecorder {
         const speed = this.gps.getSpeed();
         const speedStr = speed.toFixed(1) + ' km/h';
 
-        const minDim = Math.min(cw, ch);
-        
-        // === Tối ưu kích thước chữ nhỏ hơn & cân đối ===
-        const baseFontSize = minDim * 0.032;      // Ngày tháng
-        const timeFontSize = minDim * 0.048;       // Giờ
-        const speedFontSize = minDim * 0.055;      // Tốc độ
+        // Chỉ tính lại font/kích thước khi nội dung, kích thước canvas hoặc xoay HUD
+        // thực sự đổi (đa số là 1 lần/giây) thay vì đo lại mỗi frame (60 lần/giây).
+        const cacheKey = date + time + speedStr + cw + ch + this.rotateHUD;
+        if (!this.hudCache || this.hudCacheKey !== cacheKey) {
+            const minDim = Math.min(cw, ch);
 
-        const padX = baseFontSize * 1.2;           // Giảm khoảng đệm ngang
-        const padY = baseFontSize * 1.0;           // Giảm khoảng đệm dọc
-        const margin = minDim * 0.03;               // Lề viền ngoài nhỏ gọn
-        const radius = baseFontSize * 0.7;         // Bo góc mềm
-        const lineGap = baseFontSize * 0.4;        // Khoảng cách giữa các dòng gọn hơn
-        const dotR = baseFontSize * 0.25;          // Chấm xanh nhỏ hơn
+            // === Tối ưu kích thước chữ nhỏ hơn & cân đối ===
+            const baseFontSize = minDim * 0.032;      // Ngày tháng
+            const timeFontSize = minDim * 0.048;       // Giờ
+            const speedFontSize = minDim * 0.055;      // Tốc độ
+
+            const padX = baseFontSize * 1.2;           // Giảm khoảng đệm ngang
+            const padY = baseFontSize * 1.0;           // Giảm khoảng đệm dọc
+            const margin = minDim * 0.03;               // Lề viền ngoài nhỏ gọn
+            const radius = baseFontSize * 0.7;         // Bo góc mềm
+            const lineGap = baseFontSize * 0.4;        // Khoảng cách giữa các dòng gọn hơn
+            const dotR = baseFontSize * 0.25;          // Chấm xanh nhỏ hơn
+
+            const dateFont = `bold ${baseFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+            const timeFont = `bold ${timeFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+            const speedFont = `bold ${speedFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+
+            this.ctx.font = dateFont;
+            const dateW = this.ctx.measureText(date).width;
+            this.ctx.font = timeFont;
+            const timeW = this.ctx.measureText(time).width;
+            this.ctx.font = speedFont;
+            const speedW = this.ctx.measureText(speedStr).width;
+
+            const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
+            const boxH = padY * 2 + baseFontSize + timeFontSize + speedFontSize + lineGap * 2;
+            const hudX = margin;
+            const hudY = margin;
+
+            this.hudCache = {
+                date, time, speedStr, baseFontSize, timeFontSize, speedFontSize,
+                dateFont, timeFont, speedFont, padX, padY, radius, lineGap, dotR,
+                boxW, boxH, hudX, hudY
+            };
+            this.hudCacheKey = cacheKey;
+        }
+
+        const c = this.hudCache;
 
         this.ctx.save();
         if (this.rotateHUD === 90) {
@@ -534,49 +591,32 @@ class VideoRecorder {
             this.ctx.translate(-ch / 2, -cw / 2);
         }
 
-        // Tính kích thước thực tế của từng dòng
-        this.ctx.font = `bold ${baseFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const dateW = this.ctx.measureText(date).width;
-
-        this.ctx.font = `bold ${timeFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const timeW = this.ctx.measureText(time).width;
-
-        this.ctx.font = `bold ${speedFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const speedW = this.ctx.measureText(speedStr).width;
-
-        // Nền chỉ vừa vặn với nội dung, trong suốt hơn
-        const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
-        const boxH = padY * 2 + baseFontSize + timeFontSize + speedFontSize + lineGap * 2;
-
-        const hudX = margin;
-        const hudY = margin;
-
         // Nền trong suốt nhẹ hơn, không bị rối hình nền
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-        this.roundRect(this.ctx, hudX, hudY, boxW, boxH, radius);
+        this.roundRect(this.ctx, c.hudX, c.hudY, c.boxW, c.boxH, c.radius);
         this.ctx.fill();
 
         // Vẽ nội dung
-        let tx = hudX + padX;
-        let ty = hudY + padY + baseFontSize * 0.75;
+        let tx = c.hudX + c.padX;
+        let ty = c.hudY + c.padY + c.baseFontSize * 0.75;
 
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        this.ctx.font = `bold ${baseFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        this.ctx.fillText(date, tx, ty);
-        ty += baseFontSize + lineGap;
+        this.ctx.font = c.dateFont;
+        this.ctx.fillText(c.date, tx, ty);
+        ty += c.baseFontSize + c.lineGap;
 
-        this.ctx.font = `bold ${timeFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        this.ctx.fillText(time, tx, ty);
-        ty += timeFontSize + lineGap;
+        this.ctx.font = c.timeFont;
+        this.ctx.fillText(c.time, tx, ty);
+        ty += c.timeFontSize + c.lineGap;
 
         const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
         this.ctx.fillStyle = speedColor;
-        this.ctx.font = `bold ${speedFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        this.ctx.fillText(speedStr, tx, ty);
+        this.ctx.font = c.speedFont;
+        this.ctx.fillText(c.speedStr, tx, ty);
 
         // Chấm trạng thái GPS
-        const dotX = hudX + padX - dotR * 1.5;
-        const dotY = hudY + padY + baseFontSize * 0.5;
+        const dotX = c.hudX + c.padX - c.dotR * 1.5;
+        const dotY = c.hudY + c.padY + c.baseFontSize * 0.5;
 
         this.ctx.beginPath();
         this.ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
@@ -665,7 +705,10 @@ attachClick(document.getElementById('btnCam'), () => cam.switchCam());
 attachClick(document.getElementById('btnSave'), () => cam.saveVideo());
 document.getElementById('ramLimit').addEventListener('change', e => cam.setMaxMB(parseInt(e.target.value)));
 cam.initCam('user');
-window.addEventListener('beforeunload', () => { cam.stopRecording(); cam.gps.stop(); });
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && cam.cameraReady) cam.acquireWakeLock();
+});
+window.addEventListener('beforeunload', () => { cam.stopRecording(); cam.gps.stop(); cam.releaseWakeLock(); });
 </script>
 </body>
 </html>
