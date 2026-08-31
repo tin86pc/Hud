@@ -506,21 +506,24 @@ class VideoRecorder {
         const date = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const time = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         const speed = this.gps.getSpeed();
-        const speedStr = speed.toFixed(1) + ' km/h';
+        const speedNum = speed.toFixed(1);
+        const unit = 'km/h';
 
         const minDim = Math.min(cw, ch);
-        
-        // === Tối ưu kích thước chữ nhỏ hơn & cân đối ===
-        const baseFontSize = minDim * 0.032;      // Ngày tháng
-        const timeFontSize = minDim * 0.048;       // Giờ
-        const speedFontSize = minDim * 0.055;      // Tốc độ
 
-        const padX = baseFontSize * 1.2;           // Giảm khoảng đệm ngang
-        const padY = baseFontSize * 1.0;           // Giảm khoảng đệm dọc
-        const margin = minDim * 0.03;               // Lề viền ngoài nhỏ gọn
-        const radius = baseFontSize * 0.7;         // Bo góc mềm
-        const lineGap = baseFontSize * 0.4;        // Khoảng cách giữa các dòng gọn hơn
-        const dotR = baseFontSize * 0.25;          // Chấm xanh nhỏ hơn
+        // Scale đẹp theo kích thước màn hình
+        const s = minDim * 0.001; // scale factor
+        const dateSize   = minDim * 0.028;
+        const timeSize   = minDim * 0.042;
+        const speedSize  = minDim * 0.068;
+        const unitSize   = minDim * 0.026;
+
+        const padX = minDim * 0.038;
+        const padY = minDim * 0.028;
+        const margin = minDim * 0.028;
+        const radius = minDim * 0.022;
+        const gap = minDim * 0.012;
+        const accentW = minDim * 0.008;
 
         this.ctx.save();
         if (this.rotateHUD === 90) {
@@ -529,53 +532,93 @@ class VideoRecorder {
             this.ctx.translate(-ch / 2, -cw / 2);
         }
 
-        // Tính kích thước thực tế của từng dòng
-        this.ctx.font = `bold ${baseFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        // Đo kích thước text
+        this.ctx.font = `600 ${dateSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
         const dateW = this.ctx.measureText(date).width;
 
-        this.ctx.font = `bold ${timeFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.font = `700 ${timeSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
         const timeW = this.ctx.measureText(time).width;
 
-        this.ctx.font = `bold ${speedFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        const speedW = this.ctx.measureText(speedStr).width;
+        this.ctx.font = `800 ${speedSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
+        const speedW = this.ctx.measureText(speedNum).width;
 
-        // Nền chỉ vừa vặn với nội dung, trong suốt hơn
-        const boxW = Math.max(dateW, timeW, speedW) + padX * 2;
-        const boxH = padY * 2 + baseFontSize + timeFontSize + speedFontSize + lineGap * 2;
+        this.ctx.font = `600 ${unitSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
+        const unitW = this.ctx.measureText(unit).width;
+
+        const contentW = Math.max(dateW, timeW, speedW + unitW + minDim * 0.012);
+        const boxW = contentW + padX * 2 + accentW + minDim * 0.012;
+        const boxH = padY * 2 + dateSize + gap + timeSize + gap * 1.4 + speedSize;
 
         const hudX = margin;
         const hudY = margin;
 
-        // Nền trong suốt nhẹ hơn, không bị rối hình nền
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        // Màu tốc độ theo ngưỡng
+        const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9f0a' : '#30d158';
+
+        // --- Nền glass ---
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
         this.roundRect(this.ctx, hudX, hudY, boxW, boxH, radius);
         this.ctx.fill();
 
-        // Vẽ nội dung
-        let tx = hudX + padX;
-        let ty = hudY + padY + baseFontSize * 0.75;
+        // Viền mỏng sáng
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+        this.ctx.lineWidth = Math.max(1, minDim * 0.002);
+        this.roundRect(this.ctx, hudX, hudY, boxW, boxH, radius);
+        this.ctx.stroke();
 
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        this.ctx.font = `bold ${baseFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        this.ctx.fillText(date, tx, ty);
-        ty += baseFontSize + lineGap;
-
-        this.ctx.font = `bold ${timeFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        this.ctx.fillText(time, tx, ty);
-        ty += timeFontSize + lineGap;
-
-        const speedColor = speed >= 50 ? '#ff3b30' : speed >= 30 ? '#ff9500' : '#34c759';
+        // Accent bar bên trái theo màu tốc độ
         this.ctx.fillStyle = speedColor;
-        this.ctx.font = `bold ${speedFontSize}px -apple-system, 'Segoe UI', Roboto, sans-serif`;
-        this.ctx.fillText(speedStr, tx, ty);
+        this.ctx.beginPath();
+        this.ctx.moveTo(hudX + radius, hudY);
+        this.ctx.lineTo(hudX + accentW, hudY);
+        this.ctx.lineTo(hudX + accentW, hudY + boxH);
+        this.ctx.lineTo(hudX + radius, hudY + boxH);
+        this.ctx.quadraticCurveTo(hudX, hudY + boxH, hudX, hudY + boxH - radius);
+        this.ctx.lineTo(hudX, hudY + radius);
+        this.ctx.quadraticCurveTo(hudX, hudY, hudX + radius, hudY);
+        this.ctx.closePath();
+        this.ctx.fill();
 
-        // Chấm trạng thái GPS
-        const dotX = hudX + padX - dotR * 1.5;
-        const dotY = hudY + padY + baseFontSize * 0.5;
+        // --- Nội dung ---
+        let tx = hudX + padX + accentW + minDim * 0.008;
+        let ty = hudY + padY + dateSize * 0.85;
 
+        // Ngày
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+        this.ctx.font = `600 ${dateSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.fillText(date, tx, ty);
+
+        // Giờ
+        ty += dateSize + gap;
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        this.ctx.font = `700 ${timeSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.fillText(time, tx, ty);
+
+        // Tốc độ (số lớn + đơn vị nhỏ)
+        ty += timeSize + gap * 1.4;
+        this.ctx.fillStyle = speedColor;
+        this.ctx.font = `800 ${speedSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.fillText(speedNum, tx, ty);
+
+        // Đơn vị km/h
+        const unitX = tx + speedW + minDim * 0.012;
+        const unitY = ty - speedSize * 0.12;
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+        this.ctx.font = `600 ${unitSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
+        this.ctx.fillText(unit, unitX, unitY);
+
+        // Chấm GPS nhỏ góc trên phải trong box
+        const dotR = minDim * 0.009;
+        const dotX = hudX + boxW - padX * 0.7;
+        const dotY = hudY + padY * 0.9;
         this.ctx.beginPath();
         this.ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#34c759';
+        this.ctx.fillStyle = '#30d158';
+        this.ctx.fill();
+        // glow nhẹ
+        this.ctx.beginPath();
+        this.ctx.arc(dotX, dotY, dotR * 2.2, 0, Math.PI * 2);
+        this.ctx.fillStyle = 'rgba(48, 209, 88, 0.25)';
         this.ctx.fill();
 
         this.ctx.restore();
