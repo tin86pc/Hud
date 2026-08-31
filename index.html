@@ -517,12 +517,12 @@ class VideoRecorder {
         const speedSize  = minDim * 0.068;
         const unitSize   = minDim * 0.026;
 
-        const padX = minDim * 0.036;
-        const padTop = minDim * 0.022;
-        const padBottom = minDim * 0.018;
+        const padX = minDim * 0.038;
+        const padTop = minDim * 0.026;
+        const padBottom = minDim * 0.024;
         const margin = minDim * 0.028;
-        const radius = minDim * 0.018;
-        const gap = minDim * 0.009;
+        const radius = minDim * 0.02;
+        const gap = minDim * 0.018;          // khoảng cách giữa các dòng (giãn ra)
         const accentW = minDim * 0.007;
 
         this.ctx.save();
@@ -547,8 +547,8 @@ class VideoRecorder {
 
         const contentW = Math.max(dateW, timeW, speedW + unitW + minDim * 0.01);
         const boxW = contentW + padX * 2 + accentW + minDim * 0.01;
-        // Chiều cao ôm sát nội dung, không thừa khoảng trống dưới
-        const boxH = padTop + padBottom + dateSize + gap + timeSize + gap * 1.15 + speedSize * 0.92;
+        // Chiều cao theo khoảng cách dòng mới
+        const boxH = padTop + padBottom + dateSize + gap + timeSize + gap + speedSize * 0.92;
 
         const hudX = margin;
         const hudY = margin;
@@ -596,7 +596,7 @@ class VideoRecorder {
         this.ctx.fillText(time, tx, ty);
 
         // Tốc độ (số lớn + đơn vị nhỏ)
-        ty += timeSize + gap * 1.15;
+        ty += timeSize + gap;
         this.ctx.fillStyle = speedColor;
         this.ctx.font = `800 ${speedSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
         this.ctx.fillText(speedNum, tx, ty);
