@@ -511,19 +511,19 @@ class VideoRecorder {
 
         const minDim = Math.min(cw, ch);
 
-        // Scale đẹp theo kích thước màn hình
-        const s = minDim * 0.001; // scale factor
+        // Scale theo kích thước màn hình
         const dateSize   = minDim * 0.028;
         const timeSize   = minDim * 0.042;
         const speedSize  = minDim * 0.068;
         const unitSize   = minDim * 0.026;
 
-        const padX = minDim * 0.038;
-        const padY = minDim * 0.028;
+        const padX = minDim * 0.036;
+        const padTop = minDim * 0.022;
+        const padBottom = minDim * 0.018;
         const margin = minDim * 0.028;
-        const radius = minDim * 0.022;
-        const gap = minDim * 0.012;
-        const accentW = minDim * 0.008;
+        const radius = minDim * 0.018;
+        const gap = minDim * 0.009;
+        const accentW = minDim * 0.007;
 
         this.ctx.save();
         if (this.rotateHUD === 90) {
@@ -545,9 +545,10 @@ class VideoRecorder {
         this.ctx.font = `600 ${unitSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
         const unitW = this.ctx.measureText(unit).width;
 
-        const contentW = Math.max(dateW, timeW, speedW + unitW + minDim * 0.012);
-        const boxW = contentW + padX * 2 + accentW + minDim * 0.012;
-        const boxH = padY * 2 + dateSize + gap + timeSize + gap * 1.4 + speedSize;
+        const contentW = Math.max(dateW, timeW, speedW + unitW + minDim * 0.01);
+        const boxW = contentW + padX * 2 + accentW + minDim * 0.01;
+        // Chiều cao ôm sát nội dung, không thừa khoảng trống dưới
+        const boxH = padTop + padBottom + dateSize + gap + timeSize + gap * 1.15 + speedSize * 0.92;
 
         const hudX = margin;
         const hudY = margin;
@@ -580,8 +581,8 @@ class VideoRecorder {
         this.ctx.fill();
 
         // --- Nội dung ---
-        let tx = hudX + padX + accentW + minDim * 0.008;
-        let ty = hudY + padY + dateSize * 0.85;
+        let tx = hudX + padX + accentW + minDim * 0.006;
+        let ty = hudY + padTop + dateSize * 0.82;
 
         // Ngày
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
@@ -595,31 +596,17 @@ class VideoRecorder {
         this.ctx.fillText(time, tx, ty);
 
         // Tốc độ (số lớn + đơn vị nhỏ)
-        ty += timeSize + gap * 1.4;
+        ty += timeSize + gap * 1.15;
         this.ctx.fillStyle = speedColor;
         this.ctx.font = `800 ${speedSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
         this.ctx.fillText(speedNum, tx, ty);
 
         // Đơn vị km/h
-        const unitX = tx + speedW + minDim * 0.012;
-        const unitY = ty - speedSize * 0.12;
+        const unitX = tx + speedW + minDim * 0.01;
+        const unitY = ty - speedSize * 0.1;
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
         this.ctx.font = `600 ${unitSize}px -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif`;
         this.ctx.fillText(unit, unitX, unitY);
-
-        // Chấm GPS nhỏ góc trên phải trong box
-        const dotR = minDim * 0.009;
-        const dotX = hudX + boxW - padX * 0.7;
-        const dotY = hudY + padY * 0.9;
-        this.ctx.beginPath();
-        this.ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#30d158';
-        this.ctx.fill();
-        // glow nhẹ
-        this.ctx.beginPath();
-        this.ctx.arc(dotX, dotY, dotR * 2.2, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(48, 209, 88, 0.25)';
-        this.ctx.fill();
 
         this.ctx.restore();
     }
